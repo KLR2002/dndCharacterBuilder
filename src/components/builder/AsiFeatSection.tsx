@@ -4,7 +4,8 @@ import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { AbilityKey, Character } from "../../types/character";
 import { FeatData } from "../../types/dnd5e";
-import { getFeatAbilityBonusOptions, removeAsiSelection } from "../../rules/leveling";
+import { removeAsiSelection } from "../../rules/leveling";
+import { featIncreaseOptions, findFeat } from "../../rules/featSlot";
 import { applyAsiWithHitPoints } from "../../rules/builderTransitions";
 import { validateFeatPrerequisites } from "../../rules/feats";
 import { findHeldRecord } from "../../rules/raceLookup";
@@ -97,7 +98,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
       }
     } else {
       if (!asiSelectedFeat) return;
-      const opts = getFeatAbilityBonusOptions(asiSelectedFeat.name, asiSelectedFeat);
+      const opts = featIncreaseOptions(asiSelectedFeat);
       if (opts.type === "choice" && !asiSelectedFeatAbility) return;
       const featAbility = opts.type === "fixed" ? opts.abilities[0] : asiSelectedFeatAbility || undefined;
       onUpdate((current) => {
@@ -377,7 +378,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                               key={`${f.name}_${f.source}`}
                               onPress={() => {
                                 setAsiSelectedFeat(f);
-                                const opts = getFeatAbilityBonusOptions(f.name, f);
+                                const opts = featIncreaseOptions(f);
                                 setAsiSelectedFeatAbility(opts.type === "fixed" ? opts.abilities[0] : null);
                                 setAsiSelectedFightingStyle(null);
                                 setAsiSelectedManeuvers([]);
@@ -452,7 +453,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
 
                     {asiSelectedFeat &&
                       (() => {
-                        const featOpts = getFeatAbilityBonusOptions(asiSelectedFeat.name, asiSelectedFeat);
+                        const featOpts = featIncreaseOptions(asiSelectedFeat);
                         if (featOpts.type === "none") return null;
                         return (
                           <View
@@ -716,7 +717,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                       size="sm"
                       disabled={
                         !asiSelectedFeat ||
-                        (getFeatAbilityBonusOptions(asiSelectedFeat.name, asiSelectedFeat).type === "choice" &&
+                        (featIncreaseOptions(asiSelectedFeat).type === "choice" &&
                           !asiSelectedFeatAbility) ||
                         (asiSelectedFeat.name.toLowerCase() === "fighting initiate" && !asiSelectedFightingStyle) ||
                         (asiSelectedFeat.name.toLowerCase() === "martial adept" && asiSelectedManeuvers.length < 2) ||
@@ -746,11 +747,14 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
               : sel.asi && Object.keys(sel.asi).length > 0
               ? ` • +1 ${Object.keys(sel.asi)[0].toUpperCase()}`
               : "";
+            const savedFeatSource = isAsi
+              ? undefined
+              : findFeat(sel.featName ?? "", sel.featSource, currentCompendium(), activeBooks)?.source ?? sel.featSource;
             const summary = isAsi
               ? Object.entries(sel.asi || {})
                   .map(([k, v]) => `${k.toUpperCase()} +${v}`)
                   .join(", ")
-              : `Feat: ${sel.featName} (${sel.featSource || "PHB"})${featAbilityStr}`;
+              : `Feat: ${sel.featName}${savedFeatSource ? ` (${savedFeatSource})` : ""}${featAbilityStr}`;
 
             return (
               <View
@@ -856,7 +860,12 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                 {!isAsi && sel.featName && (
                   <GrantedSpellPicks
                     character={character}
-                    choices={featSpellChoicesOf(character, { name: sel.featName, source: sel.featSource || "PHB" }, currentCompendium(), activeBooks)}
+                    choices={featSpellChoicesOf(
+                      character,
+                      { name: sel.featName, source: findFeat(sel.featName, sel.featSource, currentCompendium(), activeBooks)?.source ?? sel.featSource ?? "" },
+                      currentCompendium(),
+                      activeBooks
+                    )}
                     onUpdate={onUpdate}
                     activeBooks={activeBooks}
                     theme={theme}

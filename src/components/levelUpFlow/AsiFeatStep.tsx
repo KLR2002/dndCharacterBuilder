@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View, type StyleProp, type TextStyle, type ViewStyle } from "react-native";
 import type { AbilityKey, AsiSelection, Character } from "../../types/character";
 import type { FeatData } from "../../types/dnd5e";
-import { getFeatAbilityBonusOptions } from "../../rules/leveling";
+import { featIncreaseOptions, findFeat } from "../../rules/featSlot";
 import { validateFeatPrerequisites } from "../../rules/feats";
 import { currentCompendium } from "../../services/compendium";
 import { useAppTheme } from "../../context/ThemeContext";
@@ -71,7 +71,7 @@ export function AsiFeatStep({
   };
 
   const handleFeat = (feat: FeatData) => {
-    const opts = getFeatAbilityBonusOptions(feat.name, feat);
+    const opts = featIncreaseOptions(feat);
     const ability = opts.type === "fixed" ? opts.abilities[0] : null;
     // Selecting a feat replaces the plan's pick at once. A feat offering +1 to one of several abilities
     // stays pending (no featAbility) until one is chosen below, and the step rejects it until then.
@@ -99,9 +99,13 @@ export function AsiFeatStep({
   };
 
   const current = plan.picks.asi;
+  const currentFeatSource =
+    current?.type === "feat" && current.featName
+      ? findFeat(current.featName, current.featSource, currentCompendium(), activeBooks)?.source ?? current.featSource
+      : undefined;
   const currentSummary = current
     ? current.type === "feat"
-      ? `Feat: ${current.featName ?? ""} (${current.featSource ?? "PHB"})`
+      ? `Feat: ${current.featName ?? ""}${currentFeatSource ? ` (${currentFeatSource})` : ""}`
       : Object.entries(current.asi ?? {})
           .map(([k, v]) => `${k.toUpperCase()} +${v}`)
           .join(", ")

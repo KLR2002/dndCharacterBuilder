@@ -30,7 +30,7 @@ import { ABILITY_KEYS, ABILITY_LABELS, builderStyles as styles, RuleChoicePicker
 import { useCharacters } from "../../context/CharacterContext";
 import { getFeats } from "../../services/dataService";
 import { validateFeatPrerequisites, applyOriginFeat, removeOriginFeat } from "../../rules/feats";
-import { getFeatAbilityBonusOptions } from "../../rules/leveling";
+import { featIncreaseOptions, findFeat } from "../../rules/featSlot";
 import { BACKGROUND_FEAT_SOURCE } from "../../constants/rules";
 
 export interface AncestrySectionProps {
@@ -492,7 +492,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                     {currentOriginFeat.featName}
                   </Text>
                   <Text style={{ color: theme.textMuted, fontSize: 12 }}>
-                    Source: {currentOriginFeat.featSource || "PHB"}
+                    Source: {findFeat(currentOriginFeat.featName || "", currentOriginFeat.featSource, currentCompendium(), activeBooks)?.source ?? currentOriginFeat.featSource}
                   </Text>
                 </View>
                 <Button
@@ -508,7 +508,9 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
               </View>
 
               {(() => {
-                const bonusOptions = getFeatAbilityBonusOptions(currentOriginFeat.featName || "");
+                const bonusOptions = featIncreaseOptions(
+                  findFeat(currentOriginFeat.featName || "", currentOriginFeat.featSource, currentCompendium(), activeBooks)
+                );
                 if (bonusOptions.abilities.length <= 1) return null;
                 return (
                   <View style={{ gap: 6, marginTop: 4 }}>
@@ -518,7 +520,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                     <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
                       {bonusOptions.abilities.map((ab) => {
                         const isSelected = currentOriginFeat.featAbility === ab;
-                        return (
+return (
                           <TouchableOpacity
                             key={ab}
                             onPress={() => {
@@ -557,7 +559,15 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
 
               <GrantedSpellPicks
                 character={character}
-                choices={featSpellChoicesOf(character, { name: currentOriginFeat.featName || "", source: currentOriginFeat.featSource || "PHB" }, currentCompendium(), activeBooks)}
+                choices={featSpellChoicesOf(
+                  character,
+                  {
+                    name: currentOriginFeat.featName || "",
+                    source: findFeat(currentOriginFeat.featName || "", currentOriginFeat.featSource, currentCompendium(), activeBooks)?.source ?? currentOriginFeat.featSource ?? "",
+                  },
+                  currentCompendium(),
+                  activeBooks
+                )}
                 onUpdate={onUpdate}
                 theme={theme}
                 activeBooks={activeBooks}
@@ -757,7 +767,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
               .filter((f) => f.name.toLowerCase().includes(featSearch.toLowerCase()))
               .map((f) => {
                 const prereqCheck = validateFeatPrerequisites(character, f, { catalogs: { compendium: currentCompendium(), activeBooks } });
-                const bonusOptions = getFeatAbilityBonusOptions(f.name);
+                const bonusOptions = featIncreaseOptions(f);
                 const isSelected = currentOriginFeat?.featName?.toLowerCase() === f.name.toLowerCase();
                 // A feat the background already gives is held once, so the race cannot take it (applyOriginFeat).
                 const heldByBackground = (character.originFeats ?? []).some(
