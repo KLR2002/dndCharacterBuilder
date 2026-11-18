@@ -15,10 +15,14 @@ import {
   clearRolledAbilityPicks,
   reclaimStartingGrants,
   rollRolledAbilities,
+  setOptionalFeatureEnabled,
   setRolledAbilityPick,
   setStandardArrayPick,
   STARTING_GOLD_BY_CLASS,
 } from "../../rules/builderTransitions";
+import { toggleExpertiseChoice } from "../../rules/expertise";
+import { clearProficiencyPick } from "../../rules/proficiencyPools";
+import { pickRuleChoice, type AvailableRuleChoice } from "../../rules/ruleChoices";
 import { appRandom } from "../../rules/dice";
 import {
   setStartingEquipmentItems,
@@ -39,7 +43,7 @@ import { AbilityScoresSection } from "../builder/AbilityScoresSection";
 import { AncestrySection } from "../builder/AncestrySection";
 import { BackgroundSection } from "../builder/BackgroundSection";
 import { builderStyles as styles } from "../builder/builderStyles";
-import { ClassProgressionSection } from "../builder/ClassProgressionSection";
+import { ClassSteps } from "../builder/ClassSteps";
 
 const ABILITY_KEYS: AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
 
@@ -341,6 +345,40 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
     );
   };
 
+  // The Class Choices part's transitions. The cards only report picks; the Level-Up Flow wires its own plan.
+  const handleToggleRuleChoice = (choice: AvailableRuleChoice, option: string) => {
+    onUpdate((cur) => pickRuleChoice(cur, choice, option, currentCompendium(), activeBooks));
+  };
+
+  const handleClearChoice = (choice: AvailableRuleChoice) => {
+    onUpdate((cur) => {
+      const next: Character =
+        choice.pick === "proficiency"
+          ? clearProficiencyPick(cur, choice.id)
+          : {
+              ...cur,
+              ruleChoices: (cur.ruleChoices || []).filter((rc) => rc.id !== choice.id),
+            };
+      return reconcile(next, currentCompendium(), { activeBooks });
+    });
+  };
+
+  const handleToggleExpertise = (item: string) => {
+    onUpdate((cur) => toggleExpertiseChoice(cur, item, catalogs));
+  };
+
+  const handlePruneInvalidExpertise = () => {
+    onUpdate((cur) => reconcile(cur, currentCompendium(), { activeBooks }));
+  };
+
+  const handleToggleOptionalFeature = (featureName: string) => {
+    onUpdate((cur) =>
+      setOptionalFeatureEnabled(cur, featureName, !cur.optionalFeatureReplacements?.[featureName], currentCompendium(), {
+        activeBooks,
+      })
+    );
+  };
+
   const { race: raceGranted, background: backgroundGranted, classTools } = sourceGrants(character, catalogs);
   const proficiencyOffers = proficiencyChoiceOffers(character, { activeBooks });
   const raceProficiencyChoices = proficiencyOffers.filter((choice) => choice.origin === "race");
@@ -450,7 +488,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
       )}
 
       {(hostedSection ?? activeSection) === "class" && (
-        <ClassProgressionSection
+        <ClassSteps
           character={character}
           onUpdate={onUpdate}
           step={step}
@@ -461,7 +499,12 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
           effectiveScores={effectiveScores}
           classChoices={classChoices}
           autoGranted={autoGrantedBase}
-          toggleSkill={toggleSkill}
+          onToggleStartingSkill={toggleSkill}
+          onToggleRuleChoice={handleToggleRuleChoice}
+          onClearChoice={handleClearChoice}
+          onToggleExpertise={handleToggleExpertise}
+          onPruneInvalidExpertise={handlePruneInvalidExpertise}
+          onToggleOptionalFeature={handleToggleOptionalFeature}
           classTools={classTools}
           pendingAsiSlots={pendingAsi}
           primaryClass={primaryClass}
