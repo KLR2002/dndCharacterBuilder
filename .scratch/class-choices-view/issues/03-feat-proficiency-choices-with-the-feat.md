@@ -7,7 +7,9 @@
 
 **Blocked by:** 02
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Tests (red first): a character holding Skilled (ASI) or Skilled as a Variant Human origin feat gets its Proficiency Choice from the Feat Slot module and not from `classChoicesStepView`.
-- [ ] Layout: `Builder ASI feat Fighting Initiate`, `Builder origin feat` and the class-choice scenarios at 393 (`-- --integrated`); add a Skilled pick to one of the feat scenarios, assert its picker shows on the feat card, and check its screenshot. `npm run check:all` passes.
+**Landed:** merge of 69d0a58, 81600f4. `featProficiencyChoiceOffers` (`proficiencyChoiceOffers.ts`) matches a feat's offers by the feature's origin, name and source; `featPickView(...).proficiencyChoices` and `takenFeatProficiencyChoices` in `featSlot.ts`. `skillPickOffers` no longer includes origin `"feat"`, and the class view's other card drops feat offers. `FeatPickDetails` renders them (`FeatProficiencyPickers`) on the saved ASI card and the race and background origin cards; the Level-Up feat step does not (the plan holds no proficiency picks), so they appear on the saved card after Review. New integrated scenarios `Builder origin feat Skilled` and `Builder ASI feat Skilled` passed at 393 with the class-choice scenarios; check:all passed.
+
+- [x] Tests (red first): a character holding Skilled (ASI) or Skilled as a Variant Human origin feat gets its Proficiency Choice from the Feat Slot module and not from `classChoicesStepView`.
+- [x] Layout: `Builder ASI feat Fighting Initiate`, `Builder origin feat` and the class-choice scenarios at 393 (`-- --integrated`); add a Skilled pick to one of the feat scenarios, assert its picker shows on the feat card, and check its screenshot. `npm run check:all` passes.
