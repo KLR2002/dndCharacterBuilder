@@ -5,6 +5,7 @@ import type { FeatData } from "../types/dnd5e.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { hasFeat } from "./abilities.ts";
 import { applyAsiWithHitPoints } from "./builderTransitions.ts";
+import { featIncreaseOptions, findFeat, type FeatAbilityBonusOptions } from "./featIncrease.ts";
 import {
   applyOriginFeat,
   grantBackgroundFeat,
@@ -14,6 +15,8 @@ import {
 } from "./feats.ts";
 import { featGrantedRuleChoices, featSpellChoicesOf, pickRuleChoice } from "./ruleChoices.ts";
 import type { AvailableRuleChoice } from "./choices/types.ts";
+
+export { featIncreaseOptions, findFeat, type FeatAbilityBonusOptions } from "./featIncrease.ts";
 
 /**
  * The module every Feat Slot reads: the ASI slot a class level opens and the origin slot a race or background
@@ -33,13 +36,6 @@ export interface FeatSlotPick {
   featSource?: string;
   featAbility?: AbilityKey;
   subChoicePicks?: Record<string, string[]>;
-}
-
-/** The ability increase a feat grants: the fixed +1 its record states, the Increase Choice it states, or none. */
-export interface FeatAbilityBonusOptions {
-  type: "fixed" | "choice" | "none";
-  abilities: AbilityKey[];
-  amount: number;
 }
 
 export interface FeatSlotOffer {
@@ -69,55 +65,6 @@ export interface FeatSlotApplyOptions extends FeatSlotOptions {
   fullHealOnLevelUp?: boolean;
   /** The origin feat entry an origin pick replaces. */
   replacing?: OriginFeatEntry;
-}
-
-const ABILITY_KEYS: readonly AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
-
-const NO_INCREASE: FeatAbilityBonusOptions = { type: "none", abilities: [], amount: 0 };
-
-/**
- * The feat with this name, from the active books. A source narrows it to one record. Without a source it is found only when
- * exactly one active feat has the name. The Background marker names where a background granted the feat, not a book, so it
- * is found by name.
- */
-export function findFeat(
-  name: string,
-  source: string | undefined,
-  compendium: Compendium,
-  activeBooks: ActiveBooks
-): FeatData | null {
-  const wanted = name.trim().toLowerCase();
-  const bookSource = source === BACKGROUND_FEAT_SOURCE ? undefined : source;
-  const matches = compendium
-    .for(activeBooks)
-    .feats()
-    .filter((feat) => feat.name.trim().toLowerCase() === wanted && (!bookSource || feat.source === bookSource));
-  if (bookSource) return matches[0] ?? null;
-  return matches.length === 1 ? matches[0] : null;
-}
-
-/**
- * The increase a feat grants, read from the record alone. A record with an Increase Choice gives its choice; a record with one
- * fixed score gives that +1; a record with neither, or no record, gives none.
- */
-export function featIncreaseOptions(feat: FeatData | null): FeatAbilityBonusOptions {
-  if (!feat) return NO_INCREASE;
-  const choice = feat.abilityScoreChoices?.[0];
-  if (choice) return { type: "choice", abilities: [...choice.from], amount: choice.amount };
-  const fixed = fixedAbilitiesOf(feat);
-  if (fixed.length === 1) return { type: "fixed", abilities: fixed, amount: 1 };
-  return NO_INCREASE;
-}
-
-function fixedAbilitiesOf(feat: FeatData): AbilityKey[] {
-  const abilities: AbilityKey[] = [];
-  for (const increase of feat.abilityScoreIncrease ?? []) {
-    for (const key of Object.keys(increase)) {
-      const ability = key.toLowerCase().slice(0, 3) as AbilityKey;
-      if (ABILITY_KEYS.includes(ability) && !abilities.includes(ability)) abilities.push(ability);
-    }
-  }
-  return abilities;
 }
 
 /** The ability a pick places: a fixed increase's score, else the score the pick chose (kept on a stale catalog). */
