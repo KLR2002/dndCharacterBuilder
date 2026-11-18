@@ -1,6 +1,6 @@
 # Spec: The Class Choices step reads one view
 
-**Status:** ready-for-agent
+**Status:** done (pending the full layout gate)
 
 Decided with the user on 2026-11-18 (architecture review candidate 3). Builds on `.scratch/feat-slot/` (ADR 0023).
 
