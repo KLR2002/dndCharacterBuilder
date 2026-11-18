@@ -6,13 +6,8 @@ import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { effectiveScores, formatModifier } from "./abilities.ts";
 import { asiLevels, casterKindOf, heldClass, hitDieOf, isThirdCaster } from "./classData.ts";
 import { subclassLevel } from "./leveling.ts";
-import {
-  featIncreaseOptions,
-  featPickView,
-  findFeat,
-  type FeatAbilityBonusOptions,
-  type FeatSlotPick,
-} from "./featSlot.ts";
+import { featIncreaseOptions, findFeat, type FeatAbilityBonusOptions } from "./featIncrease.ts";
+import { featPickView, type FeatSlotPick } from "./featSlot.ts";
 import {
   applyAsiWithHitPoints,
   changeSubclass,

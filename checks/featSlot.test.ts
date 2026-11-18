@@ -3,17 +3,14 @@ import assert from "node:assert/strict";
 import { makeChar } from "./testUtils.ts";
 import { choiceCatalogBundle } from "./choiceCatalogFixture.ts";
 import { createCompendium, type Compendium } from "../src/services/compendium.ts";
+import { REQUIRED_CATALOG_FORMAT } from "../src/services/compendiumStorage.ts";
+import { reconcile } from "../src/rules/characterReconciler.ts";
 import { ALL_BOOKS } from "../src/constants/books.ts";
 import { BACKGROUND_FEAT_SOURCE } from "../src/constants/rules.ts";
 import { effectiveScores, hasFeat } from "../src/rules/abilities.ts";
 import { FIGHTING_INITIATE_CHOICE_ID } from "../src/rules/choices/fightingStyles.ts";
-import {
-  applyFeatSlotPick,
-  featIncreaseOptions,
-  featSlotView,
-  findFeat,
-  type FeatSlotPick,
-} from "../src/rules/featSlot.ts";
+import { featIncreaseOptions, findFeat } from "../src/rules/featIncrease.ts";
+import { applyFeatSlotPick, featSlotView, type FeatSlotPick } from "../src/rules/featSlot.ts";
 import type { AbilityKey } from "../src/types/character.ts";
 import type { FeatData, OptionFeatureData } from "../src/types/dnd5e.ts";
 
@@ -181,4 +178,91 @@ test("a feat with no increase in the catalog gets none, whatever its name", () =
   });
   assert.equal(view.increase.type, "none");
   assert.equal(view.complete, true);
+});
+
+const STR_DEX_CHOICE = { from: ["str", "dex"] as AbilityKey[], count: 1, amount: 1 };
+const RESILIENT_PAST_POOL = {
+  baseAbilityScores: { str: 10, dex: 12, con: 10, int: 16, wis: 10, cha: 8 },
+  classes: [{ className: "Wizard", source: "PHB", level: 4 }],
+};
+const RELEASED_CON_NOTICE = "Ability increase to Constitution removed from Resilient: the feat no longer offers it";
+
+test("a saved Increase Choice outside its feat's pool is released with one notice naming the feat and the score", () => {
+  const compendium = catalog([feat({ name: "Resilient", abilityScoreChoices: [STR_DEX_CHOICE] })]);
+  const character = makeChar({
+    ...RESILIENT_PAST_POOL,
+    asiSelections: [
+      {
+        level: 4,
+        className: "Wizard",
+        classLevel: 4,
+        type: "feat",
+        featName: "Resilient",
+        featSource: "PHB",
+        featAbility: "con",
+        asi: { con: 1 },
+      },
+    ],
+  });
+  const updated = reconcile(character, compendium, { activeBooks: ALL_BOOKS });
+  assert.equal(updated.asiSelections?.[0].featName, "Resilient", "the feat stays taken");
+  assert.equal(updated.asiSelections?.[0].featAbility, undefined);
+  assert.equal(updated.asiSelections?.[0].asi, undefined);
+  assert.equal(effectiveScores(updated).scores.con, 10, "the score drops by one");
+  assert.deepEqual(updated.needsReview, [RELEASED_CON_NOTICE]);
+});
+
+test("a saved Increase Choice is kept with no notice when its feat has no Increase Choice in the catalog", () => {
+  const compendium = catalog([feat({ name: "Resilient" })]);
+  const character = makeChar({
+    ...RESILIENT_PAST_POOL,
+    asiSelections: [
+      { level: 4, className: "Wizard", classLevel: 4, type: "feat", featName: "Resilient", featSource: "PHB", featAbility: "con" },
+    ],
+  });
+  const updated = reconcile(character, compendium, { activeBooks: ALL_BOOKS });
+  assert.equal(updated.asiSelections?.[0].featAbility, "con");
+  assert.equal(updated.needsReview, undefined);
+});
+
+test("a saved Increase Choice is kept with no notice on a stale catalog", () => {
+  const stale = createCompendium({
+    ...choiceCatalogBundle({ feats: [feat({ name: "Resilient", abilityScoreChoices: [STR_DEX_CHOICE] })] }),
+    catalogFormat: REQUIRED_CATALOG_FORMAT - 1,
+  });
+  assert.equal(stale.stale, true);
+  const character = makeChar({
+    ...RESILIENT_PAST_POOL,
+    asiSelections: [
+      { level: 4, className: "Wizard", classLevel: 4, type: "feat", featName: "Resilient", featSource: "PHB", featAbility: "con" },
+    ],
+  });
+  const updated = reconcile(character, stale, { activeBooks: ALL_BOOKS });
+  assert.equal(updated.asiSelections?.[0].featAbility, "con");
+  assert.equal(updated.needsReview, undefined);
+});
+
+test("a race origin feat's Increase Choice outside its pool is released the same way", () => {
+  const compendium = catalog([feat({ name: "Resilient", abilityScoreChoices: [STR_DEX_CHOICE] })]);
+  const character = makeChar({
+    ...RESILIENT_PAST_POOL,
+    originFeats: [{ level: 1, type: "feat", featName: "Resilient", featSource: "PHB", featAbility: "con" }],
+  });
+  const updated = reconcile(character, compendium, { activeBooks: ALL_BOOKS });
+  assert.equal(updated.originFeats?.[0].featAbility, undefined);
+  assert.equal(effectiveScores(updated).scores.con, 10);
+  assert.deepEqual(updated.needsReview, [RELEASED_CON_NOTICE]);
+});
+
+test("a fixed increase is never released, even when the saved score differs from the record", () => {
+  const compendium = catalog([feat({ name: "Tough", abilityScoreIncrease: [{ con: 1 }] })]);
+  const character = makeChar({
+    ...RESILIENT_PAST_POOL,
+    asiSelections: [
+      { level: 4, className: "Wizard", classLevel: 4, type: "feat", featName: "Tough", featSource: "PHB", featAbility: "str" },
+    ],
+  });
+  const updated = reconcile(character, compendium, { activeBooks: ALL_BOOKS });
+  assert.equal(updated.asiSelections?.[0].featAbility, "str");
+  assert.equal(updated.needsReview, undefined);
 });
