@@ -31,7 +31,7 @@ import { SIDEKICK_CLASSES } from "../../rules/levelUpFlow";
 import { proficiencyChoiceOffers } from "../../rules/proficiencyChoiceOffers";
 import { getPendingLevelChoices } from "../../rules/leveling";
 import { normalizeSkillName } from "../../rules/skills";
-import { getAvailableOptionalFeatures } from "../../rules/optionalFeatures";
+import { classChoicesStepView } from "../../rules/classChoices";
 import { AbilityKey, Character, CreationStepId, SkillChoiceEntry } from "../../types/character";
 import { DetailModal } from "../DetailModal";
 import { useFlowStepScrollContentPadding } from "../creationFlow/FlowShell";
@@ -113,7 +113,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   const primaryClass = character.classes[0]?.className;
 
   const { pendingAsi } = getPendingLevelChoices(character, allClasses);
-  const availableOptionalFeatures = getAvailableOptionalFeatures(character, allClasses);
+  const classChoices = classChoicesStepView(character, { compendium: currentCompendium(), activeBooks });
 
   // ─────────────────────────────────────────────────────────────────────────
   // ABILITY SCORES
@@ -459,11 +459,10 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
           allFeats={allFeats}
           totalLevel={totalLevel}
           effectiveScores={effectiveScores}
-          skillChoices={skillChoices}
+          classChoices={classChoices}
           autoGranted={autoGrantedBase}
           toggleSkill={toggleSkill}
           classTools={classTools}
-          availableOptionalFeatures={availableOptionalFeatures}
           pendingAsiSlots={pendingAsi}
           primaryClass={primaryClass}
           startingCard={startingCard}
