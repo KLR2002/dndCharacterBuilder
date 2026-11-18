@@ -36,7 +36,6 @@
         }
       ],
       "expo-image",
-      "expo-web-browser",
       "./plugins/e2e-build.mjs"
     ],
     "experiments": {
@@ -49,12 +48,6 @@
         "projectId": "d9666891-68f0-45d6-95df-23f06bc7493a"
       }
     },
-    "owner": "kl02",
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
-    "updates": {
-      "url": "https://u.expo.dev/d9666891-68f0-45d6-95df-23f06bc7493a"
-    }
+    "owner": "kl02"
   }
 }
