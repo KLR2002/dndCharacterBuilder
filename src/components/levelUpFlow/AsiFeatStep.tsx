@@ -1,14 +1,12 @@
 import React, { useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View, type StyleProp, type TextStyle, type ViewStyle } from "react-native";
+import { Text, TouchableOpacity, View, type StyleProp, type TextStyle, type ViewStyle } from "react-native";
 import type { AbilityKey, AsiSelection, Character } from "../../types/character";
 import type { FeatData } from "../../types/dnd5e";
-import { featIncreaseOptions, findFeat } from "../../rules/featSlot";
-import { validateFeatPrerequisites } from "../../rules/feats";
+import { featIncreaseOptions, featSlotView, findFeat, type FeatSlotPick } from "../../rules/featSlot";
 import { currentCompendium } from "../../services/compendium";
 import { useAppTheme } from "../../context/ThemeContext";
 import { ABILITY_KEYS, ABILITY_LABELS, builderStyles as styles } from "../builder/builderStyles";
-import { Badge } from "../ui/Badge";
-import { SearchBar } from "../ui/SearchBar";
+import { chipStyle, chipText, FeatPicker } from "../feats/FeatPicker";
 import { asiFeatStepView, type LevelUpPlan } from "../../rules/levelUpFlow";
 
 /**
@@ -19,7 +17,7 @@ import { asiFeatStepView, type LevelUpPlan } from "../../rules/levelUpFlow";
  * incomplete until they are all made. The step only renders while it is open, so it remounts when the
  * player leaves it and returns: the whole selection (picked feat, its ability, its sub-choices, the
  * ASI picks, the open tab) is derived from `plan.picks.asi` through `asiFeatStepView`, and only
- * genuinely transient UI (the open tab, the ASI sub-mode, the search text) is local state.
+ * genuinely transient UI (the open tab, the ASI sub-mode) is local state.
  */
 export function AsiFeatStep({
   plan,
@@ -40,7 +38,6 @@ export function AsiFeatStep({
   const view = asiFeatStepView(plan, character, allFeats, { activeBooks });
   const [tab, setTab] = useState<"asi" | "feat">(view.tab);
   const [asiMode, setAsiMode] = useState<"plus2" | "plus1plus1">(view.asiMode);
-  const [search, setSearch] = useState("");
 
   const slot: AsiSelection = {
     level: plan.toLevel,
@@ -48,6 +45,13 @@ export function AsiFeatStep({
     classLevel: plan.toLevel,
     type: "asi",
     asi: {},
+  };
+
+  const asiFeatPick: FeatSlotPick = {
+    slot: { kind: "asi", className: plan.className, classLevel: plan.toLevel },
+    featName: plan.picks.asi?.type === "feat" ? plan.picks.asi.featName ?? null : null,
+    featSource: plan.picks.asi?.featSource,
+    featAbility: plan.picks.asi?.featAbility,
   };
 
   const pickAsi = (asi: Partial<Record<AbilityKey, number>>) => {
@@ -125,22 +129,6 @@ export function AsiFeatStep({
       fontWeight: active ? ("700" as const) : ("500" as const),
     },
   ];
-  const chipStyle = (active: boolean): StyleProp<ViewStyle> => [
-    styles.choiceChip,
-    // 48dp touch target, like the level-up Subclass chips.
-    { minHeight: 48 },
-    {
-      backgroundColor: active ? theme.accentGlow : theme.surfaceHighlight,
-      borderColor: active ? theme.accentHover : theme.border,
-    },
-  ];
-  const chipText = (active: boolean): StyleProp<TextStyle> => [
-    {
-      color: active ? theme.accentHover : theme.textSecondary,
-      fontWeight: "700" as const,
-      fontSize: 13,
-    },
-  ];
 
   return (
     <View style={{ gap: 10 }}>
@@ -200,9 +188,9 @@ export function AsiFeatStep({
                   accessibilityState={{ selected }}
                   accessibilityLabel={`${ABILITY_LABELS[key]} (+${asiMode === "plus2" ? 2 : 1})`}
                   onPress={() => (asiMode === "plus2" ? handlePlus2(key) : handlePlus1(key))}
-                  style={chipStyle(selected)}
+                  style={chipStyle(theme, selected)}
                 >
-                  <Text style={chipText(selected)}>
+                  <Text style={chipText(theme, selected)}>
                     {ABILITY_LABELS[key]} (+{asiMode === "plus2" ? 2 : 1})
                   </Text>
                 </TouchableOpacity>
@@ -211,113 +199,17 @@ export function AsiFeatStep({
           </View>
         </View>
       ) : (
-        <View style={{ gap: 8 }}>
-          <SearchBar value={search} onChangeText={setSearch} placeholder="Search feats..." />
-          <ScrollView style={{ maxHeight: 260 }} nestedScrollEnabled contentContainerStyle={{ gap: 6 }}>
-            {allFeats
-              .filter((f) => f.name.toLowerCase().includes(search.toLowerCase()))
-              .map((f) => {
-                const isSelected = view.featName !== null && f.name.trim().toLowerCase() === view.featName.trim().toLowerCase();
-                const prereq = validateFeatPrerequisites(character, f, {
-                  catalogs: { compendium: currentCompendium(), activeBooks },
-                });
-                return (
-                  <TouchableOpacity
-                    key={`${f.name}_${f.source}`}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: isSelected }}
-                    accessibilityLabel={`Feat ${f.name}`}
-                    onPress={() => handleFeat(f)}
-                    style={[
-                      styles.featureRow,
-                      {
-                        padding: 8,
-                        borderRadius: 6,
-                        backgroundColor: isSelected ? theme.accentGlow : theme.surfaceHighlight,
-                        borderColor: isSelected ? theme.accentHover : theme.border,
-                      },
-                    ]}
-                  >
-                    <View style={{ flex: 1 }}>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                        <Text style={{ color: isSelected ? theme.accentHover : theme.text, fontWeight: "700", fontSize: 13 }}>
-                          {f.name}
-                        </Text>
-                        {!prereq.met && <Badge label={`⚠️ ${prereq.reason}`} variant="danger" size="sm" />}
-                      </View>
-                      <Text style={{ color: theme.textMuted, fontSize: 11 }}>
-                        {f.source}
-                        {f.prerequisite ? ` • Prereq: ${f.prerequisite}` : ""}
-                      </Text>
-                    </View>
-                  </TouchableOpacity>
-                );
-              })}
-          </ScrollView>
-          {view.featName !== null &&
-            (() => {
-              const opts = view.featAbilityOptions;
-              if (opts.type === "none") return null;
-              return (
-                <View style={{ gap: 6 }}>
-                  <Text style={{ color: theme.text, fontSize: 12, fontWeight: "600" }}>
-                    {opts.type === "fixed"
-                      ? `Ability Score Increase: +1 ${opts.abilities[0].toUpperCase()}`
-                      : "Choose Ability Score to Increase (+1):"}
-                  </Text>
-                  {opts.type === "choice" && (
-                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-                      {opts.abilities.map((ability) => {
-                        const isPicked = view.featAbility === ability;
-                        return (
-                          <TouchableOpacity
-                            key={ability}
-                            accessibilityRole="button"
-                            accessibilityState={{ selected: isPicked }}
-                            accessibilityLabel={`${ability.toUpperCase()} +1`}
-                            onPress={() => handleFeatAbility(ability)}
-                            style={chipStyle(isPicked)}
-                          >
-                            <Text style={chipText(isPicked)}>{ability.toUpperCase()} +1</Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-                  )}
-                </View>
-              );
-            })()}
-          {view.subChoices.map((choice) => {
-              const picked = plan.picks.featPicks?.[choice.id] ?? [];
-              return (
-                <View key={choice.id} style={{ gap: 6 }}>
-                  <Text style={{ color: theme.text, fontSize: 12, fontWeight: "600" }}>
-                    {choice.traitName} ({picked.length}/{choice.choose}):
-                  </Text>
-                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-                    {choice.options.map((opt) => {
-                      const isPicked = picked.some((p) => p.toLowerCase() === opt.name.toLowerCase());
-                      // At the cap a new option is disabled; the picked ones stay deselectable.
-                      const atCap = picked.length >= choice.choose && !isPicked;
-                      return (
-                        <TouchableOpacity
-                          key={opt.name}
-                          accessibilityRole="button"
-                          accessibilityState={{ selected: isPicked, disabled: atCap }}
-                          accessibilityLabel={`${choice.traitName} ${opt.name}`}
-                          disabled={atCap}
-                          onPress={() => onFeatPick(choice.id, opt.name, choice.choose)}
-                          style={[chipStyle(isPicked), atCap ? { opacity: 0.45 } : null]}
-                        >
-                          <Text style={chipText(isPicked)}>{opt.name}</Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                </View>
-              );
-            })}
-        </View>
+        <FeatPicker
+          offered={featSlotView(character, asiFeatPick, { activeBooks }).offered}
+          selectedFeatName={view.featName}
+          increase={view.featAbilityOptions}
+          featAbility={view.featAbility}
+          subChoices={view.subChoices}
+          subChoicePicks={plan.picks.featPicks ?? {}}
+          onSelectFeat={handleFeat}
+          onSelectAbility={handleFeatAbility}
+          onToggleSubChoice={(choice, option) => onFeatPick(choice.id, option, choice.choose)}
+        />
       )}
     </View>
   );
