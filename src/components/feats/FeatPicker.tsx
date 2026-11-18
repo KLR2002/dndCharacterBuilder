@@ -31,32 +31,22 @@ export const chipText = (theme: AppTheme, active: boolean): StyleProp<TextStyle>
 ];
 
 /**
- * The feat list of a Feat Slot with the picked feat's increase and Rule Choices. `offered` carries each feat's
- * prerequisite result, so an unmet feat is shown with its reason and the picker holds no rule state of its own.
+ * The searchable feat rows of a Feat Slot. `offered` carries each feat's prerequisite result, so an unmet feat is shown
+ * with its reason and the list holds no rule state of its own. `isDisabled` keeps a row from being picked.
  */
-export function FeatPicker({
+export function FeatList({
   offered,
   selectedFeatName,
-  increase,
-  featAbility,
-  subChoices,
-  subChoicePicks,
   onSelectFeat,
-  onSelectAbility,
-  onToggleSubChoice,
   onViewDetail,
+  isDisabled,
 }: {
   offered: FeatSlotOffer[];
   selectedFeatName: string | null;
-  increase: FeatAbilityBonusOptions;
-  featAbility: AbilityKey | null;
-  subChoices: AvailableRuleChoice[];
-  subChoicePicks: Record<string, string[]>;
   onSelectFeat: (feat: FeatData) => void;
-  onSelectAbility: (ability: AbilityKey) => void;
-  onToggleSubChoice: (choice: AvailableRuleChoice, option: string) => void;
   /** When given, each feat row shows an Info button that opens the feat's detail. */
   onViewDetail?: (feat: FeatData) => void;
+  isDisabled?: (offer: FeatSlotOffer) => boolean;
 }) {
   const { theme } = useAppTheme();
   const [search, setSearch] = useState("");
@@ -67,15 +57,18 @@ export function FeatPicker({
       <ScrollView style={{ maxHeight: 260 }} nestedScrollEnabled contentContainerStyle={{ gap: 6 }}>
         {offered
           .filter((offer) => offer.feat.name.toLowerCase().includes(search.toLowerCase()))
-          .map(({ feat: f, prerequisite }) => {
+          .map((offer) => {
+            const { feat: f, prerequisite } = offer;
             const isSelected =
               selectedFeatName !== null && f.name.trim().toLowerCase() === selectedFeatName.trim().toLowerCase();
+            const disabled = isDisabled?.(offer) ?? false;
             return (
               <TouchableOpacity
                 key={`${f.name}_${f.source}`}
                 accessibilityRole="button"
-                accessibilityState={{ selected: isSelected }}
+                accessibilityState={{ selected: isSelected, disabled }}
                 accessibilityLabel={`Feat ${f.name}`}
+                disabled={disabled}
                 onPress={() => onSelectFeat(f)}
                 style={[
                   styles.featureRow,
@@ -114,38 +107,61 @@ export function FeatPicker({
             );
           })}
       </ScrollView>
-      {selectedFeatName !== null &&
-        (() => {
-          if (increase.type === "none") return null;
-          return (
-            <View style={{ gap: 6 }}>
-              <Text style={{ color: theme.text, fontSize: 12, fontWeight: "600" }}>
-                {increase.type === "fixed"
-                  ? `Ability Score Increase: +1 ${increase.abilities[0].toUpperCase()}`
-                  : "Choose Ability Score to Increase (+1):"}
-              </Text>
-              {increase.type === "choice" && (
-                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-                  {increase.abilities.map((ability) => {
-                    const isPicked = featAbility === ability;
-                    return (
-                      <TouchableOpacity
-                        key={ability}
-                        accessibilityRole="button"
-                        accessibilityState={{ selected: isPicked }}
-                        accessibilityLabel={`${ability.toUpperCase()} +1`}
-                        onPress={() => onSelectAbility(ability)}
-                        style={chipStyle(theme, isPicked)}
-                      >
-                        <Text style={chipText(theme, isPicked)}>{ability.toUpperCase()} +1</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </View>
-              )}
+    </View>
+  );
+}
+
+/**
+ * The picked feat's Increase Choice and the Rule Choices it opens, with the descriptions of the options picked.
+ * Renders nothing for a feat with no increase and no Rule Choice.
+ */
+export function FeatPickDetails({
+  increase,
+  featAbility,
+  subChoices,
+  subChoicePicks,
+  onSelectAbility,
+  onToggleSubChoice,
+}: {
+  increase: FeatAbilityBonusOptions;
+  featAbility: AbilityKey | null;
+  subChoices: AvailableRuleChoice[];
+  subChoicePicks: Record<string, string[]>;
+  onSelectAbility: (ability: AbilityKey) => void;
+  onToggleSubChoice: (choice: AvailableRuleChoice, option: string) => void;
+}) {
+  const { theme } = useAppTheme();
+
+  return (
+    <>
+      {increase.type !== "none" && (
+        <View style={{ gap: 6 }}>
+          <Text style={{ color: theme.text, fontSize: 12, fontWeight: "600" }}>
+            {increase.type === "fixed"
+              ? `Ability Score Increase: +1 ${increase.abilities[0].toUpperCase()}`
+              : "Choose Ability Score to Increase (+1):"}
+          </Text>
+          {increase.type === "choice" && (
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+              {increase.abilities.map((ability) => {
+                const isPicked = featAbility === ability;
+                return (
+                  <TouchableOpacity
+                    key={ability}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isPicked }}
+                    accessibilityLabel={`${ability.toUpperCase()} +1`}
+                    onPress={() => onSelectAbility(ability)}
+                    style={chipStyle(theme, isPicked)}
+                  >
+                    <Text style={chipText(theme, isPicked)}>{ability.toUpperCase()} +1</Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
-          );
-        })()}
+          )}
+        </View>
+      )}
       {subChoices.map((choice) => {
         const picked = subChoicePicks[choice.id] ?? [];
         return (
@@ -184,6 +200,56 @@ export function FeatPicker({
           </View>
         );
       })}
+    </>
+  );
+}
+
+/**
+ * The feat list of a Feat Slot with the picked feat's increase and Rule Choices: {@link FeatList} and, once a feat is
+ * picked, {@link FeatPickDetails}.
+ */
+export function FeatPicker({
+  offered,
+  selectedFeatName,
+  increase,
+  featAbility,
+  subChoices,
+  subChoicePicks,
+  onSelectFeat,
+  onSelectAbility,
+  onToggleSubChoice,
+  onViewDetail,
+}: {
+  offered: FeatSlotOffer[];
+  selectedFeatName: string | null;
+  increase: FeatAbilityBonusOptions;
+  featAbility: AbilityKey | null;
+  subChoices: AvailableRuleChoice[];
+  subChoicePicks: Record<string, string[]>;
+  onSelectFeat: (feat: FeatData) => void;
+  onSelectAbility: (ability: AbilityKey) => void;
+  onToggleSubChoice: (choice: AvailableRuleChoice, option: string) => void;
+  /** When given, each feat row shows an Info button that opens the feat's detail. */
+  onViewDetail?: (feat: FeatData) => void;
+}) {
+  return (
+    <View style={{ gap: 8 }}>
+      <FeatList
+        offered={offered}
+        selectedFeatName={selectedFeatName}
+        onSelectFeat={onSelectFeat}
+        onViewDetail={onViewDetail}
+      />
+      {selectedFeatName !== null && (
+        <FeatPickDetails
+          increase={increase}
+          featAbility={featAbility}
+          subChoices={subChoices}
+          subChoicePicks={subChoicePicks}
+          onSelectAbility={onSelectAbility}
+          onToggleSubChoice={onToggleSubChoice}
+        />
+      )}
     </View>
   );
 }

@@ -20,7 +20,7 @@ import {
 } from "../../rules/customBackground";
 import { heldByOtherSources, picksOnlyLanguages } from "../../rules/proficiencyChoiceOffers";
 import { poolNames } from "../../rules/proficiencyPools";
-import { featSpellChoicesOf, type AvailableRuleChoice } from "../../rules/ruleChoices";
+import { featSpellChoicesOf, pickRuleChoice, type AvailableRuleChoice } from "../../rules/ruleChoices";
 import { currentCompendium } from "../../services/compendium";
 import { catalogListings, type CharacterCatalogs } from "../../rules/catalogs";
 import { findHeldRecord } from "../../rules/raceLookup";
@@ -34,8 +34,9 @@ import { SearchBar } from "../ui/SearchBar";
 import { builderStyles as styles, pkStyles } from "./builderStyles";
 import { ProficiencyChoicePicker } from "./ProficiencyChoicePicker";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
-import { applyOriginFeat, getBackgroundFeatGrant, grantBackgroundFeat, removeOriginFeat } from "../../rules/feats";
-import { featIncreaseOptions, findFeat } from "../../rules/featSlot";
+import { applyOriginFeat, getBackgroundFeatGrant, removeOriginFeat } from "../../rules/feats";
+import { applyFeatSlotPick, featIncreaseOptions, findFeat, takenFeatRuleChoices } from "../../rules/featSlot";
+import { FeatPickDetails } from "../feats/FeatPicker";
 
 export interface BackgroundSectionProps {
   character: Character;
@@ -311,55 +312,30 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                             </View>
 
                             {/* Half-feat picker if applicable */}
-                            {(() => {
-                              const bonusOptions = featIncreaseOptions(
+                            <FeatPickDetails
+                              increase={featIncreaseOptions(
                                 findFeat(bgOriginFeat.featName || "", bgOriginFeat.featSource, catalogs.compendium ?? currentCompendium(), catalogs.activeBooks)
-                              );
-                              if (bonusOptions.abilities.length === 0) return null;
-                              return (
-                                <View style={{ gap: 4 }}>
-                                  <Text style={{ color: theme.textSecondary, fontSize: 11, fontWeight: "600" }}>
-                                    Choose +{bonusOptions.amount} Ability Score Increase:
-                                  </Text>
-                                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-                                    {bonusOptions.abilities.map((ab) => {
-                                      const isSelected = bgOriginFeat.featAbility === ab;
-                                      return (
-                                        <TouchableOpacity
-                                          key={ab}
-                                          onPress={() => {
-                                            onUpdate((cur) =>
-                                              applyOriginFeat(
-                                                cur,
-                                                { ...bgOriginFeat, featAbility: ab },
-                                                undefined,
-                                                catalogs.compendium ?? currentCompendium(),
-                                                catalogs.activeBooks
-                                              )
-                                            );
-                                          }}
-                                          style={[
-                                            styles.choiceChip,
-                                            {
-                                              backgroundColor: isSelected ? theme.accentGlow : theme.surfaceHighlight,
-                                              borderColor: isSelected ? theme.accentHover : theme.border,
-                                            },
-                                          ]}>
-                                          <Text
-                                            style={{
-                                              color: theme.text,
-                                              fontSize: 12,
-                                              fontWeight: isSelected ? "700" : "500",
-                                            }}>
-                                            +{bonusOptions.amount} {ab.toUpperCase()}
-                                          </Text>
-                                        </TouchableOpacity>
-                                      );
-                                    })}
-                                  </View>
-                                </View>
-                              );
-                            })()}
+                              )}
+                              featAbility={bgOriginFeat.featAbility ?? null}
+                              subChoices={takenFeatRuleChoices(character, bgOriginFeat, catalogs.activeBooks, catalogs.compendium ?? currentCompendium())}
+                              subChoicePicks={Object.fromEntries((character.ruleChoices ?? []).map((rc) => [rc.id, rc.picked]))}
+                              onSelectAbility={(ab) =>
+                                onUpdate((cur) =>
+                                  applyOriginFeat(
+                                    cur,
+                                    { ...bgOriginFeat, featAbility: ab },
+                                    undefined,
+                                    catalogs.compendium ?? currentCompendium(),
+                                    catalogs.activeBooks
+                                  )
+                                )
+                              }
+                              onToggleSubChoice={(choice, option) =>
+                                onUpdate((cur) =>
+                                  pickRuleChoice(cur, choice, option, catalogs.compendium ?? currentCompendium(), catalogs.activeBooks)
+                                )
+                              }
+                            />
 
                             <GrantedSpellPicks
                               character={character}
@@ -386,16 +362,15 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                                 variant="secondary"
                                 size="sm"
                                 icon="ribbon-outline"
-                                onPress={() => {
-                                  const bonusOptions = featIncreaseOptions(
-                                    findFeat(featName, undefined, catalogs.compendium ?? currentCompendium(), catalogs.activeBooks)
-                                  );
-                                  const initialAbility =
-                                    bonusOptions.abilities.length === 1 ? bonusOptions.abilities[0] : undefined;
+                                onPress={() =>
                                   onUpdate((cur) =>
-                                    grantBackgroundFeat(cur, featName, initialAbility, catalogs.compendium ?? currentCompendium(), catalogs.activeBooks)
-                                  );
-                                }}
+                                    applyFeatSlotPick(
+                                      cur,
+                                      { slot: { kind: "origin", grantedBy: "background" }, featName },
+                                      { compendium: catalogs.compendium ?? currentCompendium(), activeBooks: catalogs.activeBooks }
+                                    )
+                                  )
+                                }
                               />
                             ))}
                           </View>
