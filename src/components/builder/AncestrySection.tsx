@@ -732,6 +732,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
         subtitle="Select a 1st-level origin feat from your sourcebooks"
         maxHeightPercent={90}>
         <FeatList
+          maxHeight={450}
           offered={raceOriginOffers}
           selectedFeatName={currentOriginFeat?.featName ?? null}
           onSelectFeat={(f) => {

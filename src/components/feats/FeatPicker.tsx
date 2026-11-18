@@ -40,6 +40,7 @@ export function FeatList({
   onSelectFeat,
   onViewDetail,
   isDisabled,
+  maxHeight = 260,
 }: {
   offered: FeatSlotOffer[];
   selectedFeatName: string | null;
@@ -47,6 +48,8 @@ export function FeatList({
   /** When given, each feat row shows an Info button that opens the feat's detail. */
   onViewDetail?: (feat: FeatData) => void;
   isDisabled?: (offer: FeatSlotOffer) => boolean;
+  /** The list's scroll height; a modal gives it more room than an inline step. */
+  maxHeight?: number;
 }) {
   const { theme } = useAppTheme();
   const [search, setSearch] = useState("");
@@ -54,7 +57,7 @@ export function FeatList({
   return (
     <View style={{ gap: 8 }}>
       <SearchBar value={search} onChangeText={setSearch} placeholder="Search feats..." />
-      <ScrollView style={{ maxHeight: 260 }} nestedScrollEnabled contentContainerStyle={{ gap: 6 }}>
+      <ScrollView style={{ maxHeight }} nestedScrollEnabled contentContainerStyle={{ gap: 6 }}>
         {offered
           .filter((offer) => offer.feat.name.toLowerCase().includes(search.toLowerCase()))
           .map((offer) => {
