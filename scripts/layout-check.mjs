@@ -292,6 +292,25 @@ function findLayoutViolations(root) {
   return [...new Set(out)];
 }
 
+// Runs in the browser. Returns the words of the text leaf `name` that the browser lays out across more than
+// one line (a word split by a wrap), or null when no visible leaf shows the name.
+function attackNameSplitWords(name) {
+  const leaf = [...document.querySelectorAll("*")].find((e) => e.children.length === 0 && e.textContent.trim() === name && e.getBoundingClientRect().height > 0);
+  if (!leaf) return null;
+  const node = [...leaf.childNodes].find((n) => n.nodeType === Node.TEXT_NODE);
+  if (!node) return null;
+  const out = [];
+  for (const m of node.textContent.matchAll(/\S+/g)) {
+    const range = document.createRange();
+    range.setStart(node, m.index);
+    range.setEnd(node, m.index + m[0].length);
+    const tops = [...range.getClientRects()].map((r) => r.top);
+    // Fragments of one line share a top edge; a line below sits at least a line height lower.
+    if (tops.length > 0 && Math.max(...tops) - Math.min(...tops) > 4) out.push(m[0]);
+  }
+  return out;
+}
+
 // Runs in the browser. No <button> or [role="button"] may contain another one: React logs "cannot contain
 // a nested <button>" for it and the inner control is not reliably tappable. `scopeSelector` is a CSS selector
 // to search inside, or null/"" for the whole document. Returns one message per offending outer button.
@@ -2108,6 +2127,15 @@ async function checkActionRolls(ctx, width, meta) {
   const before = await storedCharacter(ACTIONS_ID);
   if (!before) fail("the seeded character is not in storage");
   for (const v of await page.evaluate(findLayoutViolations, null)) fail(v);
+  // The attack name keeps each word whole, and from 380 px to below the 600 px phone breakpoint the damage
+  // badge sits under the to-hit badge instead of beside it.
+  const splitWords = await page.evaluate(attackNameSplitWords, "Longsword");
+  if (splitWords === null) fail('no "Longsword" title on the weapon row');
+  else for (const w of splitWords) fail(`the attack name breaks inside the word "${w}" at ${width}px`);
+  const toHitBox = await toHit.boundingBox();
+  const damageBox = await damageBadge.boundingBox();
+  if (width >= 380 && width < 600 && toHitBox && damageBox && damageBox.y < toHitBox.y + toHitBox.height - 1)
+    fail(`the damage badge (top ${Math.round(damageBox.y)}px) sits beside the to-hit badge (bottom ${Math.round(toHitBox.y + toHitBox.height)}px) at ${width}px, expected it below`);
   await maybeShot(page, shot("tab"), meta);
 
   // Tap the "to hit" badge: a d20 +5, fixed to 15, so total 20, with "Roll damage" on the card and no details modal.
