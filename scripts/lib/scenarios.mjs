@@ -380,6 +380,56 @@ function battleMasterCharacter() {
   });
 }
 
+// A level 6 Battle Master. Its plan for level 7 brings the Additional Maneuvers choice, so the Level-Up Flow's Class
+// Choices step shows the Battle Master Maneuvers card (a level 3 or 4 Battle Master brings no class choice at its next level).
+const LEVEL_UP_BATTLE_MASTER_ID = "char_levelup_battlemaster";
+function levelUpBattleMasterCharacter() {
+  return makeChar({
+    id: LEVEL_UP_BATTLE_MASTER_ID,
+    name: "Osric",
+    createdAt: 19,
+    updatedAt: 19,
+    startingOption: "equipment",
+    baseAbilityScores: { str: 15, dex: 14, con: 13, int: 10, wis: 12, cha: 8 },
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [
+      {
+        className: "Fighter",
+        source: catalogSource("classes", "Fighter"),
+        level: 6,
+        subclassName: "Battle Master",
+        subclassSource: "PHB",
+      },
+    ],
+    currentHp: 52,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+    ruleChoices: [
+      {
+        id: "PHB__Fighter__Fighting Style",
+        trait: "Fighting Style",
+        origin: "class",
+        choose: 1,
+        from: ["Defense"],
+        picked: ["Defense"],
+      },
+      {
+        id: "PHB__Fighter__Battle Master__Maneuvers 3",
+        trait: "Combat Superiority (3rd Level)",
+        origin: "subclass",
+        choose: 3,
+        from: ["Riposte", "Rally", "Trip Attack"],
+        picked: ["Riposte", "Rally", "Trip Attack"],
+      },
+    ],
+    asiSelections: [
+      { className: "Fighter", classLevel: 4, level: 4, type: "asi", asi: { str: 2 } },
+      { className: "Fighter", classLevel: 6, level: 6, type: "asi", asi: { dex: 2 } },
+    ],
+  });
+}
+
 // A level 4 Human Fighter with no Ability Score Improvement taken yet, so the builder's ASI/Feat card has its level 4 slot
 // pending. Integrated mode only: Fighting Initiate, which the card's feat-choice check uses, is in the integrated catalog.
 export const ASI_FIGHTER_ID = "char_asi_fighter";
@@ -1252,6 +1302,7 @@ export function buildSeed({ root, integrated }) {
       fighterCharacter({ id: FIGHTER_ID, name: "Tavish", picked: false }),
       fighterCharacter({ id: FIGHTER_PICKED_ID, name: "Brannoc", picked: true }),
       battleMasterCharacter(),
+      levelUpBattleMasterCharacter(),
       ...(INTEGRATED ? [magicInitiateCharacter()] : []),
       highElfCharacter(),
       ...(INTEGRATED ? [backgroundFeatCharacter(), variantOriginCharacter(), variantSkilledCharacter(), asiSkilledCharacter()] : []),
@@ -1728,6 +1779,14 @@ export function buildScreens({ integrated }) {
         open: [{ tap: { label: "Level up Fighter" } }],
         ready: "Hit Points",
         expect: { texts: ["Class", "Hit Points", "ASI/Feat", "Review", "Fighter", "3 → 4"], fitsWidth: true },
+      },
+      // The Class Choices step of a level 6 → 7 Battle Master shows its maneuver choice in the Battle Master Maneuvers card.
+      {
+        name: "Level-Up Flow class choices maneuvers", shot: true,
+        route: `/levelup/${LEVEL_UP_BATTLE_MASTER_ID}`,
+        open: [{ tap: { label: "Level up Fighter" } }, { tap: { text: "Class Choices", exact: true } }],
+        ready: "Battle Master Maneuvers",
+        expect: { texts: ["Battle Master Maneuvers", "Additional Maneuvers (7th Level)"], fitsWidth: true },
       },
       // The Level-Up Flow's identity line — phone bottom bar below 768px, wide footer from 768px up — opens
       // the same "Character" modal as the Creation Flow's; from 1024px up the panel is the side column, on
