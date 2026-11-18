@@ -349,6 +349,14 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                       }
                       onSelectAbility={(ability) => setFeatPick((prev) => (prev ? { ...prev, featAbility: ability } : prev))}
                       onToggleSubChoice={toggleSubChoice}
+                      onViewDetail={(feat) =>
+                        onViewDetail({
+                          title: feat.name,
+                          source: feat.source,
+                          description: feat.description,
+                          tags: feat.prerequisite ? [`Prereq: ${feat.prerequisite}`] : [],
+                        })
+                      }
                     />
                     <Button
                       title={featView.picked ? `Save Feat: ${featView.picked.name}` : "Select a Feat"}
