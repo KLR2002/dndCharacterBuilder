@@ -110,6 +110,27 @@ function opened<T extends { id: string }>(choices: T[], held: T[]): T[] {
 }
 
 /**
+ * The Rule Choices a saved feat entry opens: those the character holds with the entry, not those it holds without it. The
+ * builder's saved cards render them once a feat is taken.
+ */
+export function takenFeatRuleChoices(
+  character: Character,
+  selection: AsiSelection,
+  activeBooks: ActiveBooks,
+  compendium: Compendium
+): AvailableRuleChoice[] {
+  const without: Character = {
+    ...character,
+    asiSelections: (character.asiSelections ?? []).filter((entry) => entry !== selection),
+    originFeats: (character.originFeats ?? []).filter((entry) => entry !== selection),
+  };
+  return opened(
+    featGrantedRuleChoices(character, activeBooks, compendium),
+    featGrantedRuleChoices(without, activeBooks, compendium)
+  );
+}
+
+/**
  * Everything a Feat Slot shows for a pending pick: the feats offered, the picked feat's increase, the Rule Choices and feat
  * spells it opens, and whether the pick is complete. A pick is complete when a feat is picked, its Increase Choice is placed
  * when it is a choice, and every Rule Choice it opens has its picks. Feat spell picks never block it.
