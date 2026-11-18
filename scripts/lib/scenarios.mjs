@@ -502,6 +502,54 @@ function variantOriginCharacter() {
   });
 }
 
+// Skilled taken as a feat: a level 1 Variant Human whose origin feat is Skilled, and a level 4 Fighter whose ASI is Skilled.
+// Each saved card shows the three-skill pick the feat opens. Integrated mode only.
+const VARIANT_SKILLED_ID = "char_variant_skilled";
+function variantSkilledCharacter() {
+  return makeChar({
+    id: VARIANT_SKILLED_ID,
+    name: "Ilse",
+    createdAt: 14,
+    updatedAt: 14,
+    startingOption: "equipment",
+    race: { name: "Human", source: catalogSource("races", "Human"), subraceName: "Variant", subraceSource: "PHB" },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [{ className: "Fighter", source: catalogSource("classes", "Fighter"), level: 1 }],
+    originFeats: [{ level: 1, type: "feat", featName: "Skilled", featSource: catalogSource("feats", "Skilled") }],
+    currentHp: 12,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+  });
+}
+
+const ASI_SKILLED_ID = "char_asi_skilled";
+function asiSkilledCharacter() {
+  return makeChar({
+    id: ASI_SKILLED_ID,
+    name: "Dorin",
+    createdAt: 15,
+    updatedAt: 15,
+    startingOption: "equipment",
+    baseAbilityScores: { str: 16, dex: 12, con: 14, int: 10, wis: 12, cha: 8 },
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [{ className: "Fighter", source: catalogSource("classes", "Fighter"), level: 4 }],
+    asiSelections: [
+      {
+        level: 4,
+        className: "Fighter",
+        classLevel: 4,
+        type: "feat",
+        featName: "Skilled",
+        featSource: catalogSource("feats", "Skilled"),
+      },
+    ],
+    currentHp: 36,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+  });
+}
+
 // A level 8 Wizard whose sources grant spells, so the Spells tab shows one card per source. The SRD Baseline has the race
 // only (a Tiefling, cast with Charisma). The integrated catalog adds: a Githyanki with its casting ability picked (Intelligence);
 // Magic Initiate from an origin feat, with its Wizard list picked; a Strixhaven Initiate (Silverquill) with long spell names
@@ -1206,7 +1254,7 @@ export function buildSeed({ root, integrated }) {
       battleMasterCharacter(),
       ...(INTEGRATED ? [magicInitiateCharacter()] : []),
       highElfCharacter(),
-      ...(INTEGRATED ? [backgroundFeatCharacter(), variantOriginCharacter()] : []),
+      ...(INTEGRATED ? [backgroundFeatCharacter(), variantOriginCharacter(), variantSkilledCharacter(), asiSkilledCharacter()] : []),
       grantedSpellsCharacter(),
       ...(INTEGRATED ? [preparedGrantCharacter(), preparedFighterCharacter()] : []),
       ...(INTEGRATED ? [clericCharacter({ id: CLERIC_ID, name: "Corwin", domain: false })] : []),
@@ -1396,6 +1444,23 @@ export function buildScreens({ integrated }) {
               ],
               scrollTo: "Fighting Initiate Style",
               expect: { texts: ["Variant Human Origin Feat", "Fighting Initiate Style (1/1):", "Archery"], fitsWidth: true },
+            },
+            // Skilled taken as an origin feat, then as an ASI: each saved card shows the three-skill pick under the feat.
+            {
+              shot: true,
+              name: "Builder origin feat Skilled",
+              route: buildRoute(VARIANT_SKILLED_ID, "race"),
+              ready: "Picked 0 / 3",
+              scrollTo: "Skilled",
+              expect: { texts: ["Variant Human Origin Feat", "Skilled", "Picked 0 / 3"], fitsWidth: true },
+            },
+            {
+              shot: true,
+              name: "Builder ASI feat Skilled",
+              route: buildRoute(ASI_SKILLED_ID, "asiFeats"),
+              ready: /Selected Ability Improvements/i,
+              scrollTo: "Skilled",
+              expect: { texts: ["Selected Ability Improvements & Feats:", "Skilled", "Picked 0 / 3"], fitsWidth: true },
             },
           ]
         : []),
