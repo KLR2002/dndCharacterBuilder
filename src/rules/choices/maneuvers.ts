@@ -115,6 +115,7 @@ export function battleMasterManeuverChoices(
           level: m.level,
           effectLevel: m.level,
           origin: "subclass",
+          group: "maneuver",
           options: maneuverOptions.filter((o) => !otherPicked.has(o.name.toLowerCase().trim())),
         });
       }
@@ -132,6 +133,7 @@ export function battleMasterManeuverChoices(
       level: 1,
       effectLevel: 1,
       origin: "class",
+      group: "maneuver",
       options: maneuverOptions.filter((o) => !otherPicked.has(o.name.toLowerCase().trim())),
     });
   }
@@ -152,6 +154,7 @@ export function battleMasterManeuverChoices(
       level: 1,
       effectLevel: 1,
       origin: "class",
+      group: "maneuver",
       options: maneuverOptions.filter((o) => !otherPicked.has(o.name.toLowerCase().trim())),
     });
   }
