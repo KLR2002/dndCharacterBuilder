@@ -732,7 +732,7 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
         );
       })}
 
-      {/* Selected ASI / Feat choices */}
+      {/* Saved ASI and feat picks */}
       {existingAsis.length > 0 && (
         <Card style={{ gap: 10 }}>
           <Text style={[styles.heading, { color: theme.text }]}>Selected Ability Improvements & Feats:</Text>
