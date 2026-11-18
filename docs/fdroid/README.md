@@ -6,7 +6,7 @@ How the app is prepared for [F-Droid](https://f-droid.org/docs/Submitting_to_F-D
 
 - Store listing: `fastlane/metadata/android/en-US/` (title, short and full description, icon, phone screenshots, changelogs).
 - Version: `expo.version` and `expo.android.versionCode` in `app.json`. EAS reads them from there (`appVersionSource: local` in `eas.json`).
-- Build flags: `-Pfdroid` turns Expo Updates off. F-Droid does not allow an app to download code outside F-Droid. Every release build leaves out Google's dependency metadata blob (`dependenciesInfo`). Both come from `plugins/lib/e2e-build-transforms.mjs`.
+- Build flags: `-Pfdroid` is accepted and changes nothing; the app ships no code-download path. Every release build leaves out Google's dependency metadata blob (`dependenciesInfo`), from `plugins/lib/e2e-build-transforms.mjs`.
 - Expo modules build from source (`expo.autolinking.android.buildFromSource` in `package.json`), so the build does not need the prebuilt AARs in `node_modules/*/local-maven-repo`.
 - Draft build recipe for fdroiddata: `docs/fdroid/io.github.klr2002.cb5e.yml`.
 
