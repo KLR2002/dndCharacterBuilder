@@ -380,6 +380,26 @@ function battleMasterCharacter() {
   });
 }
 
+// A level 4 Human Fighter with no Ability Score Improvement taken yet, so the builder's ASI/Feat card has its level 4 slot
+// pending. Integrated mode only: Fighting Initiate, which the card's feat-choice check uses, is in the integrated catalog.
+export const ASI_FIGHTER_ID = "char_asi_fighter";
+function asiFighterCharacter() {
+  return makeChar({
+    id: ASI_FIGHTER_ID,
+    name: "Garrick",
+    createdAt: 12,
+    updatedAt: 12,
+    startingOption: "equipment",
+    baseAbilityScores: { str: 16, dex: 12, con: 14, int: 10, wis: 12, cha: 8 },
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [{ className: "Fighter", source: catalogSource("classes", "Fighter"), level: 4 }],
+    currentHp: 36,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+  });
+}
+
 // A level 1 High Elf Wizard with no cantrip picked yet. The race card shows the wizard cantrip pick the High Elf's
 // subrace grants, with the Intelligence casting ability.
 const HIGH_ELF_ID = "char_highelf";
@@ -1158,7 +1178,7 @@ export function buildSeed({ root, integrated }) {
       noticesManyCharacter(),
       noticesFewCharacter(),
       ...(INTEGRATED ? [kenseiCharacter()] : []),
-      ...(INTEGRATED ? [initiativeCharacter()] : []),
+      ...(INTEGRATED ? [initiativeCharacter(), asiFighterCharacter()] : []),
       bardCharacter(),
       noRaceCharacter(),
       noBackgroundCharacter(),
