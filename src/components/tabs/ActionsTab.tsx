@@ -262,6 +262,7 @@ export const ActionsTab: React.FC = () => {
             </Text>
           </View>
           <AttackRow
+            flush
             toHit={
               <RollBadge
                 testID="roll-badge-offhand-tohit"

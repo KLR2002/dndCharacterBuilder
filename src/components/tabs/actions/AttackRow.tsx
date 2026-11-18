@@ -12,6 +12,8 @@ export interface AttackRowProps {
   onPress?: () => void;
   borderBottomColor?: string;
   borderBottomWidth?: number;
+  /** No horizontal padding: the row sits in a card that pads it already. */
+  flush?: boolean;
 }
 
 /**
@@ -26,6 +28,7 @@ export const AttackRow: React.FC<AttackRowProps> = ({
   onPress,
   borderBottomColor,
   borderBottomWidth = 0,
+  flush = false,
 }) => {
   const { width, isCompact } = useResponsiveLayout();
   const stacked = !isCompact && width < BREAKPOINTS.phone;
@@ -33,6 +36,7 @@ export const AttackRow: React.FC<AttackRowProps> = ({
   const rowStyle = [
     styles.row,
     isCompact && styles.rowCompact,
+    flush && styles.rowFlush,
     { borderBottomColor, borderBottomWidth },
   ];
   const badgesStyle = [
@@ -68,6 +72,10 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     gap: 8,
     minHeight: 44,
+  },
+  rowFlush: {
+    paddingHorizontal: 0,
+    paddingVertical: 4,
   },
   rowCompact: {
     flexDirection: "column",
