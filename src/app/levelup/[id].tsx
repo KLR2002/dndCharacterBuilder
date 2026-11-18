@@ -209,7 +209,7 @@ export default function LevelUpScreen() {
           <SubclassStep
             plan={plan}
             options={subclassOptionsForPlan(plan, flowOpts)}
-            onPick={(name, source) => commitPlan(setPlanSubclass(plan, name, source))}
+            onPick={(name, source) => commitPlan(setPlanSubclass(character, plan, name, source, flowOpts))}
           />
         );
       case "asiFeat":
