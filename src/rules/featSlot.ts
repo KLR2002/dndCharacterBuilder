@@ -171,7 +171,6 @@ export function featSlotView(character: Character, pick: FeatSlotPick, opts: Fea
   const compendium = opts.compendium ?? currentCompendium();
   const activeBooks = opts.activeBooks ?? DEFAULT_ACTIVE_BOOK_CODES;
   const catalogs = { compendium, activeBooks };
-
   const offered = compendium
     .for(activeBooks)
     .feats()
@@ -180,6 +179,13 @@ export function featSlotView(character: Character, pick: FeatSlotPick, opts: Fea
       prerequisite: validateFeatPrerequisites(character, feat, { catalogs }),
       held: hasFeat(character, feat.name),
     }));
+  return { offered, ...featPickView(character, pick, catalogs) };
+}
+
+/** What a Feat Slot shows for the pick alone, without the offered feats and their prerequisite checks. */
+export function featPickView(character: Character, pick: FeatSlotPick, opts: FeatSlotOptions = {}): Omit<FeatSlotView, "offered"> {
+  const compendium = opts.compendium ?? currentCompendium();
+  const activeBooks = opts.activeBooks ?? DEFAULT_ACTIVE_BOOK_CODES;
 
   const picked = pick.featName ? findFeat(pick.featName, pick.featSource, compendium, activeBooks) : null;
   const increase = featIncreaseOptions(picked);
@@ -203,7 +209,6 @@ export function featSlotView(character: Character, pick: FeatSlotPick, opts: Fea
   );
 
   return {
-    offered,
     picked,
     increase,
     subChoices,

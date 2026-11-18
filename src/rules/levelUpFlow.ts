@@ -8,7 +8,7 @@ import { asiLevels, casterKindOf, heldClass, hitDieOf, isThirdCaster } from "./c
 import { subclassLevel } from "./leveling.ts";
 import {
   featIncreaseOptions,
-  featSlotView,
+  featPickView,
   findFeat,
   type FeatAbilityBonusOptions,
   type FeatSlotPick,
@@ -426,7 +426,7 @@ export function featSubChoicesForSelection(
   opts: { compendium?: Compendium; activeBooks?: ActiveBooks } = {}
 ): AvailableRuleChoice[] {
   if (selection.type !== "feat" || !selection.featName) return [];
-  return featSlotView(character, asiPickOf(selection), opts).subChoices;
+  return featPickView(character, asiPickOf(selection), opts).subChoices;
 }
 
 /** The Feat Slot pick an ASI/Feat selection of the Level-Up Flow stands for. */

@@ -520,7 +520,7 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                     <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
                       {bonusOptions.abilities.map((ab) => {
                         const isSelected = currentOriginFeat.featAbility === ab;
-return (
+                        return (
                           <TouchableOpacity
                             key={ab}
                             onPress={() => {
