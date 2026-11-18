@@ -13,22 +13,14 @@ import {
 } from "../../rules/builderTransitions";
 import { findClassData, type CharacterCatalogs } from "../../rules/catalogs";
 import { reconcile } from "../../rules/characterReconciler";
-import {
-  getAvailableExpertiseMilestones,
-  getMilestonePicks,
-  toggleExpertiseChoice,
-} from "../../rules/expertise";
+import { toggleExpertiseChoice } from "../../rules/expertise";
+import type { ClassChoicesStepView } from "../../rules/classChoices";
 import { subclassLevel } from "../../rules/leveling";
 import { classStepMinLevel, classStepOffer, isCreationFinished } from "../../rules/creationFlow";
 import type { CreationStepId } from "../../types/character";
-import {
-  proficiencyChoiceOffers,
-  skillPickOffers,
-} from "../../rules/proficiencyChoiceOffers";
 import { clearProficiencyPick } from "../../rules/proficiencyPools";
 import {
   AvailableRuleChoice,
-  offeredRuleChoices,
   pickedOptionNames,
   pickRuleChoice,
 } from "../../rules/ruleChoices";
@@ -65,18 +57,12 @@ export interface ClassProgressionSectionProps {
   allFeats: FeatData[];
   totalLevel: number;
   effectiveScores: Record<AbilityKey, number>;
-  skillChoices: { source: string; choose: number; from: string[] }[];
+  /** The Class Choices step's view: its skill picks, choice cards, Expertise and optional features. */
+  classChoices: ClassChoicesStepView;
   autoGranted: string[];
   toggleSkill: (skill: string, source?: string) => void;
   /** The fixed tools the first class starts with. */
   classTools: string[];
-  availableOptionalFeatures: {
-    name: string;
-    level: number;
-    className: string;
-    description: string;
-    replacesFeatureName?: string;
-  }[];
   pendingAsiSlots: PendingAsiSlot[];
   primaryClass?: string;
   /** The first class's equipment slots with the picks made in them. */
@@ -112,11 +98,10 @@ export const ClassProgressionSection: React.FC<
   allFeats,
   totalLevel,
   effectiveScores,
-  skillChoices,
+  classChoices,
   autoGranted,
   toggleSkill,
   classTools,
-  availableOptionalFeatures,
   pendingAsiSlots,
   primaryClass,
   startingCard,
@@ -143,13 +128,6 @@ export const ClassProgressionSection: React.FC<
     orphaned: string[];
   } | null>(null);
   const hasAnyClass = (character.classes || []).length > 0;
-  // The skill picks the class tab offers, all in the Skills card: the first class's starting picker, and the skill
-  // Proficiency Choices (a subclass's or feature's pick, and a later class's multiclass pick).
-  const startingSkillChoices = skillChoices.filter((sc) =>
-    sc.source.startsWith("Class:"),
-  );
-  const skillOffers = skillPickOffers(character, { activeBooks });
-  const skillPickIds = new Set(skillOffers.map((offer) => offer.id));
   // Two listed classes can share a name (the same class from two sources). Only then is a source shown.
   const sharedClassNames = new Set(
     allClasses
@@ -551,36 +529,18 @@ export const ClassProgressionSection: React.FC<
 
       {/* Modular Progression & Class/Subclass Rule Choices */}
       {(!step || step === "classChoices") && (() => {
-        const allSubclassChoices = [
-          ...offeredRuleChoices(character, {
-            activeBooks,
-            origins: ["class", "subclass"],
-          }),
-          ...proficiencyChoiceOffers(character, { activeBooks }).filter(
-            (choice) =>
-              (choice.origin === "class" ||
-                choice.origin === "subclass" ||
-                choice.origin === "feat") &&
-              !skillPickIds.has(choice.id),
-          ),
-        ];
-        const hasSkillCard =
-          startingSkillChoices.length > 0 || skillOffers.length > 0;
-        if (allSubclassChoices.length === 0 && !hasSkillCard) return null;
+        const { startingSkills, skillPicks, cards } = classChoices;
+        const hasSkillCard = startingSkills.length > 0 || skillPicks.length > 0;
+        const hasCardChoice = Object.values(cards).some((choices) => choices.length > 0);
+        if (!hasCardChoice && !hasSkillCard) return null;
 
-        const fightingStyleChoices = allSubclassChoices.filter(
-          (c) => c.group === "fightingStyle",
-        );
-        const maneuverChoices = allSubclassChoices.filter(
-          (c) => c.group === "maneuver",
-        );
-        const warlockChoices = allSubclassChoices.filter(
-          (c) => c.group === "warlock",
-        );
-        const infusionChoices = allSubclassChoices.filter(
-          (c) => c.group === "infusion",
-        );
-        const otherChoices = allSubclassChoices.filter((c) => !c.group);
+        const {
+          fightingStyle: fightingStyleChoices,
+          maneuver: maneuverChoices,
+          warlock: warlockChoices,
+          infusion: infusionChoices,
+          other: otherChoices,
+        } = cards;
 
         const handleClearChoice = (choice: AvailableRuleChoice) => {
           onUpdate((cur) => {
@@ -676,7 +636,7 @@ export const ClassProgressionSection: React.FC<
         // Each is named by its source, and a pick whose grant gives Expertise is tagged on the picked names.
         const skillsCard = !hasSkillCard ? null : (
           <CollapsibleCard key="prog_skills" title="Skills" style={{ gap: 12 }}>
-            {startingSkillChoices.map((sc) => {
+            {startingSkills.map((sc) => {
               const choiceEntry = character.skillChoices?.find(
                 (c) => c.id === sc.source,
               );
@@ -702,7 +662,7 @@ export const ClassProgressionSection: React.FC<
                 />
               );
             })}
-            {skillOffers.map((offer) =>
+            {skillPicks.map((offer) =>
               renderChoice(offer, offer.expertise ? "Expertise" : undefined),
             )}
           </CollapsibleCard>
@@ -750,15 +710,8 @@ export const ClassProgressionSection: React.FC<
           compendium: currentCompendium(),
           activeBooks,
         };
-        const milestones = getAvailableExpertiseMilestones(character, catalogs);
-        if (milestones.length === 0) return null;
-        const picks = getMilestonePicks(milestones, character.chosenExpertise);
-        const allAllowed = new Set(
-          milestones.flatMap((m) => m.options.map((o) => o.toLowerCase())),
-        );
-        const invalidPicks = (character.chosenExpertise || []).filter(
-          (e) => !allAllowed.has(e.toLowerCase()),
-        );
+        const { picks, invalidPicks } = classChoices.expertise;
+        if (picks.length === 0) return null;
 
         return (
           <CollapsibleCard
@@ -885,13 +838,13 @@ export const ClassProgressionSection: React.FC<
       )}
 
       {/* Optional & Replacement Class Features (Tasha's) */}
-      {(!step || step === "classChoices") && hasAnyClass && availableOptionalFeatures.length > 0 && (
+      {(!step || step === "classChoices") && hasAnyClass && classChoices.optionalFeatures.length > 0 && (
         <CollapsibleCard
           title="Optional & Replacement Class Features:"
           subtitle="Tasha's Cauldron optional features and replacements for your classes."
         >
           <View style={{ gap: 8 }}>
-            {availableOptionalFeatures.map((opt) => {
+            {classChoices.optionalFeatures.map((opt) => {
               const isEnabled = Boolean(
                 character.optionalFeatureReplacements?.[opt.name],
               );
