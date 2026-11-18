@@ -23,7 +23,13 @@ import {
   profileSpellContext,
 } from "./spellcasting.ts";
 import { maxHp, recordRolledHitPoints } from "./hp.ts";
-import { classChoicesAtLevel, classChoicesLevelView, hasClassChoices, type ClassChoicesStepView } from "./classChoices.ts";
+import {
+  classChoicesAtLevel,
+  classChoicesLevelView,
+  hasClassChoices,
+  type ClassChoicesStepView,
+  type ClassLevelChoices,
+} from "./classChoices.ts";
 import { currentRandom, rollDie, type RandomSource, type Roll } from "./dice.ts";
 import { totalLevel } from "./proficiencies.ts";
 import { allCatalogClasses, catalogListings, findClassData } from "./catalogs.ts";
@@ -144,9 +150,19 @@ export function planLevelUp(character: Character, options: PlanLevelUpOptions): 
     toLevel >= subclassLevel(className) && !heldSubclass ? subclassOptions(className, source, { compendium, activeBooks }) : [];
   if (offeredSubclasses.length > 0) wanted.add("subclass");
   if (asiLevels(className).includes(toLevel)) wanted.add("asiFeat");
+  const picks: LevelUpPicks = { ...options.picks };
+  // A single offered subclass is the plan's pick from the start: the Subclass step shows it selected and
+  // the confirmed plan applies it, whatever catalog is active (applyLevelUpPlan never auto-applies on an
+  // integrated catalog, so the pick has to be here).
+  if (wanted.has("subclass") && !picks.subclass && offeredSubclasses.length === 1) {
+    picks.subclass = { name: offeredSubclasses[0].name, source: offeredSubclasses[0].source };
+  }
   // The same shared reader the Creation Flow uses decides the Class Choices step, evaluated on the
-  // planned class at the new level; a multiclass entry's skill pick is found here too.
-  const choices = classChoicesAtLevel(character, atLevel, fromLevel, { compendium, activeBooks });
+  // planned entry at the new level; a multiclass entry's skill pick is found here too.
+  const choices = plannedLevelChoices(character, { className, source, fromLevel, toLevel, subclassName: picks.subclass?.name }, {
+    compendium,
+    activeBooks,
+  });
   if (hasClassChoices(choices)) wanted.add("classChoices");
   if (casterKindOf(atLevel) !== undefined || isThirdCaster(atLevel)) wanted.add("spells");
   const steps = STEP_ORDER.filter((id) => wanted.has(id)).map((id) => ({ id, className, classLevel: toLevel }));
@@ -161,14 +177,6 @@ export function planLevelUp(character: Character, options: PlanLevelUpOptions): 
     hitPoints = { mode, roll, amount: Math.max(1, roll + conMod) };
   } else {
     hitPoints = { mode, amount: Math.max(1, (firstLevel ? die : Math.floor(die / 2) + 1) + conMod) };
-  }
-
-  const picks: LevelUpPicks = { ...options.picks };
-  // A single offered subclass is the plan's pick from the start: the Subclass step shows it selected and
-  // the confirmed plan applies it, whatever catalog is active (applyLevelUpPlan never auto-applies on an
-  // integrated catalog, so the pick has to be here).
-  if (wanted.has("subclass") && !picks.subclass && offeredSubclasses.length === 1) {
-    picks.subclass = { name: offeredSubclasses[0].name, source: offeredSubclasses[0].source };
   }
 
   return {
@@ -386,9 +394,64 @@ export function rollPlanHitPoints(
   };
 }
 
-/** Sets the plan's subclass pick. The given plan is never mutated. */
-export function setPlanSubclass(plan: LevelUpPlan, name: string, source: string): LevelUpPlan {
-  return { ...plan, picks: { ...plan.picks, subclass: { name, source } } };
+/**
+ * The planned class entry a level's choices are read on: the class at the new level with the subclass the
+ * plan picks, or else the subclass the Character holds.
+ */
+function plannedClassEntry(
+  character: Character,
+  plan: { className: string; source: string; toLevel: number; subclassName?: string }
+): CharacterClass {
+  const held = character.classes.find((c) => sameName(c.className, plan.className));
+  const subclass = plan.subclassName ?? held?.subclassName ?? held?.subclass;
+  return { className: plan.className, source: plan.source, level: plan.toLevel, ...(subclass ? { subclassName: subclass } : {}) };
+}
+
+/** The class choices the planned level brings, read on the planned class entry. */
+function plannedLevelChoices(
+  character: Character,
+  plan: { className: string; source: string; fromLevel: number; toLevel: number; subclassName?: string },
+  opts: { compendium: Compendium; activeBooks: ActiveBooks }
+): ClassLevelChoices {
+  return classChoicesAtLevel(character, plannedClassEntry(character, plan), plan.fromLevel, opts);
+}
+
+/**
+ * Sets the plan's subclass pick and re-derives the level's class choices on the picked subclass: the plan's
+ * `classChoices`, the Class Choices step in `steps` (kept in STEP_ORDER), and the picks of choices that are
+ * still offered. Hit points, the ASI/Feat pick and the spells are left as they are. The given plan is never mutated.
+ */
+export function setPlanSubclass(
+  character: Character,
+  plan: LevelUpPlan,
+  name: string,
+  source: string,
+  opts: { compendium?: Compendium; activeBooks?: ActiveBooks } = {}
+): LevelUpPlan {
+  const compendium = opts.compendium ?? currentCompendium();
+  const activeBooks = opts.activeBooks ?? DEFAULT_ACTIVE_BOOK_CODES;
+  const choices = plannedLevelChoices(
+    character,
+    { className: plan.className, source: plan.source, fromLevel: plan.fromLevel, toLevel: plan.toLevel, subclassName: name },
+    { compendium, activeBooks }
+  );
+  const classChoices = [...choices.proficiencyChoices, ...choices.ruleChoices];
+  const offered = new Set(classChoices.map((choice) => choice.id));
+  const classChoicePicks = Object.fromEntries(
+    Object.entries(plan.picks.classChoicePicks ?? {}).filter(([choiceId]) => offered.has(choiceId))
+  );
+
+  const stepIds = new Set<LevelUpStepId>(plan.steps.map((step) => step.id));
+  if (hasClassChoices(choices)) stepIds.add("classChoices");
+  else stepIds.delete("classChoices");
+  const steps = STEP_ORDER.filter((id) => stepIds.has(id)).map((id) => ({ id, className: plan.className, classLevel: plan.toLevel }));
+
+  return {
+    ...plan,
+    steps,
+    classChoices,
+    picks: { ...plan.picks, subclass: { name, source }, classChoicePicks },
+  };
 }
 
 /** Sets the plan's ASI/Feat pick. The given plan is never mutated. */
@@ -565,14 +628,12 @@ export function levelUpClassChoicesView(
   plan: LevelUpPlan,
   opts: { compendium?: Compendium; activeBooks?: ActiveBooks } = {}
 ): ClassChoicesStepView {
-  const held = character.classes.find((c) => sameName(c.className, plan.className));
-  const heldSubclass = held?.subclassName ?? held?.subclass;
-  const entry: CharacterClass = {
+  const entry = plannedClassEntry(character, {
     className: plan.className,
     source: plan.source,
-    level: plan.toLevel,
-    ...(heldSubclass ? { subclassName: heldSubclass } : {}),
-  };
+    toLevel: plan.toLevel,
+    subclassName: plan.picks.subclass?.name,
+  });
   return classChoicesLevelView(character, entry, plan.fromLevel, opts);
 }
 
