@@ -430,6 +430,36 @@ function levelUpBattleMasterCharacter() {
   });
 }
 
+// A level 2 Human Fighter with no subclass, so its level 3 plan's Subclass step lists Battle Master. Integrated only:
+// Battle Master is in the integrated catalog.
+const LEVEL_UP_FIGHTER_TWO_ID = "char_levelup_fighter_two";
+function levelUpFighterTwoCharacter() {
+  return makeChar({
+    id: LEVEL_UP_FIGHTER_TWO_ID,
+    name: "Wyn",
+    createdAt: 20,
+    updatedAt: 20,
+    startingOption: "equipment",
+    baseAbilityScores: { str: 15, dex: 14, con: 14, int: 10, wis: 10, cha: 8 },
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [{ className: "Fighter", source: catalogSource("classes", "Fighter"), level: 2 }],
+    currentHp: 18,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+    ruleChoices: [
+      {
+        id: "PHB__Fighter__Fighting Style",
+        trait: "Fighting Style",
+        origin: "class",
+        choose: 1,
+        from: ["Defense"],
+        picked: ["Defense"],
+      },
+    ],
+  });
+}
+
 // A level 4 Human Fighter with no Ability Score Improvement taken yet, so the builder's ASI/Feat card has its level 4 slot
 // pending. Integrated mode only: Fighting Initiate, which the card's feat-choice check uses, is in the integrated catalog.
 export const ASI_FIGHTER_ID = "char_asi_fighter";
@@ -1303,6 +1333,7 @@ export function buildSeed({ root, integrated }) {
       fighterCharacter({ id: FIGHTER_PICKED_ID, name: "Brannoc", picked: true }),
       battleMasterCharacter(),
       levelUpBattleMasterCharacter(),
+      ...(INTEGRATED ? [levelUpFighterTwoCharacter()] : []),
       ...(INTEGRATED ? [magicInitiateCharacter()] : []),
       highElfCharacter(),
       ...(INTEGRATED ? [backgroundFeatCharacter(), variantOriginCharacter(), variantSkilledCharacter(), asiSkilledCharacter()] : []),
@@ -1788,6 +1819,24 @@ export function buildScreens({ integrated }) {
         ready: "Battle Master Maneuvers",
         expect: { texts: ["Battle Master Maneuvers", "Additional Maneuvers (7th Level)"], fitsWidth: true },
       },
+      // Picking Battle Master in a Fighter 2 → 3 plan's Subclass step adds the Class Choices step: its maneuver card
+      // and Student of War's tool pick follow the picked subclass. Integrated only.
+      ...(INTEGRATED
+        ? [
+            {
+              name: "Level-Up Flow subclass picks class choices", shot: true,
+              route: `/levelup/${LEVEL_UP_FIGHTER_TWO_ID}`,
+              open: [
+                { tap: { label: "Level up Fighter" } },
+                { tap: { text: "Subclass", exact: true } },
+                { tap: { text: "Battle Master", exact: true } },
+                { tap: { text: "Class Choices", exact: true } },
+              ],
+              ready: "Battle Master Maneuvers",
+              expect: { texts: ["Battle Master Maneuvers", "Combat Superiority (3rd Level)"], fitsWidth: true },
+            },
+          ]
+        : []),
       // The Level-Up Flow's identity line — phone bottom bar below 768px, wide footer from 768px up — opens
       // the same "Character" modal as the Creation Flow's; from 1024px up the panel is the side column, on
       // screen with no tap and no modal. So the default 768px width exercises the Level-Up Flow's wide
