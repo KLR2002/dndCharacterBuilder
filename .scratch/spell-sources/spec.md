@@ -1,6 +1,6 @@
 # Spec: One reader of spell-grant owners, one learnable-spell list per Spell Owner
 
-**Status:** ready-for-agent
+**Status:** done (pending the full layout gate)
 
 Decided with the user on 2026-11-18 (architecture review candidates 5 and 2). Builds on `.scratch/feat-slot/` and `.scratch/class-choices-view/`.
 
