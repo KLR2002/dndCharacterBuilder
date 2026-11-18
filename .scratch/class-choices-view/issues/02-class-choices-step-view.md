@@ -6,9 +6,11 @@ Then: `creationFlow.ts` decides the Class Choices step's skip and completeness f
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Tests (red first): a Rogue 1 with no Expertise picked has `complete: false`, and with two picked `true`; a class with only optional features available is `complete: true`; the view lists the same choices, in the same groups, as the section did before for the characters from ticket 01's test.
-- [ ] `ClassProgressionSection.tsx` no longer calls `offeredRuleChoices`, `proficiencyChoiceOffers`, `skillPickOffers` or `getAvailableExpertiseMilestones` (paste the grep).
-- [ ] Creation Flow tests (`checks/creationFlow*.test.ts`) pass; add one: a Rogue draft at the Class Choices step is not complete until Expertise is picked.
-- [ ] Scoped layout: the Creation Flow and class-choice scenarios at 393. `npm run check:all` passes.
+**Landed:** merge of 288ebff, e36d4f6. `classChoicesStepView` (startingSkills, skillPicks, cards by group, expertise, optionalFeatures, applies, complete) builds on `classChoicesAtLevel` per held class; the Creation Flow's skip and completeness read it (Expertise counts, optional features make the step apply but never block, feat-origin picks never count). The section takes a `classChoices` prop instead of `skillChoices` and `availableOptionalFeatures`. A milestone with fewer eligible options than its count is satisfied by all of them. The six characters list the same choices as the old assembly; multiclass parity is not tested. The optional-feature derivation leaves out sidekick classes (import cycle via `levelUpFlow`; the UI offers none). Scoped layout green at 393 except `New character draft`, a pre-existing cold-start bug filed as `quick-fixes-nov-2026/issues/05-new-character-before-load.md`. check:all and check:live passed.
+
+- [x] Tests (red first): a Rogue 1 with no Expertise picked has `complete: false`, and with two picked `true`; a class with only optional features available is `complete: true`; the view lists the same choices, in the same groups, as the section did before for the characters from ticket 01's test.
+- [x] `ClassProgressionSection.tsx` no longer calls `offeredRuleChoices`, `proficiencyChoiceOffers`, `skillPickOffers` or `getAvailableExpertiseMilestones` (paste the grep).
+- [x] Creation Flow tests (`checks/creationFlow*.test.ts`) pass; add one: a Rogue draft at the Class Choices step is not complete until Expertise is picked.
+- [x] Scoped layout: the Creation Flow and class-choice scenarios at 393. `npm run check:all` passes.
