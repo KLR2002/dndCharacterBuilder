@@ -121,9 +121,9 @@ export type ExpertiseMilestonePick = ReturnType<typeof getMilestonePicks>[number
 export interface ClassChoicesStepView {
   /** The first class's starting skill pick, shown first in the Skills card. */
   startingSkills: SkillChoiceOffer[];
-  /** The skill Proficiency Choices: class, subclass and multiclass picks, and feat picks. */
+  /** The skill Proficiency Choices: class, subclass and multiclass picks. A feat's pick is shown with the feat. */
   skillPicks: SkillPickOffer[];
-  /** The rule and Proficiency Choices by card. The other card also holds feat-origin Proficiency Choices. */
+  /** The rule and Proficiency Choices by card. */
   cards: Record<ClassChoiceCard, AvailableRuleChoice[]>;
   expertise: {
     picks: ExpertiseMilestonePick[];
@@ -131,16 +131,15 @@ export interface ClassChoicesStepView {
     invalidPicks: string[];
   };
   optionalFeatures: OptionalFeatureOption[];
-  /** Whether the step has anything to show. Feat-origin picks and optional features are not counted by the Creation Flow. */
+  /** Whether the step has anything to show. */
   applies: boolean;
-  /** Whether every pick the step asks for is made. Optional features and feat-origin picks never block. */
+  /** Whether every pick the step asks for is made. Optional features never block. */
   complete: boolean;
 }
 
 /**
- * The Class Choices step's view: each held class's choices from `classChoicesAtLevel` at level 0, the feat-origin
- * Proficiency Choices (listed with the feat, never counted toward completeness), Expertise milestones and their
- * picks, and the optional features the held classes offer.
+ * The Class Choices step's view: each held class's choices from `classChoicesAtLevel` at level 0, Expertise milestones
+ * and their picks, and the optional features the held classes offer. A feat's Proficiency Choices are not listed here.
  */
 export function classChoicesStepView(character: Character, query: ClassChoicesQuery = {}): ClassChoicesStepView {
   const compendium = query.compendium ?? currentCompendium();
@@ -157,16 +156,12 @@ export function classChoicesStepView(character: Character, query: ClassChoicesQu
   const classProficiencies = perClass
     .flatMap((choices) => choices.proficiencyChoices)
     .filter((choice) => !skillIds.has(choice.id));
-  const featProficiencies = proficiencyChoiceOffers(character, { compendium, activeBooks }).filter(
-    (choice) => choice.origin === "feat" && !skillIds.has(choice.id),
-  );
-
   const cards: Record<ClassChoiceCard, AvailableRuleChoice[]> = {
     fightingStyle: ruleChoices.filter((choice) => choice.group === "fightingStyle"),
     maneuver: ruleChoices.filter((choice) => choice.group === "maneuver"),
     warlock: ruleChoices.filter((choice) => choice.group === "warlock"),
     infusion: ruleChoices.filter((choice) => choice.group === "infusion"),
-    other: [...ruleChoices.filter((choice) => !choice.group), ...classProficiencies, ...featProficiencies],
+    other: [...ruleChoices.filter((choice) => !choice.group), ...classProficiencies],
   };
 
   const milestones = getAvailableExpertiseMilestones(character, catalogs);
@@ -183,7 +178,6 @@ export function classChoicesStepView(character: Character, query: ClassChoicesQu
       offer.choose,
     ),
   );
-  const counted = (offer: AvailableRuleChoice) => offer.origin !== "feat";
   const proficiencyPicked = (offer: AvailableRuleChoice) => pickedEnough(character.proficiencyPicks?.[offer.id], offer.choose);
   const rulePicked = ruleChoices.every((choice) =>
     pickedEnough(character.ruleChoices?.find((saved) => saved.id === choice.id)?.picked, choice.choose),
@@ -198,11 +192,11 @@ export function classChoicesStepView(character: Character, query: ClassChoicesQu
     optionalFeatures,
     applies:
       startingSkills.length > 0 ||
-      skillPicks.some(counted) ||
+      skillPicks.length > 0 ||
       classProficiencies.length > 0 ||
       ruleChoices.length > 0 ||
       milestones.length > 0 ||
       optionalFeatures.length > 0,
-    complete: startingPicked && skillPicks.filter(counted).every(proficiencyPicked) && classProficiencies.every(proficiencyPicked) && rulePicked && expertisePicked,
+    complete: startingPicked && skillPicks.every(proficiencyPicked) && classProficiencies.every(proficiencyPicked) && rulePicked && expertisePicked,
   };
 }

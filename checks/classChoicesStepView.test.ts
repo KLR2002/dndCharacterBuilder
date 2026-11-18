@@ -42,8 +42,7 @@ function oldAssembly(character: Character) {
   const skillIds = new Set(skillOffers.map((offer) => offer.id));
   const rules = offeredRuleChoices(character, { activeBooks: ALL_BOOKS, compendium, origins: ["class", "subclass"] });
   const proficiencies = proficiencyChoiceOffers(character, { activeBooks: ALL_BOOKS, compendium }).filter(
-    (choice) =>
-      (choice.origin === "class" || choice.origin === "subclass" || choice.origin === "feat") && !skillIds.has(choice.id),
+    (choice) => (choice.origin === "class" || choice.origin === "subclass") && !skillIds.has(choice.id),
   );
   return {
     startingSkills: skillChoiceOffers(character, query).filter((offer) => offer.source.startsWith("Class:")),
@@ -91,7 +90,7 @@ describe("The Class Choices view is complete when every pick it asks for is made
     assert.equal(view.complete, true);
   });
 
-  test("a feat's skill picks never block completion", () => {
+  test("a feat's skill picks are not listed and never block completion", () => {
     const barbarian = withStartingSkills(
       makeChar({
         classes: [cl("Barbarian", 4)],
@@ -99,7 +98,7 @@ describe("The Class Choices view is complete when every pick it asks for is made
       }),
     );
     const view = classChoicesStepView(barbarian, query);
-    assert.ok(view.skillPicks.some((offer) => offer.origin === "feat"), "the feat's skill pick is listed");
+    assert.equal(view.skillPicks.some((offer) => offer.origin === "feat"), false, "the feat's skill pick is shown with the feat");
     assert.equal(view.complete, true);
   });
 });

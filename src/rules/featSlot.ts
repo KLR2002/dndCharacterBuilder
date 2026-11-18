@@ -14,6 +14,7 @@ import {
   type OriginFeatEntry,
 } from "./feats.ts";
 import { featGrantedRuleChoices, featSpellChoicesOf, pickRuleChoice } from "./ruleChoices.ts";
+import { featProficiencyChoiceOffers } from "./proficiencyChoiceOffers.ts";
 import type { AvailableRuleChoice } from "./choices/types.ts";
 
 export { featIncreaseOptions, findFeat, type FeatAbilityBonusOptions } from "./featIncrease.ts";
@@ -53,6 +54,8 @@ export interface FeatSlotView {
   subChoices: AvailableRuleChoice[];
   /** The feat spell picks the picked feat opens. They never make the pick incomplete. */
   spellChoices: AvailableRuleChoice[];
+  /** The Proficiency Choices the picked feat opens (Skilled's skill pick). They never make the pick incomplete. */
+  proficiencyChoices: AvailableRuleChoice[];
   complete: boolean;
 }
 
@@ -131,6 +134,20 @@ export function takenFeatRuleChoices(
 }
 
 /**
+ * The Proficiency Choices a saved feat entry opens, read from the character that holds it. The builder's saved cards render
+ * them, and they never block the entry.
+ */
+export function takenFeatProficiencyChoices(
+  character: Character,
+  selection: AsiSelection,
+  activeBooks: ActiveBooks,
+  compendium: Compendium
+): AvailableRuleChoice[] {
+  const feat = selection.featName ? findFeat(selection.featName, selection.featSource, compendium, activeBooks) : null;
+  return feat ? featProficiencyChoiceOffers(character, feat, { compendium, activeBooks }) : [];
+}
+
+/**
  * Everything a Feat Slot shows for a pending pick: the feats offered, the picked feat's increase, the Rule Choices and feat
  * spells it opens, and whether the pick is complete. A pick is complete when a feat is picked, its Increase Choice is placed
  * when it is a choice, and every Rule Choice it opens has its picks. Feat spell picks never block it.
@@ -161,6 +178,7 @@ export function featPickView(character: Character, pick: FeatSlotPick, opts: Fea
 
   let subChoices: AvailableRuleChoice[] = [];
   let spellChoices: AvailableRuleChoice[] = [];
+  let proficiencyChoices: AvailableRuleChoice[] = [];
   if (picked) {
     const selection = selectionOf(pick, picked, featAbility);
     const planned = withSelection(character, pick.slot, selection);
@@ -169,6 +187,7 @@ export function featPickView(character: Character, pick: FeatSlotPick, opts: Fea
       featGrantedRuleChoices(character, activeBooks, compendium)
     );
     spellChoices = featSpellChoicesOf(planned, { name: picked.name, source: picked.source }, compendium, activeBooks);
+    proficiencyChoices = featProficiencyChoiceOffers(planned, picked, { compendium, activeBooks });
   }
 
   const increaseChosen = increase.type !== "choice" || featAbility !== undefined;
@@ -181,6 +200,7 @@ export function featPickView(character: Character, pick: FeatSlotPick, opts: Fea
     increase,
     subChoices,
     spellChoices,
+    proficiencyChoices,
     complete: picked !== null && increaseChosen && subChoicesFilled,
   };
 }

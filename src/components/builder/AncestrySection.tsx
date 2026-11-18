@@ -29,7 +29,7 @@ import { SearchBar } from "../ui/SearchBar";
 import { ABILITY_KEYS, ABILITY_LABELS, builderStyles as styles, RuleChoicePicker } from "./builderStyles";
 import { useCharacters } from "../../context/CharacterContext";
 import { applyOriginFeat, removeOriginFeat } from "../../rules/feats";
-import { applyFeatSlotPick, featIncreaseOptions, featSlotView, findFeat, takenFeatRuleChoices } from "../../rules/featSlot";
+import { applyFeatSlotPick, featIncreaseOptions, featSlotView, findFeat, takenFeatProficiencyChoices, takenFeatRuleChoices } from "../../rules/featSlot";
 import { pickRuleChoice } from "../../rules/ruleChoices";
 import { FeatList, FeatPickDetails } from "../feats/FeatPicker";
 import { BACKGROUND_FEAT_SOURCE } from "../../constants/rules";
@@ -530,6 +530,12 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                 onToggleSubChoice={(choice, option) =>
                   onUpdate((cur) => pickRuleChoice(cur, choice, option, currentCompendium(), activeBooks))
                 }
+                proficiency={{
+                  choices: takenFeatProficiencyChoices(character, currentOriginFeat, activeBooks, currentCompendium()),
+                  character,
+                  onUpdate,
+                  activeBooks,
+                }}
               />
 
               <GrantedSpellPicks

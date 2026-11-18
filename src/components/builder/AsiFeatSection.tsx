@@ -4,14 +4,14 @@ import { Text, TouchableOpacity, View } from "react-native";
 import { AbilityKey, Character } from "../../types/character";
 import { FeatData } from "../../types/dnd5e";
 import { removeAsiSelection } from "../../rules/leveling";
-import { applyFeatSlotPick, featSlotView, findFeat, takenFeatRuleChoices, type FeatSlotPick } from "../../rules/featSlot";
+import { applyFeatSlotPick, featSlotView, findFeat, takenFeatProficiencyChoices, takenFeatRuleChoices, type FeatSlotPick } from "../../rules/featSlot";
 import type { AvailableRuleChoice } from "../../rules/choices/types";
 import { applyAsiWithHitPoints } from "../../rules/builderTransitions";
 import { findHeldRecord } from "../../rules/raceLookup";
 import { featSpellChoicesOf, pickedOptionNames, pickRuleChoice } from "../../rules/ruleChoices";
 import { currentCompendium } from "../../services/compendium";
 import { GrantedSpellPicks } from "./GrantedSpellPicks";
-import { FeatPicker } from "../feats/FeatPicker";
+import { FeatPicker, FeatProficiencyPickers } from "../feats/FeatPicker";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
@@ -477,6 +477,15 @@ export const AsiFeatSection: React.FC<AsiFeatSectionProps> = ({
                       </View>
                     );
                   })}
+
+                {!isAsi && (
+                  <FeatProficiencyPickers
+                    choices={takenFeatProficiencyChoices(character, sel, activeBooks, currentCompendium())}
+                    character={character}
+                    onUpdate={onUpdate}
+                    activeBooks={activeBooks}
+                  />
+                )}
 
                 {!isAsi && sel.featName && (
                   <GrantedSpellPicks
