@@ -440,7 +440,7 @@ function levelUpFighterTwoCharacter() {
     createdAt: 20,
     updatedAt: 20,
     startingOption: "equipment",
-    baseAbilityScores: { str: 15, dex: 14, con: 14, int: 10, wis: 10, cha: 8 },
+    baseAbilityScores: { str: 15, dex: 14, con: 14, int: 16, wis: 10, cha: 8 },
     race: { name: "Human", source: catalogSource("races", "Human") },
     background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
     classes: [{ className: "Fighter", source: catalogSource("classes", "Fighter"), level: 2 }],
@@ -1834,6 +1834,19 @@ export function buildScreens({ integrated }) {
               ],
               ready: "Battle Master Maneuvers",
               expect: { texts: ["Battle Master Maneuvers", "Combat Superiority (3rd Level)"], fitsWidth: true },
+            },
+            // Picking Eldritch Knight adds the Spells step, which offers the spells the subclass learns from. Integrated only.
+            {
+              name: "Level-Up Flow subclass picks spells", shot: true,
+              route: `/levelup/${LEVEL_UP_FIGHTER_TWO_ID}`, fresh: true,
+              open: [
+                { tap: { label: "Level up Fighter" } },
+                { tap: { text: "Subclass", exact: true } },
+                { tap: { text: "Eldritch Knight", exact: true } },
+                { tap: { text: "Spells", exact: true } },
+              ],
+              ready: "Magic Missile",
+              expect: { texts: ["Magic Missile", "Mage Hand"], fitsWidth: true },
             },
           ]
         : []),
