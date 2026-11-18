@@ -293,6 +293,7 @@ export function fightingStyleRuleChoices(
     (choice): AvailableRuleChoice => ({
       ...choice,
       origin: choice.id.includes("College of Swords") ? "subclass" : "class",
+      group: "fightingStyle",
       pick: "fightingStyle",
     })
   );
