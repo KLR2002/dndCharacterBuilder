@@ -15,7 +15,7 @@ const MODULE = "rules/ancestryIncreases.ts";
 /** Legitimate reads outside the module, per file, with the reason. An entry must still match a read, or it is stale. */
 const ALLOWANCES: { file: string; reason: string }[] = [
   {
-    file: "rules/leveling.ts",
+    file: "rules/featSlot.ts",
     reason: "a feat's ability increase: feat records are not race data",
   },
 ];

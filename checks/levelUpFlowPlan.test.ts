@@ -232,7 +232,14 @@ test("asiFeatStepView derives the whole ASI/Feat selection from the plan's pick,
   const plan = fighterPlan();
   const opts = { activeBooks: ALL_BOOKS };
   const feats: FeatData[] = [
-    { name: "Athlete", source: "PHB", prerequisite: null, abilityScoreIncrease: [{ Str: 1 }, { Dex: 1 }], description: "" },
+    {
+      name: "Athlete",
+      source: "PHB",
+      prerequisite: null,
+      abilityScoreIncrease: null,
+      abilityScoreChoices: [{ from: ["str", "dex"], count: 1, amount: 1 }],
+      description: "",
+    },
   ];
   // A feat with an ability choice is picked but its ability is not chosen yet — the remount case.
   const athlete = setPlanAsi(plan, { level: 4, className: "Fighter", classLevel: 4, type: "feat", featName: "Athlete", featSource: "PHB" });

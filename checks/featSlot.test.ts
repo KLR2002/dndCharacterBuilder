@@ -1,0 +1,184 @@
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { makeChar } from "./testUtils.ts";
+import { choiceCatalogBundle } from "./choiceCatalogFixture.ts";
+import { createCompendium, type Compendium } from "../src/services/compendium.ts";
+import { ALL_BOOKS } from "../src/constants/books.ts";
+import { BACKGROUND_FEAT_SOURCE } from "../src/constants/rules.ts";
+import { effectiveScores, hasFeat } from "../src/rules/abilities.ts";
+import { FIGHTING_INITIATE_CHOICE_ID } from "../src/rules/choices/fightingStyles.ts";
+import {
+  applyFeatSlotPick,
+  featIncreaseOptions,
+  featSlotView,
+  findFeat,
+  type FeatSlotPick,
+} from "../src/rules/featSlot.ts";
+import type { AbilityKey } from "../src/types/character.ts";
+import type { FeatData, OptionFeatureData } from "../src/types/dnd5e.ts";
+
+const ALL_ABILITIES: AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
+
+function feat(overrides: Partial<FeatData> & { name: string }): FeatData {
+  return { source: "PHB", prerequisite: null, abilityScoreIncrease: null, description: "", ...overrides };
+}
+
+const RESILIENT_CHOICE = { from: ALL_ABILITIES, count: 1, amount: 1 };
+const FIGHTING_INITIATE = feat({ name: "Fighting Initiate", source: "TCE" });
+const MAGIC_INITIATE = feat({
+  name: "Magic Initiate",
+  source: "PHB",
+  additionalSpells: [
+    { name: "Cleric Spells", ability: "wis", known: { _: [{ choose: "level=0|class=Cleric", count: 2 }] } },
+  ],
+});
+
+/** Two invented style options the Fighting Initiate style choice offers. */
+const STYLE_OPTIONS: OptionFeatureData[] = ["Test Style Alpha", "Test Style Beta"].map((name) => ({
+  name,
+  source: "TCE",
+  category: "Fighting Style",
+  featureType: ["FS:F"],
+  prerequisite: null,
+  description: "",
+}));
+
+function catalog(feats: FeatData[]): Compendium {
+  return createCompendium(choiceCatalogBundle({ feats, optionsAndFeatures: STYLE_OPTIONS }));
+}
+
+const WIZARD_4 = makeChar({
+  baseAbilityScores: { str: 10, dex: 12, con: 12, int: 16, wis: 10, cha: 8 },
+  classes: [{ className: "Wizard", source: "PHB", level: 4 }],
+});
+
+function asiPick(overrides: Partial<FeatSlotPick> = {}): FeatSlotPick {
+  return {
+    slot: { kind: "asi", className: "Wizard", classLevel: 4 },
+    featName: null,
+    ...overrides,
+  };
+}
+
+test("Resilient's Increase Choice comes from the catalog: one of six scores, +1", () => {
+  const compendium = catalog([feat({ name: "Resilient", abilityScoreChoices: [RESILIENT_CHOICE] })]);
+  const resilient = findFeat("Resilient", undefined, compendium, ALL_BOOKS);
+  assert.ok(resilient, "Resilient is found");
+  const options = featIncreaseOptions(resilient);
+  assert.equal(options.type, "choice");
+  assert.deepEqual(options.abilities, ALL_ABILITIES);
+  assert.equal(options.amount, 1);
+});
+
+test("a feat with no increase in the catalog is still offered, with no increase", () => {
+  const compendium = catalog([feat({ name: "Resilient" }), feat({ name: "Alert" })]);
+  const character = makeChar({
+    ...WIZARD_4,
+    asiSelections: [{ level: 4, className: "Wizard", classLevel: 4, type: "feat", featName: "Alert", featSource: "PHB" }],
+  });
+  const view = featSlotView(character, asiPick(), { compendium, activeBooks: ALL_BOOKS });
+  const offer = view.offered.find((o) => o.feat.name === "Resilient");
+  assert.ok(offer, "Resilient is offered without its increase");
+  assert.equal(featIncreaseOptions(offer.feat).type, "none");
+  assert.equal(view.offered.find((o) => o.feat.name === "Alert")?.held, true, "a feat the character holds is marked held");
+  assert.equal(view.offered.find((o) => o.feat.name === "Resilient")?.held, false);
+});
+
+test("Fighting Initiate opens its style Rule Choice, and the pick is incomplete until a style is picked", () => {
+  const compendium = catalog([FIGHTING_INITIATE]);
+  const pick = asiPick({ featName: "Fighting Initiate", featSource: "TCE" });
+  const view = featSlotView(WIZARD_4, pick, { compendium, activeBooks: ALL_BOOKS });
+  assert.deepEqual(view.subChoices.map((choice) => choice.id), [FIGHTING_INITIATE_CHOICE_ID]);
+  assert.equal(view.complete, false, "no style picked yet");
+
+  const picked = featSlotView(
+    WIZARD_4,
+    { ...pick, subChoicePicks: { [FIGHTING_INITIATE_CHOICE_ID]: ["Test Style Alpha"] } },
+    { compendium, activeBooks: ALL_BOOKS },
+  );
+  assert.equal(picked.complete, true);
+});
+
+test("Magic Initiate's spell picks are offered on the feat and do not make the pick incomplete", () => {
+  const compendium = catalog([MAGIC_INITIATE]);
+  const view = featSlotView(
+    WIZARD_4,
+    asiPick({ featName: "Magic Initiate", featSource: "PHB" }),
+    { compendium, activeBooks: ALL_BOOKS },
+  );
+  assert.ok(view.spellChoices.length > 0, "the feat's spell list is offered");
+  assert.equal(view.complete, true, "no spell picked, and the pick is still complete");
+});
+
+test("findFeat takes a feat by name and source, or by name alone only when one active feat has it", () => {
+  const compendium = catalog([
+    feat({ name: "Resilient", source: "PHB", abilityScoreChoices: [RESILIENT_CHOICE] }),
+    feat({ name: "Resilient", source: "TCE" }),
+  ]);
+  assert.equal(findFeat("Resilient", undefined, compendium, ["PHB"])?.source, "PHB", "only PHB is active");
+  assert.equal(findFeat("Resilient", undefined, compendium, ALL_BOOKS), null, "two active feats share the name");
+  assert.equal(findFeat("Resilient", "TCE", compendium, ALL_BOOKS)?.source, "TCE", "the source picks the record");
+  assert.equal(
+    findFeat("Resilient", BACKGROUND_FEAT_SOURCE, compendium, ["PHB"])?.source,
+    "PHB",
+    "a background's copy carries the Background marker, not a book, and is found by name",
+  );
+});
+
+test("a saved Resilient +1 Constitution keeps counting on a catalog without the Increase Choice", () => {
+  const stale = catalog([feat({ name: "Resilient" })]);
+  const character = makeChar({
+    baseAbilityScores: { str: 10, dex: 12, con: 10, int: 16, wis: 10, cha: 8 },
+    classes: [{ className: "Wizard", source: "PHB", level: 4 }],
+    asiSelections: [
+      { level: 4, className: "Wizard", classLevel: 4, type: "feat", featName: "Resilient", featSource: "PHB", featAbility: "con" },
+    ],
+  });
+  assert.equal(effectiveScores(character).scores.con, 11, "the saved +1 counts");
+  const view = featSlotView(
+    character,
+    asiPick({ featName: "Resilient", featSource: "PHB", featAbility: "con" }),
+    { compendium: stale, activeBooks: ALL_BOOKS },
+  );
+  assert.equal(view.increase.type, "none", "the stale catalog states no Increase Choice");
+  assert.equal(hasFeat(character, "Resilient"), true);
+});
+
+test("applyFeatSlotPick takes an ASI feat and records its sub-choice pick", () => {
+  const compendium = catalog([FIGHTING_INITIATE]);
+  const pick = asiPick({
+    featName: "Fighting Initiate",
+    featSource: "TCE",
+    subChoicePicks: { [FIGHTING_INITIATE_CHOICE_ID]: ["Test Style Alpha"] },
+  });
+  const updated = applyFeatSlotPick(WIZARD_4, pick, { compendium, activeBooks: ALL_BOOKS });
+  assert.equal(hasFeat(updated, "Fighting Initiate"), true);
+  assert.deepEqual(
+    updated.ruleChoices?.find((entry) => entry.id === FIGHTING_INITIATE_CHOICE_ID)?.picked,
+    ["Test Style Alpha"],
+  );
+});
+
+test("applyFeatSlotPick takes a race origin feat into the origin feats with its Increase Choice", () => {
+  const compendium = catalog([feat({ name: "Resilient", abilityScoreChoices: [RESILIENT_CHOICE] })]);
+  const pick: FeatSlotPick = {
+    slot: { kind: "origin", grantedBy: "race" },
+    featName: "Resilient",
+    featSource: "PHB",
+    featAbility: "wis",
+  };
+  const updated = applyFeatSlotPick(WIZARD_4, pick, { compendium, activeBooks: ALL_BOOKS });
+  assert.deepEqual(updated.originFeats, [
+    { level: 1, type: "feat", featName: "Resilient", featSource: "PHB", featAbility: "wis" },
+  ]);
+});
+
+test("a feat with no increase in the catalog gets none, whatever its name", () => {
+  const compendium = catalog([feat({ name: "Actor" })]);
+  const view = featSlotView(WIZARD_4, asiPick({ featName: "Actor", featSource: "PHB" }), {
+    compendium,
+    activeBooks: ALL_BOOKS,
+  });
+  assert.equal(view.increase.type, "none");
+  assert.equal(view.complete, true);
+});

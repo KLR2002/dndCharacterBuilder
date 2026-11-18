@@ -35,7 +35,7 @@ import { builderStyles as styles, pkStyles } from "./builderStyles";
 import { ProficiencyChoicePicker } from "./ProficiencyChoicePicker";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import { applyOriginFeat, getBackgroundFeatGrant, grantBackgroundFeat, removeOriginFeat } from "../../rules/feats";
-import { getFeatAbilityBonusOptions } from "../../rules/leveling";
+import { featIncreaseOptions, findFeat } from "../../rules/featSlot";
 
 export interface BackgroundSectionProps {
   character: Character;
@@ -312,7 +312,9 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
 
                             {/* Half-feat picker if applicable */}
                             {(() => {
-                              const bonusOptions = getFeatAbilityBonusOptions(bgOriginFeat.featName || "");
+                              const bonusOptions = featIncreaseOptions(
+                                findFeat(bgOriginFeat.featName || "", bgOriginFeat.featSource, catalogs.compendium ?? currentCompendium(), catalogs.activeBooks)
+                              );
                               if (bonusOptions.abilities.length === 0) return null;
                               return (
                                 <View style={{ gap: 4 }}>
@@ -385,7 +387,9 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                                 size="sm"
                                 icon="ribbon-outline"
                                 onPress={() => {
-                                  const bonusOptions = getFeatAbilityBonusOptions(featName);
+                                  const bonusOptions = featIncreaseOptions(
+                                    findFeat(featName, undefined, catalogs.compendium ?? currentCompendium(), catalogs.activeBooks)
+                                  );
                                   const initialAbility =
                                     bonusOptions.abilities.length === 1 ? bonusOptions.abilities[0] : undefined;
                                   onUpdate((cur) =>
