@@ -3,17 +3,16 @@ import type { AbilityKey, Character } from "../types/character.ts";
 import type { AdditionalSpells, SpellData } from "../types/dnd5e.ts";
 import type { InnateSpellEntry, InnateSpellProfile } from "./innateMagic.ts";
 import type { GrantedPreparedSpell } from "./spellcasting.ts";
-import { catalogListings, type CharacterCatalogs } from "./catalogs.ts";
+import type { CharacterCatalogs } from "./catalogs.ts";
 import { effectiveScores } from "./abilities.ts";
 import { proficiencyBonus, totalLevel } from "./proficiencies.ts";
 import { resolveSpellName } from "./subclassSpells.ts";
+import { heldSpellGrants, raceTitleOf, type GrantOwner } from "./spellGrants.ts";
 import {
   chosenAbilityOptionsOf,
   chosenSpellsOf,
-  featOwner,
   featCounterId,
   fixedGrantAbility,
-  heldFeatsOf,
   innateEntriesOf,
   isInnatePreparedGrant,
   isModelledGrant,
@@ -22,12 +21,9 @@ import {
   pickedSpellListOf,
   pickSlotsOf,
   preparedEntries,
-  raceTitleOf,
-  raceGrantsOf,
   slugOf,
   spellListLabel,
   usesOfEntry,
-  type GrantOwner,
 } from "./choices/featSpells.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 
@@ -71,26 +67,30 @@ export function grantedSpellSources(
     proficiencyBonus: scores?.proficiencyBonus ?? proficiencyBonus(level),
     modifiers: scores?.modifiers ?? effectiveScores(character).modifiers,
   };
-  const listings = catalogListings(catalogs);
+  const held = heldSpellGrants(character, catalogs);
   const sources: InnateSpellProfile[] = [];
 
-  const race = raceGrantsOf(character, listings.races(), ctx.activeBooks);
-  if (race) {
+  // The race's sources come first, then the feats' in the order the character took them.
+  const race = held.find((entry) => entry.kind === "race");
+  if (race?.kind === "race") {
     const seen = new Set<string>();
-    for (const grant of race.grants) {
+    for (const grant of race.additionalSpells) {
       const source = grantSource(ctx, race.owner, grant, undefined, seen, raceTitleOf(character, race.owner.name));
       if (source) sources.push(source);
     }
   }
 
-  for (const { feat, selection } of heldFeatsOf(character, listings.feats(), ctx.activeBooks)) {
-    if (!feat.additionalSpells) continue;
-    const owner = featOwner(feat);
+  for (const entry of held) {
+    if (entry.kind !== "feat" || !entry.additionalSpells) continue;
+    const feat = entry.record;
+    const grants = entry.additionalSpells;
+    const owner = entry.owner;
+    const selection = entry.selection;
     // Spells named by this feat are listed once, across all its grants.
     const seen = new Set<string>();
     // A prepared-only list is never a card, so a feat whose lists are all prepared asks for no list here.
-    if (offeredSpellLists(feat.additionalSpells).some(isModelledGrant)) {
-      const picked = pickedSpellListOf(character, owner, feat.additionalSpells);
+    if (offeredSpellLists(grants).some(isModelledGrant)) {
+      const picked = pickedSpellListOf(character, owner, grants);
       if (picked) {
         const source = grantSource(ctx, owner, picked, selection, seen, `${feat.name} (${spellListLabel(picked.name ?? "")})`);
         if (source) sources.push(source);
@@ -98,7 +98,7 @@ export function grantedSpellSources(
         sources.push({ title: feat.name, origin: "feat", spells: [], notices: ["Needs review: choose a spell list"] });
       }
     }
-    for (const grant of feat.additionalSpells) {
+    for (const grant of grants) {
       if (typeof grant.name === "string") continue;
       const source = grantSource(ctx, owner, grant, selection, seen, feat.name);
       if (source) sources.push(source);
@@ -113,7 +113,6 @@ export function grantedSpellSources(
  * gates (see getClassSpellProfiles). A spell the active books do not hold is left out.
  */
 export function grantedPreparedSpells(character: Character, catalogs?: CharacterCatalogs): GrantedPreparedSpell[] {
-  const listings = catalogListings(catalogs);
   const compendium = catalogs?.compendium ?? currentCompendium();
   const activeBooks = catalogs?.activeBooks;
   const out: GrantedPreparedSpell[] = [];
@@ -143,15 +142,17 @@ export function grantedPreparedSpells(character: Character, catalogs?: Character
     }
   };
 
-  const race = raceGrantsOf(character, listings.races(), activeBooks);
-  if (race) for (const grant of race.grants) addGrant(race.owner, grant, raceTitleOf(character, race.owner.name));
+  const held = heldSpellGrants(character, catalogs);
+  const race = held.find((entry) => entry.kind === "race");
+  if (race?.kind === "race") for (const grant of race.additionalSpells) addGrant(race.owner, grant, raceTitleOf(character, race.owner.name));
 
-  for (const { feat } of heldFeatsOf(character, listings.feats(), activeBooks)) {
-    if (!feat.additionalSpells) continue;
-    const owner = featOwner(feat);
-    const picked = pickedSpellListOf(character, owner, feat.additionalSpells);
+  for (const entry of held) {
+    if (entry.kind !== "feat" || !entry.additionalSpells) continue;
+    const feat = entry.record;
+    const owner = entry.owner;
+    const picked = pickedSpellListOf(character, owner, entry.additionalSpells);
     if (picked) addGrant(owner, picked, `${feat.name} (${spellListLabel(picked.name ?? "")})`);
-    for (const grant of feat.additionalSpells) {
+    for (const grant of entry.additionalSpells) {
       if (typeof grant.name !== "string") addGrant(owner, grant, feat.name);
     }
   }
