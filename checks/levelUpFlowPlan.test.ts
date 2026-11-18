@@ -271,6 +271,36 @@ test("picking Battle Master in a Fighter 2 to 3 plan brings its maneuver and too
   assert.equal(champion.picks.learnedSpells, withTools.picks.learnedSpells);
 });
 
+test("picking Eldritch Knight in a Fighter 2 to 3 plan brings the Spells step; switching to Champion removes it and its learned spells", () => {
+  const compendium = integratedTestCompendium();
+  resetTestCompendium();
+  const character = makeChar({
+    baseAbilityScores: { str: 15, dex: 14, con: 14, int: 16, wis: 10, cha: 10 },
+    classes: [{ className: "Fighter", source: "PHB", level: 2 }],
+  });
+  const opts = { compendium, activeBooks: ALL_BOOKS };
+  const result = planLevelUp(character, { className: "Fighter", hitPoints: { mode: "average" }, ...opts });
+  if (!result.ok) assert.fail(result.reason);
+  assert.equal(result.plan.steps.some((s) => s.id === "spells"), false, "no subclass held: no Spells step yet");
+
+  const eldritch = setPlanSubclass(character, result.plan, "Eldritch Knight", "PHB", opts);
+  assert.deepEqual(
+    eldritch.steps.map((s) => s.id),
+    ["class", "hitPoints", "subclass", "spells", "review"],
+    "the Spells step follows the Subclass step",
+  );
+  const offered = newSpellsForLevelUp(character, eldritch, opts).map((spell) => spell.name);
+  assert.ok(offered.includes("Magic Missile"), "the Eldritch Knight's spells are offered");
+
+  const learned = togglePlanSpell(eldritch, { name: "Magic Missile", source: "PHB" });
+  const kept = setPlanSubclass(character, learned, "Eldritch Knight", "PHB", opts);
+  assert.deepEqual(kept.picks.learnedSpells, [{ name: "Magic Missile", source: "PHB" }], "a still offered spell stays picked");
+
+  const champion = setPlanSubclass(character, learned, "Champion", "PHB", opts);
+  assert.equal(champion.steps.some((s) => s.id === "spells"), false, "Champion brings no Spells step");
+  assert.equal(champion.picks.learnedSpells, undefined, "the learned spells go with the step");
+});
+
 test("clearPlanClassChoicePick removes one choice's picks and leaves the others", () => {
   const plan = fighterPlan();
   const picked = { ...plan, picks: { ...plan.picks, classChoicePicks: { a: ["X"], b: ["Y"] } } };

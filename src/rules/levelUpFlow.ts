@@ -142,7 +142,6 @@ export function planLevelUp(character: Character, options: PlanLevelUpOptions): 
   const compendium = options.compendium ?? currentCompendium();
   const activeBooks = options.activeBooks ?? DEFAULT_ACTIVE_BOOK_CODES;
 
-  const atLevel: CharacterClass = { className, source, level: toLevel, ...(heldSubclass ? { subclassName: heldSubclass } : {}) };
   const wanted = new Set<LevelUpStepId>(["class", "hitPoints", "review"]);
   // A level that reaches the subclass level brings a Subclass step only when the active books offer at
   // least one; with none offered the step could never complete, so it is skipped like `leveling.ts` does.
@@ -164,7 +163,9 @@ export function planLevelUp(character: Character, options: PlanLevelUpOptions): 
     activeBooks,
   });
   if (hasClassChoices(choices)) wanted.add("classChoices");
-  if (casterKindOf(atLevel) !== undefined || isThirdCaster(atLevel)) wanted.add("spells");
+  if (wantsSpellsStep(plannedClassEntry(character, { className, source, toLevel, subclassName: picks.subclass?.name }))) {
+    wanted.add("spells");
+  }
   const steps = STEP_ORDER.filter((id) => wanted.has(id)).map((id) => ({ id, className, classLevel: toLevel }));
 
   const conMod = effectiveScores(character).modifiers.con ?? 0;
@@ -407,6 +408,11 @@ function plannedClassEntry(
   return { className: plan.className, source: plan.source, level: plan.toLevel, ...(subclass ? { subclassName: subclass } : {}) };
 }
 
+/** Whether a class entry brings the Spells step: a spellcasting class, or a third caster subclass. */
+function wantsSpellsStep(entry: CharacterClass): boolean {
+  return casterKindOf(entry) !== undefined || isThirdCaster(entry);
+}
+
 /** The class choices the planned level brings, read on the planned class entry. */
 function plannedLevelChoices(
   character: Character,
@@ -444,14 +450,26 @@ export function setPlanSubclass(
   const stepIds = new Set<LevelUpStepId>(plan.steps.map((step) => step.id));
   if (hasClassChoices(choices)) stepIds.add("classChoices");
   else stepIds.delete("classChoices");
+  const spells = wantsSpellsStep(plannedClassEntry(character, { className: plan.className, source: plan.source, toLevel: plan.toLevel, subclassName: name }));
+  if (spells) stepIds.add("spells");
+  else stepIds.delete("spells");
   const steps = STEP_ORDER.filter((id) => stepIds.has(id)).map((id) => ({ id, className: plan.className, classLevel: plan.toLevel }));
 
-  return {
+  const next: LevelUpPlan = {
     ...plan,
     steps,
     classChoices,
     picks: { ...plan.picks, subclass: { name, source }, classChoicePicks },
   };
+  // Without a Spells step the learned spells go with it; with one, only the spells it still offers stay picked.
+  if (!spells) {
+    const picks = { ...next.picks };
+    delete picks.learnedSpells;
+    return { ...next, picks };
+  }
+  const offeredSpells = new Set(newSpellsForLevelUp(character, next, opts).map((spell) => spell.name.toLowerCase()));
+  const learnedSpells = (plan.picks.learnedSpells ?? []).filter((spell) => offeredSpells.has(spell.name.toLowerCase()));
+  return { ...next, picks: { ...next.picks, learnedSpells } };
 }
 
 /** Sets the plan's ASI/Feat pick. The given plan is never mutated. */
