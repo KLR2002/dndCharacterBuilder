@@ -28,9 +28,6 @@ import {
 import { clearProficiencyPick } from "../../rules/proficiencyPools";
 import {
   AvailableRuleChoice,
-  isInfusionChoiceId,
-  isInvocationChoiceId,
-  isManeuverChoiceId,
   offeredRuleChoices,
   pickedOptionNames,
   pickRuleChoice,
@@ -571,44 +568,19 @@ export const ClassProgressionSection: React.FC<
           startingSkillChoices.length > 0 || skillOffers.length > 0;
         if (allSubclassChoices.length === 0 && !hasSkillCard) return null;
 
-        const isFightingStyle = (id: string) =>
-          id.includes("Fighting Style") ||
-          id.includes("Blessed Warrior") ||
-          id.includes("Druidic Warrior");
-
-        const isManeuver = (id: string) =>
-          isManeuverChoiceId(id) ||
-          id.includes("Maneuver") ||
-          id.includes("Superior Technique");
-
-        const isWarlockModular = (id: string) =>
-          id.includes("Pact Boon") ||
-          id.includes("Pact of the Tome") ||
-          id.includes("Ancient Secrets") ||
-          id.includes("Mystic Arcanum") ||
-          isInvocationChoiceId(id);
-
-        const isInfusion = (id: string) => isInfusionChoiceId(id);
-
-        const fightingStyleChoices = allSubclassChoices.filter((c) =>
-          isFightingStyle(c.id),
+        const fightingStyleChoices = allSubclassChoices.filter(
+          (c) => c.group === "fightingStyle",
         );
-        const maneuverChoices = allSubclassChoices.filter((c) =>
-          isManeuver(c.id),
+        const maneuverChoices = allSubclassChoices.filter(
+          (c) => c.group === "maneuver",
         );
-        const warlockChoices = allSubclassChoices.filter((c) =>
-          isWarlockModular(c.id),
+        const warlockChoices = allSubclassChoices.filter(
+          (c) => c.group === "warlock",
         );
-        const infusionChoices = allSubclassChoices.filter((c) =>
-          isInfusion(c.id),
+        const infusionChoices = allSubclassChoices.filter(
+          (c) => c.group === "infusion",
         );
-        const otherChoices = allSubclassChoices.filter(
-          (c) =>
-            !isFightingStyle(c.id) &&
-            !isManeuver(c.id) &&
-            !isWarlockModular(c.id) &&
-            !isInfusion(c.id),
-        );
+        const otherChoices = allSubclassChoices.filter((c) => !c.group);
 
         const handleClearChoice = (choice: AvailableRuleChoice) => {
           onUpdate((cur) => {
@@ -680,7 +652,6 @@ export const ClassProgressionSection: React.FC<
         const renderChoiceCard = (
           key: string,
           title: string,
-          subtitle: string,
           choices: AvailableRuleChoice[],
           badge?: string,
         ) => {
@@ -689,7 +660,6 @@ export const ClassProgressionSection: React.FC<
             <CollapsibleCard
               key={key}
               title={title}
-              subtitle={subtitle}
               badge={
                 badge ? (
                   <Badge label={badge} variant="accent" size="sm" />
@@ -744,35 +714,30 @@ export const ClassProgressionSection: React.FC<
             {renderChoiceCard(
               "prog_fighting_styles",
               "Fighting Styles",
-              "Martial specialization granting passive combat bonuses or additional cantrips.",
               fightingStyleChoices,
               "Fighting Style",
             )}
             {renderChoiceCard(
               "prog_maneuvers",
               "Battle Master Maneuvers",
-              "Tactical combat maneuvers fueled by your Superiority Dice pool.",
               maneuverChoices,
               "Maneuvers",
             )}
             {renderChoiceCard(
               "prog_warlock",
               "Pact Boon & Eldritch Invocations",
-              "Otherworldly gifts and secret eldritch lore granted by your patron.",
               warlockChoices,
               "Warlock",
             )}
             {renderChoiceCard(
               "prog_infusions",
               "Infusions Known",
-              "Magical blueprints and item enhancements you know how to produce.",
               infusionChoices,
               "Artificer",
             )}
             {renderChoiceCard(
               "prog_other",
               "Class & Subclass Choices",
-              "Specializations, archetypes, and progression grants.",
               otherChoices,
             )}
           </>
