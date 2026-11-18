@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { makeChar } from "./testUtils.ts";
+import { integratedTestCompendium, makeChar, resetTestCompendium } from "./testUtils.ts";
 import { ALL_BOOKS } from "../src/constants/books.ts";
 import {
   applyLevelUpPlan,
@@ -8,7 +8,9 @@ import {
   asiFeatSubChoices,
   chooseAverageHitPoints,
   classStepOptions,
+  clearPlanClassChoicePick,
   flowSteps,
+  levelUpClassChoicesView,
   levelUpStepComplete,
   levelUpSummary,
   newSpellsForLevelUp,
@@ -204,6 +206,34 @@ test("levelUpStepComplete reads the plan: class needs a plan, asiFeat needs a pi
     }
   }
   assert.equal(levelUpStepComplete(allPicked, "classChoices"), true);
+});
+
+test("the Class Choices view of a Battle Master Fighter 6 to 7 lists every plan choice, its maneuvers in the maneuver card", () => {
+  const compendium = integratedTestCompendium();
+  resetTestCompendium();
+  const character = makeChar({
+    classes: [{ className: "Fighter", source: "PHB", level: 6, subclassName: "Battle Master", subclass: "Battle Master", subclassSource: "PHB" }],
+  });
+  const result = planLevelUp(character, { className: "Fighter", hitPoints: { mode: "average" }, compendium, activeBooks: ALL_BOOKS });
+  if (!result.ok) assert.fail(result.reason);
+  const planned = result.plan.classChoices ?? [];
+  assert.ok(planned.some((choice) => choice.group === "maneuver"), "the plan carries the maneuver choice");
+
+  const view = levelUpClassChoicesView(character, result.plan, { compendium, activeBooks: ALL_BOOKS });
+  const shown = new Set([...view.skillPicks, ...Object.values(view.cards).flat()].map((choice) => choice.id));
+  for (const choice of planned) assert.ok(shown.has(choice.id), `${choice.traitName} is shown`);
+  assert.deepEqual(
+    view.cards.maneuver.map((choice) => choice.id),
+    planned.filter((choice) => choice.group === "maneuver").map((choice) => choice.id),
+  );
+});
+
+test("clearPlanClassChoicePick removes one choice's picks and leaves the others", () => {
+  const plan = fighterPlan();
+  const picked = { ...plan, picks: { ...plan.picks, classChoicePicks: { a: ["X"], b: ["Y"] } } };
+  const cleared = clearPlanClassChoicePick(picked, "a");
+  assert.deepEqual(cleared.picks.classChoicePicks, { b: ["Y"] });
+  assert.deepEqual(picked.picks.classChoicePicks, { a: ["X"], b: ["Y"] }, "the given plan is never mutated");
 });
 
 test("a feat offering +1 to one of several abilities keeps the ASI/Feat step incomplete until one is chosen", () => {
