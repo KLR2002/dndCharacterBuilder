@@ -37,7 +37,8 @@ import {
   getMergedResourceCounters,
 } from "./resourceCounters.ts";
 import { grantedPreparedSpells, grantedSpellSources } from "./grantedSpells.ts";
-import { heldExpandedSpellNames, resolveCharacterBackground } from "./backgroundSpells.ts";
+import { heldExpandedSpellNames } from "./backgroundSpells.ts";
+import { heldSpellGrants, type HeldSpellGrant } from "./spellGrants.ts";
 import type { InnateSpellProfile } from "./innateMagic.ts";
 
 export { catalogListings, type CharacterCatalogs } from "./catalogs.ts";
@@ -99,7 +100,9 @@ export function evaluateCharacter(
 ): EvaluatedCharacter {
   const listings = catalogListings(catalogs);
   const ancestry = resolveCharacterAncestry(character, listings.races(), catalogs?.activeBooks);
-  const background = resolveCharacterBackground(character, listings.backgrounds(), catalogs?.activeBooks);
+  const background = heldSpellGrants(character, catalogs).find(
+    (grant): grant is Extract<HeldSpellGrant, { kind: "background" }> => grant.kind === "background",
+  )?.record;
   const classes = allCatalogClasses(catalogs);
 
   const lvl = totalLevel(character);
