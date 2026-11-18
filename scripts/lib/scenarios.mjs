@@ -460,6 +460,36 @@ function levelUpFighterTwoCharacter() {
   });
 }
 
+// A level 5 Rogue of the Thief subclass holding the two Expertise picks of level 1, so its level 6 plan opens the second
+// Expertise milestone with the two skills those picks do not claim. Integrated only: Thief is in the integrated catalog.
+const LEVEL_UP_ROGUE_ID = "char_levelup_rogue";
+function levelUpRogueCharacter() {
+  return makeChar({
+    id: LEVEL_UP_ROGUE_ID,
+    name: "Lark",
+    createdAt: 21,
+    updatedAt: 21,
+    startingOption: "equipment",
+    baseAbilityScores: { str: 10, dex: 16, con: 13, int: 12, wis: 10, cha: 14 },
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [
+      {
+        className: "Rogue",
+        source: catalogSource("classes", "Rogue"),
+        level: 5,
+        subclassName: "Thief",
+        subclassSource: "PHB",
+      },
+    ],
+    chosenSkills: ["Stealth", "Acrobatics", "Perception", "Deception"],
+    chosenExpertise: ["Stealth", "Acrobatics"],
+    currentHp: 33,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+  });
+}
+
 // A level 4 Human Fighter with no Ability Score Improvement taken yet, so the builder's ASI/Feat card has its level 4 slot
 // pending. Integrated mode only: Fighting Initiate, which the card's feat-choice check uses, is in the integrated catalog.
 export const ASI_FIGHTER_ID = "char_asi_fighter";
@@ -1333,7 +1363,7 @@ export function buildSeed({ root, integrated }) {
       fighterCharacter({ id: FIGHTER_PICKED_ID, name: "Brannoc", picked: true }),
       battleMasterCharacter(),
       levelUpBattleMasterCharacter(),
-      ...(INTEGRATED ? [levelUpFighterTwoCharacter()] : []),
+      ...(INTEGRATED ? [levelUpFighterTwoCharacter(), levelUpRogueCharacter()] : []),
       ...(INTEGRATED ? [magicInitiateCharacter()] : []),
       highElfCharacter(),
       ...(INTEGRATED ? [backgroundFeatCharacter(), variantOriginCharacter(), variantSkilledCharacter(), asiSkilledCharacter()] : []),
@@ -1819,6 +1849,19 @@ export function buildScreens({ integrated }) {
         ready: "Battle Master Maneuvers",
         expect: { texts: ["Battle Master Maneuvers", "Additional Maneuvers (7th Level)"], fitsWidth: true },
       },
+      // The Class Choices step of a level 5 → 6 Rogue offers the Expertise milestone the new level opens: its two picks
+      // come from the skills the held level 1 picks do not claim. Integrated only.
+      ...(INTEGRATED
+        ? [
+            {
+              name: "Level-Up Flow expertise", shot: true,
+              route: `/levelup/${LEVEL_UP_ROGUE_ID}`,
+              open: [{ tap: { label: "Level up Rogue" } }, { tap: { text: "Class Choices", exact: true } }],
+              ready: "Rogue Expertise (Level 6)",
+              expect: { texts: ["Expertise", "Rogue Expertise (Level 6)", "Perception", "Deception"], fitsWidth: true },
+            },
+          ]
+        : []),
       // Picking Battle Master in a Fighter 2 → 3 plan's Subclass step adds the Class Choices step: its maneuver card
       // and Student of War's tool pick follow the picked subclass. Integrated only.
       ...(INTEGRATED
