@@ -7,7 +7,8 @@ import { resolveAncestryState } from "../src/rules/ancestryEngine.ts";
 import { grantedFeatures } from "../src/rules/grantedFeatures.ts";
 import { offeredRuleChoices, pickRuleChoice } from "../src/rules/ruleChoices.ts";
 import { heldSubraceOf } from "../src/rules/recordProficiencyGrants.ts";
-import { pruneInvalidFeatSpellPicks, raceGrantsOf, raceSpellRuleChoices } from "../src/rules/choices/featSpells.ts";
+import { pruneInvalidFeatSpellPicks, raceSpellRuleChoices } from "../src/rules/choices/featSpells.ts";
+import { heldSpellGrantsIn } from "../src/rules/spellGrants.ts";
 import { characterSpeeds } from "../src/rules/speed.ts";
 import type { Character } from "../src/types/character.ts";
 import type { BackgroundData, ClassData, FeatData, RaceData, SubraceData } from "../src/types/dnd5e.ts";
@@ -288,8 +289,8 @@ test("a lineage held in two books is read from the record of the active book, no
   const lineage = (source: string, spell: string) =>
     race("Sample Lineage", source, { additionalSpells: [{ ability: "int", known: { "1": [spell] } }] });
   const records = [lineage("OLD", "sample ember"), lineage("ALT", "sample pulse")];
-  const grants = raceGrantsOf(makeChar({ lineageReplacement: "Sample Lineage" }), records, ["ALT"]);
-  assert.deepEqual(grants?.grants[0].known, { "1": ["sample pulse"] });
+  const grants = heldSpellGrantsIn(makeChar({ lineageReplacement: "Sample Lineage" }), { races: records, feats: [], backgrounds: [] }, ["ALT"]).find((grant) => grant.kind === "race");
+  assert.deepEqual(grants?.additionalSpells?.[0].known, { "1": ["sample pulse"] });
 });
 
 test("a lineage's spell pick is judged against the active book's record when another book also lists the lineage", () => {

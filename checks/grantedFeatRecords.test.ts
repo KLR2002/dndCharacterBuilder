@@ -2,7 +2,8 @@ import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { BACKGROUND_FEAT_SOURCE } from "../src/constants/rules.ts";
-import { featCounterId, featSpellRuleChoices, heldFeatsOf } from "../src/rules/choices/featSpells.ts";
+import { featCounterId, featSpellRuleChoices } from "../src/rules/choices/featSpells.ts";
+import { heldSpellGrantsIn } from "../src/rules/spellGrants.ts";
 import { clearAncestryChoice } from "../src/rules/ancestryEngine.ts";
 import { pickRuleChoice } from "../src/rules/ruleChoices.ts";
 import { reconcile, teardownSubclass } from "../src/rules/characterReconciler.ts";
@@ -41,14 +42,18 @@ const claimed = (background: { name: string; source: string }): Character =>
     originFeats: [{ level: 1, type: "feat", featName: "Sample Initiate", featSource: BACKGROUND_FEAT_SOURCE }],
   });
 
+/** The feats a character holds, as the reader resolves each for the given books. */
+const heldFeats = (character: Character, feats: FeatData[], books: readonly string[] | undefined) =>
+  heldSpellGrantsIn(character, { races: [], feats, backgrounds: [] }, books).flatMap((grant) => (grant.kind === "feat" ? [grant] : []));
+
 test("a background-claimed feat held in two books resolves to the background's own book before catalog order", () => {
-  const held = heldFeatsOf(claimed({ name: "Sample Drifter", source: "TST2" }), catalogFeats("TST", "TST2"), ALL_BOOKS);
-  assert.equal(held[0]?.feat.source, "TST2", "the book the background comes from is chosen before the first record listed");
+  const held = heldFeats(claimed({ name: "Sample Drifter", source: "TST2" }), catalogFeats("TST", "TST2"), ALL_BOOKS);
+  assert.equal(held[0]?.record.source, "TST2", "the book the background comes from is chosen before the first record listed");
 });
 
 test("an active book's record of a background-claimed feat outranks the background's own book and the catalog order", () => {
-  const held = heldFeatsOf(claimed({ name: "Sample Drifter", source: "TST2" }), catalogFeats("TST2", "TST"), ["TST"]);
-  assert.equal(held[0]?.feat.source, "TST", "the active book's record is chosen, though it is listed second and is not the background's book");
+  const held = heldFeats(claimed({ name: "Sample Drifter", source: "TST2" }), catalogFeats("TST2", "TST"), ["TST"]);
+  assert.equal(held[0]?.record.source, "TST", "the active book's record is chosen, though it is listed second and is not the background's book");
 });
 
 test("a pick made on a background-claimed feat is saved under the record it was made on, and every later load keeps it", () => {

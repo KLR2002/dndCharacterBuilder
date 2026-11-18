@@ -24,7 +24,7 @@ import { featSpellChoicesOf, pickRuleChoice, type AvailableRuleChoice } from "..
 import { currentCompendium } from "../../services/compendium";
 import { catalogListings, type CharacterCatalogs } from "../../rules/catalogs";
 import { findHeldRecord } from "../../rules/raceLookup";
-import { featOfSelection } from "../../rules/choices/featSpells";
+import { featOfSelection } from "../../rules/spellGrants";
 import { GrantedSpellPicks } from "./GrantedSpellPicks";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
