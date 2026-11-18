@@ -1,9 +1,12 @@
-import React, { useMemo, useState } from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React, { useEffect, useMemo, useState } from "react";
+import { InteractionManager, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useAppTheme } from "../../context/ThemeContext";
 import type { SpellData } from "../../types/dnd5e";
 import { SearchBar } from "../ui/SearchBar";
+
+/** Rows drawn in the first frame; the rest follow once the opening animation has finished, so no spell is out of reach. */
+const FIRST_ROWS = 100;
 
 export const LEVEL_NAMES = [
   "Cantrips",
@@ -50,6 +53,11 @@ export function SpellLearnList({
   const [search, setSearch] = useState("");
   const [level, setLevel] = useState<number | null>(null);
   const [restricted, setRestricted] = useState(true);
+  const [allRows, setAllRows] = useState(false);
+  useEffect(() => {
+    const task = InteractionManager.runAfterInteractions(() => setAllRows(true));
+    return () => task.cancel();
+  }, []);
 
   const maxLevel = useMemo(() => Math.max(0, ...spells.map((s) => s.level)), [spells]);
   const selected = useMemo(() => new Set(selectedNames.map((n) => n.toLowerCase())), [selectedNames]);
@@ -82,7 +90,7 @@ export function SpellLearnList({
         ))}
       </ScrollView>
 
-      {shown.map((spell) => {
+      {(allRows ? shown : shown.slice(0, FIRST_ROWS)).map((spell) => {
         const name = spell.name.toLowerCase();
         return (
           <SpellRow
