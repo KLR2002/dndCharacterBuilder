@@ -1,6 +1,6 @@
 # Spec: The Class Choices step reads one view
 
-**Status:** done (pending the full layout gate)
+**Status:** done (full layout suite green: SRD at 320, 393, 768, 1280; integrated at 320)
 
 Decided with the user on 2026-11-18 (architecture review candidate 3). Builds on `.scratch/feat-slot/` (ADR 0023).
 
