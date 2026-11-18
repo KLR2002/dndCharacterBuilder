@@ -18,7 +18,7 @@ import {
 } from "./builderTransitions.ts";
 import { learnSpell } from "./characterSpells.ts";
 import { getClassSpellProfiles } from "./spellcasting.ts";
-import { learnableSpells } from "./learnableSpells.ts";
+import { learnableSpells, type LearnableSpells } from "./learnableSpells.ts";
 import { maxHp, recordRolledHitPoints } from "./hp.ts";
 import {
   classChoicesAtLevel,
@@ -879,6 +879,18 @@ export function newSpellsForLevelUp(
   plan: LevelUpPlan,
   opts: { compendium?: Compendium; activeBooks?: ActiveBooks } = {}
 ): SpellData[] {
+  return levelUpLearnableSpells(character, plan, opts).spells;
+}
+
+/**
+ * The planned class's learnable spells at the new level, with the restricted schools the Spells step
+ * shows as a toggle. An empty list when the planned class has no Spell Owner.
+ */
+export function levelUpLearnableSpells(
+  character: Character,
+  plan: LevelUpPlan,
+  opts: { compendium?: Compendium; activeBooks?: ActiveBooks } = {}
+): LearnableSpells {
   const compendium = opts.compendium ?? currentCompendium();
   const activeBooks = opts.activeBooks ?? DEFAULT_ACTIVE_BOOK_CODES;
   const classes = allCatalogClasses({ compendium, activeBooks });
@@ -899,6 +911,6 @@ export function newSpellsForLevelUp(
   const profile = getClassSpellProfiles(planned, { activeBooks, compendium, classes }).find((p) =>
     sameName(p.className, plan.className)
   );
-  if (!profile) return [];
-  return learnableSpells(planned, profile, { compendium, activeBooks }).spells;
+  if (!profile) return { spells: [], restrictedSchools: [] };
+  return learnableSpells(planned, profile, { compendium, activeBooks });
 }

@@ -16,8 +16,6 @@ import { calculateMulticlassSpellSlots, formatModifier } from "../../services/dn
 import { evaluateCharacter } from "../../rules/characterEvaluation";
 import { currentCompendium } from "../../services/compendium";
 import {
-  isSpellAvailableForClass,
-  profileSpellContext,
   type ClassSpellProfile,
   type LockedPreparedCard,
 } from "../../rules/spellcasting";
@@ -63,19 +61,8 @@ import { Card } from "../ui/Card";
 import { Modal } from "../ui/Modal";
 import { DetailModal } from "../DetailModal";
 import { SearchBar } from "../ui/SearchBar";
-
-const LEVEL_NAMES = [
-  "Cantrips",
-  "1st Level",
-  "2nd Level",
-  "3rd Level",
-  "4th Level",
-  "5th Level",
-  "6th Level",
-  "7th Level",
-  "8th Level",
-  "9th Level",
-];
+import { SpellLearnList, LEVEL_NAMES } from "../spells/SpellLearnList";
+import { learnableSpells } from "../../rules/learnableSpells";
 
 const METAMAGIC_OPTIONS = [
   {
@@ -182,8 +169,6 @@ export const SpellsTab: React.FC = () => {
   // State hooks
   const [selectedProfileIndex, setSelectedProfileIndex] = useState(0);
   const [spellPickerVisible, setSpellPickerVisible] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedSpellLevel, setSelectedSpellLevel] = useState<number | null>(null);
   const [metamagicModalVisible, setMetamagicModalVisible] = useState(false);
   const [detailModal, setDetailModal] = useState<{
     visible: boolean;
@@ -198,7 +183,6 @@ export const SpellsTab: React.FC = () => {
     currentName: string;
     spell: SpellData;
   } | null>(null);
-  const [pickerSchoolFilter, setPickerSchoolFilter] = useState<string | null>(null);
   const [inscribeModalVisible, setInscribeModalVisible] = useState(false);
   const [inscribeSearchQuery, setInscribeSearchQuery] = useState("");
   const [inscribeLevelFilter, setInscribeLevelFilter] = useState<number | null>(null);
@@ -448,50 +432,21 @@ export const SpellsTab: React.FC = () => {
     return currentCharacter ? getMysticArcanumTiers(currentCharacter) : [];
   }, [currentCharacter]);
 
-  // Filtered spells for the Add Spells picker modal
-  const filteredPickerSpells = useMemo(() => {
-    if (!activeProfile) return [];
-    const targetCastingClass =
-      activeProfile.className === "Fighter" || activeProfile.className === "Rogue"
-        ? "Wizard"
-        : activeProfile.className;
+  const knownNames = useMemo(() => activeKnownSpells.map((k) => k.name), [activeKnownSpells]);
 
-    return allSpells.filter((s) => {
-      const matchesClass = isSpellAvailableForClass(
-        s,
-        targetCastingClass,
-        activeBooks,
-        profileSpellContext(activeProfile)
-      );
-      const matchesMaxLevel = s.level <= activeProfile.maxSpellLevel;
-      const matchesLevel =
-        selectedSpellLevel === null ||
-        (selectedSpellLevel <= activeProfile.maxSpellLevel && s.level === selectedSpellLevel);
-      const matchesSearch =
-        s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        Boolean(s.school?.toLowerCase().includes(searchQuery.toLowerCase()));
+  // The Add Spells picker: the spells this owner may learn, plus the ones it knows (shown locked).
+  const pickerLearnable = useMemo(() => {
+    if (!activeProfile || !currentCharacter) return null;
+    return learnableSpells(currentCharacter, activeProfile, { activeBooks });
+  }, [activeProfile, currentCharacter, activeBooks]);
 
-      let matchesSchoolFilter = true;
-      if (pickerSchoolFilter === "restricted") {
-        if (isEldritchKnight) {
-          matchesSchoolFilter = s.level === 0 || s.school === "Abjuration" || s.school === "Evocation";
-        } else if (isArcaneTrickster) {
-          matchesSchoolFilter = s.level === 0 || s.school === "Enchantment" || s.school === "Illusion";
-        }
-      }
-
-      return matchesClass && matchesMaxLevel && matchesLevel && matchesSearch && matchesSchoolFilter;
-    });
-  }, [
-    allSpells,
-    searchQuery,
-    selectedSpellLevel,
-    activeProfile,
-    activeBooks,
-    pickerSchoolFilter,
-    isEldritchKnight,
-    isArcaneTrickster,
-  ]);
+  const pickerSpells = useMemo(() => {
+    if (!pickerLearnable) return [];
+    const known = activeKnownSpells
+      .map((k) => allSpells.find((s) => s.name === k.name && s.source === k.source))
+      .filter((s): s is SpellData => s !== undefined);
+    return [...pickerLearnable.spells, ...known].sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
+  }, [pickerLearnable, activeKnownSpells, allSpells]);
 
   const swapAllowedSchools = useMemo(() => {
     if (!activeProfile?.subclass) return [];
@@ -1687,13 +1642,6 @@ export const SpellsTab: React.FC = () => {
         onClose={() => setSpellPickerVisible(false)}
         title={`Add Spells (${currentProfile.className})`}
       >
-        <SearchBar
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholder={`Search ${currentProfile.className} spells...`}
-        />
-
-        {/* Third-Casters Guidance & Quick School Filters */}
         {(isEldritchKnight || isArcaneTrickster) && (
           <View style={{ backgroundColor: theme.surfaceHighlight, padding: 8, borderRadius: 6, marginVertical: 6, borderLeftWidth: 3, borderLeftColor: theme.accentHover }}>
             <Text style={{ color: theme.accentHover, fontSize: 11, fontWeight: "700" }}>
@@ -1707,166 +1655,24 @@ export const SpellsTab: React.FC = () => {
           </View>
         )}
 
-        {isEldritchKnight && (
-          <View style={{ flexDirection: "row", gap: 6, marginVertical: 4 }}>
-            <TouchableOpacity
-              onPress={() => setPickerSchoolFilter(null)}
-              style={[
-                styles.filterPill,
-                {
-                  backgroundColor: pickerSchoolFilter === null ? theme.accentGlow : theme.surfaceHighlight,
-                  borderColor: pickerSchoolFilter === null ? theme.accentHover : theme.border,
-                  borderWidth: 1,
-                },
-              ]}>
-              <Text style={{ color: pickerSchoolFilter === null ? theme.text : theme.textSecondary, fontSize: 11, fontWeight: "600" }}>All Schools</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setPickerSchoolFilter("restricted")}
-              style={[
-                styles.filterPill,
-                {
-                  backgroundColor: pickerSchoolFilter === "restricted" ? theme.accentGlow : theme.surfaceHighlight,
-                  borderColor: pickerSchoolFilter === "restricted" ? theme.accentHover : theme.border,
-                  borderWidth: 1,
-                },
-              ]}>
-              <Text style={{ color: pickerSchoolFilter === "restricted" ? theme.text : theme.textSecondary, fontSize: 11, fontWeight: "600" }}>Abjuration &amp; Evocation</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {isArcaneTrickster && (
-          <View style={{ flexDirection: "row", gap: 6, marginVertical: 4 }}>
-            <TouchableOpacity
-              onPress={() => setPickerSchoolFilter(null)}
-              style={[
-                styles.filterPill,
-                {
-                  backgroundColor: pickerSchoolFilter === null ? theme.accentGlow : theme.surfaceHighlight,
-                  borderColor: pickerSchoolFilter === null ? theme.accentHover : theme.border,
-                  borderWidth: 1,
-                },
-              ]}>
-              <Text style={{ color: pickerSchoolFilter === null ? theme.text : theme.textSecondary, fontSize: 11, fontWeight: "600" }}>All Schools</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => setPickerSchoolFilter("restricted")}
-              style={[
-                styles.filterPill,
-                {
-                  backgroundColor: pickerSchoolFilter === "restricted" ? theme.accentGlow : theme.surfaceHighlight,
-                  borderColor: pickerSchoolFilter === "restricted" ? theme.accentHover : theme.border,
-                  borderWidth: 1,
-                },
-              ]}>
-              <Text style={{ color: pickerSchoolFilter === "restricted" ? theme.text : theme.textSecondary, fontSize: 11, fontWeight: "600" }}>Enchantment &amp; Illusion</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* Level Filter Pills up to activeProfile.maxSpellLevel */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={{ flexGrow: 0, marginVertical: 8 }}
-          contentContainerStyle={{ alignItems: "center" }}>
-          <TouchableOpacity
-            onPress={() => setSelectedSpellLevel(null)}
-            style={[
-              styles.filterPill,
-              {
-                backgroundColor: selectedSpellLevel === null ? theme.accentGlow : theme.surfaceHighlight,
-                borderColor: selectedSpellLevel === null ? theme.accentHover : theme.border,
-                borderWidth: 1,
-              },
-            ]}>
-            <Text style={{ color: selectedSpellLevel === null ? theme.text : theme.textSecondary, fontSize: 12, fontWeight: "600" }}>All Levels</Text>
-          </TouchableOpacity>
-          {LEVEL_NAMES.slice(0, currentProfile.maxSpellLevel + 1).map((name, idx) => (
-            <TouchableOpacity
-              key={`filter_lvl_${idx}`}
-              onPress={() => setSelectedSpellLevel(idx)}
-              style={[
-                styles.filterPill,
-                {
-                  backgroundColor: selectedSpellLevel === idx ? theme.accentGlow : theme.surfaceHighlight,
-                  borderColor: selectedSpellLevel === idx ? theme.accentHover : theme.border,
-                  borderWidth: 1,
-                },
-              ]}>
-              <Text style={{ color: selectedSpellLevel === idx ? theme.text : theme.textSecondary, fontSize: 12, fontWeight: "600" }}>{name}</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
-
-          {filteredPickerSpells.slice(0, 100).map((s) => {
-          const alreadyHas = activeKnownSpells.some(
-            (k) => k.name === s.name && k.source === s.source && k.ownerKey === currentProfile.ownerKey
-          );
-
-          return (
-            <View
-              key={`${s.name}_${s.source}`}
-              style={[styles.pickerSpellRow, { borderBottomColor: theme.border }]}>
-              <TouchableOpacity
-                onPress={() =>
-                  setDetailModal({
-                    visible: true,
-                    title: s.name,
-                    subtitle: `${s.level === 0 ? "Cantrip" : `Level ${s.level}`} (${s.source})`,
-                    content: `${s.level === 0 ? "Cantrip" : `${s.level}th-level`} ${s.school || ""}\n\n• Casting Time: ${s.castingTime || "1 action"}\n• Range: ${s.range || "Self"}\n• Components: ${s.componentsString || "V, S"}\n• Duration: ${s.duration || "Instantaneous"}\n\n${s.description || ""}`,
-                  })
-                }
-                style={{ flex: 1 }}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                  <Text style={{ color: theme.text, fontSize: 14, fontWeight: "600" }}>{s.name}</Text>
-                  {isEldritchKnight && s.level > 0 && (
-                    <Badge
-                      label={
-                        s.school === "Abjuration" || s.school === "Evocation"
-                          ? "In-School"
-                          : "Unrestricted Only"
-                      }
-                      variant={
-                        s.school === "Abjuration" || s.school === "Evocation"
-                          ? "accent"
-                          : "secondary"
-                      }
-                      size="sm"
-                    />
-                  )}
-                  {isArcaneTrickster && s.level > 0 && (
-                    <Badge
-                      label={
-                        s.school === "Enchantment" || s.school === "Illusion"
-                          ? "In-School"
-                          : "Unrestricted Only"
-                      }
-                      variant={
-                        s.school === "Enchantment" || s.school === "Illusion"
-                          ? "accent"
-                          : "secondary"
-                      }
-                      size="sm"
-                    />
-                  )}
-                </View>
-                <Text style={{ color: theme.textMuted, fontSize: 12 }}>
-                  {s.level === 0 ? "Cantrip" : `Lvl ${s.level}`} • {s.school || ""} • {s.source}
-                </Text>
-              </TouchableOpacity>
-
-              <Button
-                title={alreadyHas ? "Added" : "Add"}
-                size="sm"
-                variant={alreadyHas ? "secondary" : "primary"}
-                disabled={alreadyHas}
-                onPress={() => addSpellToCharacter(s.name, s.source)}
-              />
-            </View>
-          );
-        })}
+        <SpellLearnList
+          spells={pickerSpells}
+          restrictedSchools={pickerLearnable?.restrictedSchools ?? []}
+          selectedNames={knownNames}
+          lockedNames={knownNames}
+          actionLabels={{ idle: "Add", selected: "Added" }}
+          searchPlaceholder={`Search ${currentProfile.className} spells...`}
+          rowDetail={(s) => `${s.level === 0 ? "Cantrip" : `Lvl ${s.level}`} • ${s.school || ""} • ${s.source}`}
+          onToggle={(s) => addSpellToCharacter(s.name, s.source)}
+          onViewDetail={(s) =>
+            setDetailModal({
+              visible: true,
+              title: s.name,
+              subtitle: `${s.level === 0 ? "Cantrip" : `Level ${s.level}`} (${s.source})`,
+              content: `${s.level === 0 ? "Cantrip" : `${s.level}th-level`} ${s.school || ""}\n\n• Casting Time: ${s.castingTime || "1 action"}\n• Range: ${s.range || "Self"}\n• Components: ${s.componentsString || "V, S"}\n• Duration: ${s.duration || "Instantaneous"}\n\n${s.description || ""}`,
+            })
+          }
+        />
       </Modal>
 
       {/* Subclass Spell Swap Modal */}
