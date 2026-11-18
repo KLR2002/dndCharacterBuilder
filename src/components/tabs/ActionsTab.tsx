@@ -25,13 +25,12 @@ import { Badge } from "../ui/Badge";
 import { RollBadge } from "../dice/RollBadge";
 import { Card } from "../ui/Card";
 import { DetailModal } from "../DetailModal";
-import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
+import { AttackRow } from "./actions/AttackRow";
 
 export const ActionsTab: React.FC = () => {
   const sheetScrollPad = useSheetScrollContentPadding();
   const { currentCharacter, activeBooks } = useCharacters();
   const { theme } = useAppTheme();
-  const { isCompact } = useResponsiveLayout();
 
   const [detailModal, setDetailModal] = useState<{
     visible: boolean;
@@ -108,16 +107,8 @@ export const ActionsTab: React.FC = () => {
         {weaponAttacks.length === 0 ? (
           <Card style={{ padding: 14 }}>
             {/* Unarmed Strike Default */}
-            <View style={[styles.attackRow, {
-              flexDirection: isCompact ? "column" : "row",
-              alignItems: isCompact ? "flex-start" : "center",
-              minHeight: 44,
-            }]}>
-              <View style={{ flex: isCompact ? undefined : 1, width: isCompact ? "100%" : undefined }}>
-                <Text style={[styles.attackTitle, { color: theme.text }]}>Unarmed Strike</Text>
-                <Text style={{ color: theme.textMuted, fontSize: 12 }}>Melee • Bludgeoning</Text>
-              </View>
-              <View style={{ flexDirection: "row", gap: 8, marginTop: isCompact ? 6 : 0 }}>
+            <AttackRow
+              toHit={
                 <RollBadge
                   testID="roll-badge-unarmed-tohit"
                   label={`${formatModifier(profBonus + modifiers.str)} to hit`}
@@ -126,9 +117,11 @@ export const ActionsTab: React.FC = () => {
                   characterName={currentCharacter.name}
                   variant="accent"
                 />
-                <Badge label={`${1 + modifiers.str} dmg`} variant="secondary" />
-              </View>
-            </View>
+              }
+              damage={<Badge label={`${1 + modifiers.str} dmg`} variant="secondary" />}>
+              <Text style={[styles.attackTitle, { color: theme.text }]}>Unarmed Strike</Text>
+              <Text style={{ color: theme.textMuted, fontSize: 12 }}>Melee • Bludgeoning</Text>
+            </AttackRow>
             <Text style={{ color: theme.textMuted, fontSize: 11, marginTop: 8 }}>
               Equip weapons in the Inventory tab to see custom attack bonuses and damage formulas.
             </Text>
@@ -142,9 +135,10 @@ export const ActionsTab: React.FC = () => {
               const statUpper = attack.statUsed.toUpperCase();
 
               return (
-                <TouchableOpacity
+                <AttackRow
                   key={`${attack.item.id}_${idx}`}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  borderBottomColor={theme.border}
+                  borderBottomWidth={idx === weaponAttacks.length - 1 ? 0 : 1}
                   onPress={() => {
                     const bonusBreakdown = [
                       `Proficiency ${attack.isProficient ? `+${profBonus}` : "+0"}`,
@@ -169,45 +163,7 @@ export const ActionsTab: React.FC = () => {
                       content: `• Attack Bonus: ${formatModifier(attack.attackBonus)} (${bonusBreakdown})\n• Damage: ${attack.damage}${attack.damageType ? ` ${attack.damageType}` : ""}${dmgNotes ? ` (${dmgNotes})` : ""}${attack.isSneakAttackEligible && attack.sneakAttackDice ? `\n• Sneak Attack: Eligible for +${attack.sneakAttackDice} once per turn` : ""}\n• Range: ${rangeStr}\n• Properties: ${properties.length > 0 ? properties.join(", ") : "None"}\n\n${attack.item.description || ""}`,
                     });
                   }}
-                  style={[
-                    styles.attackRow,
-                    {
-                      borderBottomColor: theme.border,
-                      borderBottomWidth: idx === weaponAttacks.length - 1 ? 0 : 1,
-                      flexDirection: isCompact ? "column" : "row",
-                      alignItems: isCompact ? "flex-start" : "center",
-                      minHeight: 44,
-                    },
-                  ]}>
-                  <View style={{ flex: isCompact ? undefined : 1, width: isCompact ? "100%" : undefined }}>
-                    <Text style={[styles.attackTitle, { color: theme.text }]}>{attack.name}</Text>
-                    <Text style={{ color: theme.textMuted, fontSize: 11 }}>
-                      {statUpper} • {rangeStr}{attack.damageType ? ` • ${attack.damageType}` : ""}
-                    </Text>
-                    {properties.length > 0 && (
-                      <Text style={{ color: theme.textMuted, fontSize: 10, marginTop: 2 }}>
-                        {properties.join(", ")}
-                      </Text>
-                    )}
-                    {attack.calculationBadges && attack.calculationBadges.length > 0 && (
-                      <View style={{ marginTop: 4, flexDirection: "row", flexWrap: "wrap", gap: 4 }}>
-                        {attack.calculationBadges.map((badge) => (
-                          <Badge key={badge} label={badge} variant="outline" size="sm" />
-                        ))}
-                      </View>
-                    )}
-                    {attack.isSneakAttackEligible && attack.sneakAttackDice && (
-                      <View style={{ marginTop: 4, flexDirection: "row" }}>
-                        <Badge
-                          label={`Sneak Attack Eligible: +${attack.sneakAttackDice}`}
-                          variant="warning"
-                          size="sm"
-                        />
-                      </View>
-                    )}
-                  </View>
-
-                  <View style={{ flexDirection: "row", gap: 8, marginTop: isCompact ? 6 : 0 }}>
+                  toHit={
                     <RollBadge
                       testID={`roll-badge-attack-${idx}-tohit`}
                       label={`${formatModifier(attack.attackBonus)} to hit`}
@@ -218,7 +174,9 @@ export const ActionsTab: React.FC = () => {
                       characterName={currentCharacter.name}
                       variant="accent"
                     />
-                    {damagePoolOf(attack.damage) ? (
+                  }
+                  damage={
+                    damagePoolOf(attack.damage) ? (
                       <RollBadge
                         testID={`roll-badge-attack-${idx}-damage`}
                         label={`${attack.damage}${attack.damageType ? ` ${attack.damageType}` : ""}`}
@@ -229,9 +187,34 @@ export const ActionsTab: React.FC = () => {
                       />
                     ) : (
                       <Badge label={`${attack.damage}${attack.damageType ? ` ${attack.damageType}` : ""}`} variant="secondary" />
-                    )}
-                  </View>
-                </TouchableOpacity>
+                    )
+                  }>
+                  <Text style={[styles.attackTitle, { color: theme.text }]}>{attack.name}</Text>
+                  <Text style={{ color: theme.textMuted, fontSize: 11 }}>
+                    {statUpper} • {rangeStr}{attack.damageType ? ` • ${attack.damageType}` : ""}
+                  </Text>
+                  {properties.length > 0 && (
+                    <Text style={{ color: theme.textMuted, fontSize: 10, marginTop: 2 }}>
+                      {properties.join(", ")}
+                    </Text>
+                  )}
+                  {attack.calculationBadges && attack.calculationBadges.length > 0 && (
+                    <View style={{ marginTop: 4, flexDirection: "row", flexWrap: "wrap", gap: 4 }}>
+                      {attack.calculationBadges.map((badge) => (
+                        <Badge key={badge} label={badge} variant="outline" size="sm" />
+                      ))}
+                    </View>
+                  )}
+                  {attack.isSneakAttackEligible && attack.sneakAttackDice && (
+                    <View style={{ marginTop: 4, flexDirection: "row" }}>
+                      <Badge
+                        label={`Sneak Attack Eligible: +${attack.sneakAttackDice}`}
+                        variant="warning"
+                        size="sm"
+                      />
+                    </View>
+                  )}
+                </AttackRow>
               );
             })}
           </Card>
@@ -278,29 +261,8 @@ export const ActionsTab: React.FC = () => {
               Off-Hand Attack (Bonus Action / Two-Weapon Fighting)
             </Text>
           </View>
-          <View style={[styles.attackRow, { 
-            paddingHorizontal: 0, 
-            paddingVertical: 4,
-            flexDirection: isCompact ? "column" : "row",
-            alignItems: isCompact ? "flex-start" : "center",
-            minHeight: 44,
-          }]}>
-            <View style={{ flex: isCompact ? undefined : 1, width: isCompact ? "100%" : undefined }}>
-              <Text style={[styles.attackTitle, { color: theme.text }]}>
-                {dualWield.offHand.name} (Off-Hand)
-              </Text>
-              <Text style={{ color: theme.textMuted, fontSize: 11 }}>
-                Bonus Action • No ability mod to damage • {dualWield.offHand.range || (dualWield.offHand.isRanged ? "Ranged" : "Melee")}{dualWield.offHand.damageType ? ` • ${dualWield.offHand.damageType}` : ""}
-              </Text>
-              {dualWield.offHand.calculationBadges && dualWield.offHand.calculationBadges.length > 0 && (
-                <View style={{ marginTop: 4, flexDirection: "row", flexWrap: "wrap", gap: 4 }}>
-                  {dualWield.offHand.calculationBadges.map((badge) => (
-                    <Badge key={badge} label={badge} variant="outline" size="sm" />
-                  ))}
-                </View>
-              )}
-            </View>
-            <View style={{ flexDirection: "row", gap: 8, marginTop: isCompact ? 6 : 0 }}>
+          <AttackRow
+            toHit={
               <RollBadge
                 testID="roll-badge-offhand-tohit"
                 label={`${formatModifier(dualWield.offHand.attackBonus)} to hit`}
@@ -311,7 +273,9 @@ export const ActionsTab: React.FC = () => {
                 characterName={currentCharacter.name}
                 variant="warning"
               />
-              {damagePoolOf(dualWield.offHand.damage) ? (
+            }
+            damage={
+              damagePoolOf(dualWield.offHand.damage) ? (
                 <RollBadge
                   testID="roll-badge-offhand-damage"
                   label={`${dualWield.offHand.damage}${dualWield.offHand.damageType ? ` ${dualWield.offHand.damageType}` : ""}`}
@@ -322,9 +286,22 @@ export const ActionsTab: React.FC = () => {
                 />
               ) : (
                 <Badge label={`${dualWield.offHand.damage}${dualWield.offHand.damageType ? ` ${dualWield.offHand.damageType}` : ""}`} variant="secondary" />
-              )}
-            </View>
-          </View>
+              )
+            }>
+            <Text style={[styles.attackTitle, { color: theme.text }]}>
+              {dualWield.offHand.name} (Off-Hand)
+            </Text>
+            <Text style={{ color: theme.textMuted, fontSize: 11 }}>
+              Bonus Action • No ability mod to damage • {dualWield.offHand.range || (dualWield.offHand.isRanged ? "Ranged" : "Melee")}{dualWield.offHand.damageType ? ` • ${dualWield.offHand.damageType}` : ""}
+            </Text>
+            {dualWield.offHand.calculationBadges && dualWield.offHand.calculationBadges.length > 0 && (
+              <View style={{ marginTop: 4, flexDirection: "row", flexWrap: "wrap", gap: 4 }}>
+                {dualWield.offHand.calculationBadges.map((badge) => (
+                  <Badge key={badge} label={badge} variant="outline" size="sm" />
+                ))}
+              </View>
+            )}
+          </AttackRow>
         </Card>
       )}
 
@@ -382,8 +359,10 @@ export const ActionsTab: React.FC = () => {
           </Text>
           <Card style={{ padding: 4 }}>
             {spellAttacks.map((sp, idx) => (
-              <TouchableOpacity
+              <AttackRow
                 key={sp.name}
+                borderBottomColor={theme.border}
+                borderBottomWidth={idx === spellAttacks.length - 1 ? 0 : 1}
                 onPress={() =>
                   setDetailModal({
                     visible: true,
@@ -392,24 +371,8 @@ export const ActionsTab: React.FC = () => {
                     content: sp.desc,
                   })
                 }
-                style={[
-                  styles.attackRow,
-                  {
-                    borderBottomColor: theme.border,
-                    borderBottomWidth: idx === spellAttacks.length - 1 ? 0 : 1,
-                    flexDirection: isCompact ? "column" : "row",
-                    alignItems: isCompact ? "flex-start" : "center",
-                    minHeight: 44,
-                  },
-                ]}>
-                <View style={{ flex: isCompact ? undefined : 1, width: isCompact ? "100%" : undefined }}>
-                  <Text style={[styles.attackTitle, { color: theme.text }]}>{sp.name}</Text>
-                  <Text style={{ color: theme.textMuted, fontSize: 11 }}>
-                    {sp.time} • Range: {sp.range}
-                  </Text>
-                </View>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: isCompact ? 6 : 0, width: isCompact ? "100%" : undefined, justifyContent: isCompact ? "space-between" : "flex-end" }}>
-                  {sp.attackBonus !== undefined && (
+                toHit={
+                  sp.attackBonus !== undefined ? (
                     <RollBadge
                       testID={`roll-badge-spell-${idx}-tohit`}
                       label={`${formatModifier(sp.attackBonus)} to hit`}
@@ -420,8 +383,10 @@ export const ActionsTab: React.FC = () => {
                       characterName={currentCharacter.name}
                       variant="accent"
                     />
-                  )}
-                  {damagePoolOf(sp.damage) ? (
+                  ) : undefined
+                }
+                damage={
+                  damagePoolOf(sp.damage) ? (
                     <RollBadge
                       testID={`roll-badge-spell-${idx}-damage`}
                       label={sp.damage}
@@ -432,9 +397,13 @@ export const ActionsTab: React.FC = () => {
                     />
                   ) : (
                     <Badge label={sp.damage} variant="outline" />
-                  )}
-                </View>
-              </TouchableOpacity>
+                  )
+                }>
+                <Text style={[styles.attackTitle, { color: theme.text }]}>{sp.name}</Text>
+                <Text style={{ color: theme.textMuted, fontSize: 11 }}>
+                  {sp.time} • Range: {sp.range}
+                </Text>
+              </AttackRow>
             ))}
           </Card>
         </View>
@@ -676,13 +645,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 0.5,
     marginBottom: 8,
-  },
-  attackRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    gap: 8,
   },
   attackTitle: {
     fontSize: 14,
