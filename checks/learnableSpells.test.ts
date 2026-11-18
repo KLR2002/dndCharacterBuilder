@@ -4,7 +4,7 @@ import { integratedTestCompendium, makeChar, resetTestCompendium } from "./testU
 import { ALL_BOOKS } from "../src/constants/books.ts";
 import { learnableSpells } from "../src/rules/learnableSpells.ts";
 import { getClassSpellProfiles, type ClassSpellProfile } from "../src/rules/spellcasting.ts";
-import { newSpellsForLevelUp, planLevelUp, setPlanSubclass } from "../src/rules/levelUpFlow.ts";
+import { levelUpLearnableSpells, newSpellsForLevelUp, planLevelUp, setPlanSubclass } from "../src/rules/levelUpFlow.ts";
 import type { Character } from "../src/types/character.ts";
 
 const compendium = integratedTestCompendium();
@@ -60,6 +60,19 @@ test("a level-up Fighter 2 to 3 Eldritch Knight is offered the list learnableSpe
     direct.map((s) => s.name),
     "the level-up list is the list learnableSpells gives for the same owner",
   );
+});
+
+test("a level-up plan's learnable list carries the restricted schools of the planned Eldritch Knight", () => {
+  const fighter2 = makeChar({
+    baseAbilityScores: { str: 15, dex: 14, con: 14, int: 16, wis: 10, cha: 10 },
+    classes: [{ className: "Fighter", source: "PHB", level: 2 }],
+  });
+  const result = planLevelUp(fighter2, { className: "Fighter", hitPoints: { mode: "average" }, ...opts });
+  if (!result.ok) assert.fail(result.reason);
+  const plan = setPlanSubclass(fighter2, result.plan, "Eldritch Knight", "PHB", opts);
+  const learnable = levelUpLearnableSpells(fighter2, plan, opts);
+  assert.deepEqual(learnable.restrictedSchools, ["Abjuration", "Evocation"]);
+  assert.deepEqual(learnable.spells.map((s) => s.name), newSpellsForLevelUp(fighter2, plan, opts).map((s) => s.name));
 });
 
 test("a spell known by one Spell Owner is still offered to another owner's class", () => {
