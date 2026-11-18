@@ -112,7 +112,7 @@ const ALLOWANCES: Allowance[] = [
     reason: "the background card lists the background's skills as tags",
   },
   {
-    files: ["components/builder/ClassProgressionSection.tsx"],
+    files: ["components/builder/ClassListSection.tsx"],
     fields: [".savingThrows"],
     reason: "the class card lists the class's saving throws",
   },
