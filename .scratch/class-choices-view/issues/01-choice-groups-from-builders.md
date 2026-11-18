@@ -4,8 +4,10 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Characterization test first (red until the tags exist): for characters covering each group (a Battle Master Fighter with Superior Technique, a Paladin and a Ranger with their style and Blessed or Druidic Warrior, a College of Swords Bard, a Pact of the Tome Warlock at 11+ with Ancient Secrets possible, an Artificer with infusions), every choice the Class Choices step lists gets the same card from its `group` as from today's id checks (copy the old predicates into the test as the oracle). Paste the red output.
-- [ ] `grep -n "id.includes\|isManeuverChoiceId\|isInvocationChoiceId\|isInfusionChoiceId" src/components/builder/ClassProgressionSection.tsx` lists nothing.
-- [ ] Scoped layout runs for the class-choice scenarios (find their names with `ONLY=zzz WIDTHS=320 npm run layout:check`; include `-- --integrated` where the scenario needs it) at 393 pass. `npm run check:all` passes.
+**Landed:** merge of 72ce59c..beff2d3, with a follow-up that replaces the test's copied id predicates with the expected groups per character. Builders tag: `fightingStyles.ts` → fightingStyle (class styles, College of Swords, Blessed and Druidic Warrior, Fighting Initiate), `maneuvers.ts` → maneuver (Battle Master, Superior Technique, Martial Adept), `warlockChoices.ts` → warlock (Pact Boon, Tome cantrips, Ancient Secrets, Mystic Arcanum, invocations, Eldritch Adept), `artificerInfusions.ts` → infusion. No choice matched two old predicates. Subtitles removed (two scenario expectations updated). Scoped layout at 393 (SRD and integrated) and check:all, check:live passed. The maneuver, warlock and infusion cards have no layout scenario.
+
+- [x] Characterization test first (red until the tags exist): for characters covering each group (a Battle Master Fighter with Superior Technique, a Paladin and a Ranger with their style and Blessed or Druidic Warrior, a College of Swords Bard, a Pact of the Tome Warlock at 11+ with Ancient Secrets possible, an Artificer with infusions), every choice the Class Choices step lists gets the same card from its `group` as from today's id checks (copy the old predicates into the test as the oracle). Paste the red output.
+- [x] `grep -n "id.includes\|isManeuverChoiceId\|isInvocationChoiceId\|isInfusionChoiceId" src/components/builder/ClassProgressionSection.tsx` lists nothing.
+- [x] Scoped layout runs for the class-choice scenarios (find their names with `ONLY=zzz WIDTHS=320 npm run layout:check`; include `-- --integrated` where the scenario needs it) at 393 pass. `npm run check:all` passes.
