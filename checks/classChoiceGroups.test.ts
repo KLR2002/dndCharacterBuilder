@@ -19,9 +19,7 @@ function classChoicesListed(character: Character): AvailableRuleChoice[] {
   return [
     ...offeredRuleChoices(character, { activeBooks: ALL_BOOKS, compendium, origins: ["class", "subclass"] }),
     ...proficiencyChoiceOffers(character, { activeBooks: ALL_BOOKS, compendium }).filter(
-      (choice) =>
-        (choice.origin === "class" || choice.origin === "subclass" || choice.origin === "feat") &&
-        !skillIds.has(choice.id),
+      (choice) => (choice.origin === "class" || choice.origin === "subclass") && !skillIds.has(choice.id),
     ),
   ];
 }
