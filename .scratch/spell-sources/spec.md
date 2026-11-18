@@ -1,6 +1,6 @@
 # Spec: One reader of spell-grant owners, one learnable-spell list per Spell Owner
 
-**Status:** done (pending the full layout gate)
+**Status:** done (full layout suite green: SRD at 320, 393, 768, 1280; integrated at 320)
 
 Decided with the user on 2026-11-18 (architecture review candidates 5 and 2). Builds on `.scratch/feat-slot/` and `.scratch/class-choices-view/`.
 
