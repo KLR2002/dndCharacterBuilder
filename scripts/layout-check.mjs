@@ -4173,7 +4173,12 @@ async function runChecks(browser) {
   const queue = [...WIDTHS];
   let failures = 0;
   const worker = async () => {
-    while (queue.length > 0) failures += await checkWidth(browser, seed, queue.shift());
+    while (queue.length > 0) {
+      // Await first: `failures += await ...` reads the total before the await and a parallel worker's
+      // count added meanwhile is lost.
+      const widthFailures = await checkWidth(browser, seed, queue.shift());
+      failures += widthFailures;
+    }
   };
   await Promise.all(Array.from({ length: Math.min(MAX_PARALLEL, WIDTHS.length) }, worker));
   return failures;
