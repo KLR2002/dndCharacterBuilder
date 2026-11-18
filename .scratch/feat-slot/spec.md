@@ -1,6 +1,6 @@
 # Spec: One module for every Feat Slot
 
-**Status:** done (pending the full layout gate)
+**Status:** done (full layout suite green: SRD at 320, 393, 768, 1280; integrated at 320)
 
 Decided with the user on 2026-11-18 (architecture review candidate 4). Terms: **Feat Slot** and **Increase Choice** in `GLOSSARY.md`. Decision: `docs/adr/0023-feat-increases-live-in-the-catalog-and-every-feat-slot-reads-one-module.md`.
 
