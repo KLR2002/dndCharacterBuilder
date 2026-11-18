@@ -11,8 +11,10 @@ Then remove what referenced them:
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `grep -rn "expo-updates\|expo-web-browser\|@expo/ui\|expo-glass-effect\|expo-symbols\|expo-device" package.json app.json src plugins checks docs/fdroid` lists nothing.
+**Landed:** 1755bda. Transform tests red then green; prebuild succeeds; check:all passed. The manifest still has four `expo.modules.updates` meta-data lines: Expo's core prebuild (`withUpdates` in @expo/config-plugins) writes them for every app, and nothing reads them without the package.
+
+- [x] `grep -rn "expo-updates\|expo-web-browser\|@expo/ui\|expo-glass-effect\|expo-symbols\|expo-device" package.json app.json src plugins checks docs/fdroid` lists nothing.
 - [ ] `CI=1 EXPO_NO_TELEMETRY=1 npx expo prebuild --platform android --no-install --clean` succeeds in the worktree; `grep -c "expo.modules.updates" android/app/src/main/AndroidManifest.xml` prints 0, and `android/app/build.gradle` still carries `debuggable findProperty('e2e') != null` and `dependenciesInfo`. Paste the three outputs. `android/` is not tracked; do not commit it.
-- [ ] `npm run check:all` passes.
+- [x] `npm run check:all` passes.

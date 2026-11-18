@@ -27,3 +27,8 @@ Expected result for arm64-v8a: roughly 15-20 MB.
 1. `01-ionicons-only.md`: import only the Ionicons font.
 2. `02-remove-unused-modules.md`: remove `expo-updates` and the unused modules.
 3. `03-release-build-size-settings.md`: R8, resource shrinking and compressed native libraries, verified on the emulator.
+
+## Left as is
+
+- `MaterialSymbols_400Regular.ttf` (967 KB raw, about 0.4 MB in the APK) still ships: `expo-router` 57 depends on `expo-symbols`, and its Android native-tabs icon converter imports the font. The app does not use native tabs. Dropping it needs a Metro resolver stub or an npm override; not worth the risk for 0.4 MB.
+- Fresco's GIF and WebP decoders (`expo.gif.enabled`, `expo.webp.enabled` in the generated `gradle.properties`, about 0.8 MB of native code per ABI) stay on.
