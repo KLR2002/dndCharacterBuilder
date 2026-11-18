@@ -1,5 +1,5 @@
 import type { ActiveBooks } from "../../constants/books";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import React, { useEffect, useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";

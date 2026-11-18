@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { ScrollView, StyleProp, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View, ViewStyle } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { useAppTheme } from "../context/ThemeContext";
 import { Button } from "./ui/Button";
 

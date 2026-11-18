@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { ActionsTab } from "../../components/tabs/ActionsTab";
 import { FeaturesTab } from "../../components/tabs/FeaturesTab";
 import { InventoryTab } from "../../components/tabs/InventoryTab";
