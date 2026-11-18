@@ -13,9 +13,11 @@ Then delete `HALF_FEATS` and `getFeatAbilityBonusOptions` from `src/rules/leveli
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `checks/featSlot.test.ts` (tdd, red first, paste it): Resilient from a catalog with `abilityScoreChoices` gives a six-score choice; the same feat with neither field gives `none` and is still offered; Fighting Initiate's view lists the Fighting Initiate Rule Choice and `complete` is false until it is picked; Magic Initiate's spell picks do not make `complete` false; `findFeat("Resilient", undefined)` finds the one active Resilient, and returns null for a name two active feats share.
-- [ ] `grep -rn "HALF_FEATS\|getFeatAbilityBonusOptions\|\"PHB\"" src/components src/rules/featSlot.ts src/rules/leveling.ts src/rules/levelUpFlow.ts` lists nothing related to feats (paste it).
-- [ ] A saved character whose feat took +1 Constitution from Resilient keeps that +1 on a catalog without `abilityScoreChoices` (test).
-- [ ] `npm run check:all` and `npm run check:live` pass. `ONLY="Level-Up" WIDTHS=393 npm run layout:check` passes.
+**Landed:** 527c48e, with 6a61a10 (`featPickView`: the Level-Up Flow reads a pick's sub-choices without checking every feat's prerequisites). No feat in the dump has `count > 1`, more than one choice, or both a fixed increase and a choice, so the single-choice shape stays. `findFeat` treats the Background marker as no source. `asiFeatAbilityPending` reads `findFeat` + `featIncreaseOptions` (no character in its signature); `applyLevelUpPlan` still applies sub-choices through its own path. check:all, check:live (141/141) and `ONLY="Level-Up" WIDTHS=393` passed.
+
+- [x] `checks/featSlot.test.ts` (tdd, red first, paste it): Resilient from a catalog with `abilityScoreChoices` gives a six-score choice; the same feat with neither field gives `none` and is still offered; Fighting Initiate's view lists the Fighting Initiate Rule Choice and `complete` is false until it is picked; Magic Initiate's spell picks do not make `complete` false; `findFeat("Resilient", undefined)` finds the one active Resilient, and returns null for a name two active feats share.
+- [x] `grep -rn "HALF_FEATS\|getFeatAbilityBonusOptions\|\"PHB\"" src/components src/rules/featSlot.ts src/rules/leveling.ts src/rules/levelUpFlow.ts` lists nothing related to feats (paste it).
+- [x] A saved character whose feat took +1 Constitution from Resilient keeps that +1 on a catalog without `abilityScoreChoices` (test).
+- [x] `npm run check:all` and `npm run check:live` pass. `ONLY="Level-Up" WIDTHS=393 npm run layout:check` passes.
