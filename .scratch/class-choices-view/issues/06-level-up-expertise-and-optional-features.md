@@ -2,7 +2,7 @@
 
 **What to build:** The Level-Up Flow offers no Expertise picks and no optional features; a Rogue reaching 6 picks Expertise later in Edit Build. Add to the plan's picks (`LevelUpPicks`, `src/rules/levelUpFlow.ts:63`) the new level's Expertise picks and optional-feature toggles, offered by `ClassChoicesStep` through `ClassChoiceCards` from the view for the new level only (milestones and optional features gained at that class level), and applied in `applyLevelUpPlan` (~203) through the same transitions the builder uses (find how `ClassProgressionSection`/its successor records Expertise and `setOptionalFeatureEnabled`). The step is incomplete while an Expertise pick of the new level is missing; optional features never block. `flowSteps` shows the Class Choices step when the new level brings only Expertise or only optional features. The Review summary (`levelUpSummary` ~636) lists the picks.
 
-**Blocked by:** 05
+**Blocked by:** 07
 
 **Status:** ready-for-agent
 
