@@ -10,8 +10,8 @@ import { BACKGROUND_FEAT_SOURCE } from "../src/constants/rules.ts";
 import { effectiveScores, hasFeat } from "../src/rules/abilities.ts";
 import { FIGHTING_INITIATE_CHOICE_ID } from "../src/rules/choices/fightingStyles.ts";
 import { featIncreaseOptions, findFeat } from "../src/rules/featIncrease.ts";
-import { applyFeatSlotPick, featSlotView, type FeatSlotPick } from "../src/rules/featSlot.ts";
-import type { AbilityKey } from "../src/types/character.ts";
+import { applyFeatSlotPick, featSlotView, takenFeatRuleChoices, type FeatSlotPick } from "../src/rules/featSlot.ts";
+import type { AbilityKey, AsiSelection } from "../src/types/character.ts";
 import type { FeatData, OptionFeatureData } from "../src/types/dnd5e.ts";
 
 const ALL_ABILITIES: AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
@@ -265,4 +265,19 @@ test("a fixed increase is never released, even when the saved score differs from
   const updated = reconcile(character, compendium, { activeBooks: ALL_BOOKS });
   assert.equal(updated.asiSelections?.[0].featAbility, "str");
   assert.equal(updated.needsReview, undefined);
+});
+
+test("a saved feat entry opens the Rule Choice of its feat: Fighting Initiate's style choice", () => {
+  const compendium = catalog([FIGHTING_INITIATE]);
+  const selection: AsiSelection = {
+    level: 4,
+    className: "Wizard",
+    classLevel: 4,
+    type: "feat",
+    featName: "Fighting Initiate",
+    featSource: "TCE",
+  };
+  const character = makeChar({ ...WIZARD_4, asiSelections: [selection] });
+  const opened = takenFeatRuleChoices(character, selection, ALL_BOOKS, compendium);
+  assert.deepEqual(opened.map((choice) => choice.id), [FIGHTING_INITIATE_CHOICE_ID]);
 });

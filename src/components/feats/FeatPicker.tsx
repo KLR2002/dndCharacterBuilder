@@ -9,6 +9,7 @@ import { useAppTheme } from "../../context/ThemeContext";
 import type { AppTheme } from "../../constants/theme";
 import { builderStyles as styles } from "../builder/builderStyles";
 import { Badge } from "../ui/Badge";
+import { Button } from "../ui/Button";
 import { SearchBar } from "../ui/SearchBar";
 
 export const chipStyle = (theme: AppTheme, active: boolean): StyleProp<ViewStyle> => [
@@ -43,6 +44,7 @@ export function FeatPicker({
   onSelectFeat,
   onSelectAbility,
   onToggleSubChoice,
+  onViewDetail,
 }: {
   offered: FeatSlotOffer[];
   selectedFeatName: string | null;
@@ -53,6 +55,8 @@ export function FeatPicker({
   onSelectFeat: (feat: FeatData) => void;
   onSelectAbility: (ability: AbilityKey) => void;
   onToggleSubChoice: (choice: AvailableRuleChoice, option: string) => void;
+  /** When given, each feat row shows an Info button that opens the feat's detail. */
+  onViewDetail?: (feat: FeatData) => void;
 }) {
   const { theme } = useAppTheme();
   const [search, setSearch] = useState("");
@@ -95,6 +99,17 @@ export function FeatPicker({
                     {f.prerequisite ? ` • Prereq: ${f.prerequisite}` : ""}
                   </Text>
                 </View>
+                {onViewDetail && (
+                  <Button
+                    title="Info"
+                    variant="ghost"
+                    size="sm"
+                    onPress={(e) => {
+                      e.stopPropagation?.();
+                      onViewDetail(f);
+                    }}
+                  />
+                )}
               </TouchableOpacity>
             );
           })}
@@ -158,6 +173,14 @@ export function FeatPicker({
                 );
               })}
             </View>
+            {choice.options
+              .filter((opt) => opt.description && picked.some((p) => p.toLowerCase() === opt.name.toLowerCase()))
+              .map((opt) => (
+                <Text key={opt.name} style={{ color: theme.textMuted, fontSize: 11 }}>
+                  <Text style={{ color: theme.accentHover, fontWeight: "600" }}>{opt.name}: </Text>
+                  {opt.description}
+                </Text>
+              ))}
           </View>
         );
       })}

@@ -48,7 +48,7 @@ import {
   stopExpoWeb,
   waitForExpoWeb,
 } from "./lib/app-driver.mjs";
-import { buildScreens, buildSeed, ACTIONS_ID, CHARACTER_ID, DRAFT_ID, DRUID_ID, EDIT_BUILD_ID, LOW_CON_ID, MAX_LEVEL_ID, RANGER_ID, SORCERER_SWAP_ID, WIZARD_ID } from "./lib/scenarios.mjs";
+import { buildScreens, buildSeed, ACTIONS_ID, ASI_FIGHTER_ID, CHARACTER_ID, DRAFT_ID, DRUID_ID, EDIT_BUILD_ID, LOW_CON_ID, MAX_LEVEL_ID, RANGER_ID, SORCERER_SWAP_ID, WIZARD_ID } from "./lib/scenarios.mjs";
 import { applyWideOverride } from "./lib/scenario-override.mjs";
 import { playStep, playSteps } from "./lib/web-steps.mjs";
 import { ACCENT_PALETTES, BASE_DARK_THEME } from "../src/constants/theme.ts";
@@ -4086,6 +4086,60 @@ async function checkDiceBatch(ctx, width, meta) {
   return failures;
 }
 
+// Whether the element with exactly this text is a disabled control: its closest focusable ancestor carries aria-disabled.
+async function controlDisabled(page, text) {
+  return page.evaluate((needle) => {
+    const el = [...document.querySelectorAll("*")].find((e) => e.children.length === 0 && e.textContent.trim() === needle);
+    const target = el?.closest("[tabindex]");
+    return target ? target.getAttribute("aria-disabled") === "true" : null;
+  }, text);
+}
+
+// The builder's ASI/Feat card for the seeded level 4 Fighter (integrated mode): the Feat tab lists the feats with their Info
+// buttons, Fighting Initiate's style choice keeps Save Feat disabled until a style is picked, and the saved card then shows
+// the style picker with the picked style counted.
+async function checkBuilderAsiFeat(ctx, width, meta) {
+  const page = await ctx.newPage();
+  const prefix = `[${width}px builder ASI feat]`;
+  let failures = 0;
+  let failedShotTaken = false;
+  const fail = (msg) => {
+    failures++;
+    console.log(`${prefix} ${msg}`);
+    if (!failedShotTaken) {
+      failedShotTaken = true;
+      shotFailed(page, meta, width);
+    }
+  };
+  const save = "Save Feat: Fighting Initiate";
+  await gotoApp(page, `${BASE}/build/${ASI_FIGHTER_ID}?step=asiFeats`);
+  if (!(await waitForVisibleText(page, "Choose an Ability Score Improvement or a Feat."))) {
+    fail("the level 4 ASI/Feat card is not shown for the seeded Fighter");
+    await closePage(page);
+    return failures;
+  }
+  await page.getByText("Feat", { exact: true }).first().click();
+  await settle(page);
+  if ((await page.getByRole("button", { name: "Feat Fighting Initiate", exact: true }).count()) === 0)
+    fail("the Feat tab does not list Fighting Initiate");
+  if ((await page.getByText("Info", { exact: true }).count()) === 0) fail("the feat rows show no Info button");
+  await page.getByRole("button", { name: "Feat Fighting Initiate", exact: true }).first().click();
+  await settle(page);
+  if ((await controlDisabled(page, save)) !== true) fail("Save Feat is not disabled before a fighting style is picked");
+  await page.getByRole("button", { name: "Fighting Initiate Style Archery", exact: true }).first().click();
+  await settle(page);
+  if ((await controlDisabled(page, save)) !== false) fail("Save Feat is still disabled after picking a fighting style");
+  await page.getByText(save, { exact: true }).first().click();
+  await settle(page);
+  if (!(await waitForVisibleText(page, "Picked 1 / 1"))) fail("the saved card does not show its fighting style picker with 1 / 1 picked");
+  if (!(await waitForVisibleText(page, "Fighting Initiate Style"))) fail('the saved card has no "Fighting Initiate Style" picker');
+  await page.getByText("Fighting Initiate Style", { exact: true }).first().evaluate((el) => el.scrollIntoView({ block: "center" }));
+  await settle(page);
+  await maybeShot(page, join(SHOTS, `BuilderAsiFeat-${width}.png`), meta);
+  await closePage(page);
+  return failures;
+}
+
 const EXTRA_CHECKS = [
   { name: "HP modals", run: checkHitPointModals },
   { name: "Wild Shape Stats", run: checkWildShapeScreen },
@@ -4099,6 +4153,7 @@ const EXTRA_CHECKS = [
   { name: "Level-Up Flow HP per class", run: checkLevelUpHpPerClass },
   { name: "Level-Up Flow feat replace", run: checkLevelUpFeatReplace },
   { name: "Level-Up Flow feat sub-choice chips", run: checkLevelUpFeatSubChoiceChips },
+  ...(INTEGRATED ? [{ name: "Builder ASI feat Fighting Initiate", run: checkBuilderAsiFeat, shot: true }] : []),
   { name: "Level-Up Flow HP modifier sign", run: checkLevelUpHpModifierSign },
   { name: "Level up hidden at level 20", run: checkLevelUpHiddenAtMaxLevel },
   { name: "Level-Up Flow cancel and review", run: checkLevelUpCancelAndReview },
