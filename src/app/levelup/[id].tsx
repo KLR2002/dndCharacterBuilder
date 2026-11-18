@@ -33,7 +33,9 @@ import {
   rollPlanHitPoints,
   setPlanAsi,
   setPlanClassChoicePick,
+  setPlanExpertisePick,
   setPlanFeatPick,
+  setPlanOptionalFeature,
   setPlanSubclass,
   subclassOptionsForPlan,
   togglePlanSpell,
@@ -231,6 +233,8 @@ export default function LevelUpScreen() {
             activeBooks={activeBooks}
             onToggle={(choiceId, option, choose) => commitPlan(setPlanClassChoicePick(plan, choiceId, option, choose))}
             onClear={(choiceId) => commitPlan(clearPlanClassChoicePick(plan, choiceId))}
+            onToggleExpertise={(item) => commitPlan(setPlanExpertisePick(plan, item))}
+            onToggleOptionalFeature={(name, enabled) => commitPlan(setPlanOptionalFeature(plan, name, enabled))}
           />
         );
       case "spells":

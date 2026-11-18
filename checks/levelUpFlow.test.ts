@@ -23,12 +23,12 @@ const FIGHTER_3 = makeChar({
   ],
 });
 
-test("Fighter 3->4 plans only Class, Hit Points, ASI/Feat, Review", () => {
+test("Fighter 3->4 plans Class, Hit Points, ASI/Feat, Class Choices (its optional Martial Versatility), Review", () => {
   const result = planLevelUp(FIGHTER_3, { className: "Fighter" });
   if (!result.ok) assert.fail(result.reason);
   assert.deepEqual(
     result.plan.steps.map((s) => s.id),
-    ["class", "hitPoints", "asiFeat", "review"]
+    ["class", "hitPoints", "asiFeat", "classChoices", "review"]
   );
 });
 
@@ -98,10 +98,12 @@ test("a first Fighter 1 plan includes Class Choices", () => {
   );
 });
 
-test("a Fighter 3->4 plan still does not include Class Choices", () => {
+test("a Fighter 3->4 plan's Class Choices step comes from the optional feature alone: no rule choice is planned", () => {
   const result = planLevelUp(FIGHTER_3, { className: "Fighter" });
   if (!result.ok) assert.fail(result.reason);
-  assert.ok(!result.plan.steps.some((s) => s.id === "classChoices"));
+  assert.ok(result.plan.steps.some((s) => s.id === "classChoices"));
+  assert.deepEqual(result.plan.classChoices, []);
+  assert.deepEqual(result.plan.expertiseMilestones, []);
 });
 
 test("a level reaching the subclass level plans no Subclass step when the active books offer none", () => {
@@ -406,8 +408,8 @@ test("raising an already-held second class in a multiclass level-up applies the 
   assert.equal(result.plan.toLevel, 3);
   assert.deepEqual(
     result.plan.steps.map((s) => s.id),
-    ["class", "hitPoints", "spells", "review"],
-    "the held subclass stays held, so no Subclass step; the new spell level brings the Spells step"
+    ["class", "hitPoints", "classChoices", "spells", "review"],
+    "the held subclass stays held, so no Subclass step; Wizard 3's optional Cantrip Formulas brings the Class Choices step, and the new spell level the Spells step"
   );
   const spell = newSpellsForLevelUp(fw, result.plan)[0];
   assert.ok(spell, "the new level offers spells to learn");

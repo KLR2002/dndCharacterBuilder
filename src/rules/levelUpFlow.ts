@@ -13,6 +13,7 @@ import {
   changeSubclass,
   confirmLevelUp,
   missingMulticlassRequirement,
+  setOptionalFeatureEnabled,
   validateMulticlass,
 } from "./builderTransitions.ts";
 import { learnSpell } from "./characterSpells.ts";
@@ -26,10 +27,15 @@ import { maxHp, recordRolledHitPoints } from "./hp.ts";
 import {
   classChoicesAtLevel,
   classChoicesLevelView,
+  expertiseFilled,
   hasClassChoices,
+  newExpertiseMilestones,
+  newOptionalFeatures,
   type ClassChoicesStepView,
   type ClassLevelChoices,
 } from "./classChoices.ts";
+import { getMilestonePicks, toggleExpertiseChoice, type ExpertiseMilestone } from "./expertise.ts";
+import type { OptionalFeatureOption } from "./optionalFeatures.ts";
 import { currentRandom, rollDie, type RandomSource, type Roll } from "./dice.ts";
 import { totalLevel } from "./proficiencies.ts";
 import { allCatalogClasses, catalogListings, findClassData } from "./catalogs.ts";
@@ -74,6 +80,10 @@ export interface LevelUpPicks {
   classChoicePicks?: Record<string, string[]>;
   /** The options picked on each of the picked feat's own rule choices (fighting style, maneuvers, invocation), by choice id. */
   featPicks?: Record<string, string[]>;
+  /** The Expertise options picked on the new level's milestones. */
+  expertisePicks?: string[];
+  /** The optional features the level's class gains, by feature name: enabled or not. */
+  optionalFeatures?: Record<string, boolean>;
 }
 
 export interface LevelUpPlan {
@@ -87,6 +97,8 @@ export interface LevelUpPlan {
   picks: LevelUpPicks;
   /** The class choices the new level brings (proficiency and rule choices), read from the shared classChoices module. */
   classChoices?: AvailableRuleChoice[];
+  /** The Expertise milestones the new level brings, with the options each may take. */
+  expertiseMilestones?: ExpertiseMilestone[];
 }
 
 export type PlanLevelUpResult = { ok: true; plan: LevelUpPlan } | { ok: false; reason: string };
@@ -156,13 +168,13 @@ export function planLevelUp(character: Character, options: PlanLevelUpOptions): 
   if (wanted.has("subclass") && !picks.subclass && offeredSubclasses.length === 1) {
     picks.subclass = { name: offeredSubclasses[0].name, source: offeredSubclasses[0].source };
   }
-  // The same shared reader the Creation Flow uses decides the Class Choices step, evaluated on the
+  // The same shared readers the Creation Flow uses decide the Class Choices step, evaluated on the
   // planned entry at the new level; a multiclass entry's skill pick is found here too.
   const choices = plannedLevelChoices(character, { className, source, fromLevel, toLevel, subclassName: picks.subclass?.name }, {
     compendium,
     activeBooks,
   });
-  if (hasClassChoices(choices)) wanted.add("classChoices");
+  if (bringsClassChoices(choices)) wanted.add("classChoices");
   if (wantsSpellsStep(plannedClassEntry(character, { className, source, toLevel, subclassName: picks.subclass?.name }))) {
     wanted.add("spells");
   }
@@ -191,7 +203,8 @@ export function planLevelUp(character: Character, options: PlanLevelUpOptions): 
       steps,
       hitPoints,
       picks,
-      classChoices: [...choices.proficiencyChoices, ...choices.ruleChoices],
+      classChoices: [...choices.choices.proficiencyChoices, ...choices.choices.ruleChoices],
+      expertiseMilestones: choices.expertise,
     },
   };
 }
@@ -274,6 +287,15 @@ export function applyLevelUpPlan(
     for (const option of plan.picks.classChoicePicks?.[choice.id] ?? []) {
       next = pickRuleChoice(next, choice, option, compendium, activeBooks);
     }
+  }
+  // The level's Expertise picks, through the builder's Expertise toggle once the level exists (it reads the
+  // milestone the new level opens); an option the Character already holds is not toggled off again.
+  for (const item of plan.picks.expertisePicks ?? []) {
+    if (next.chosenExpertise?.some((held) => held.trim().toLowerCase() === item.trim().toLowerCase())) continue;
+    next = toggleExpertiseChoice(next, item, { compendium, activeBooks });
+  }
+  for (const [featureName, enabled] of Object.entries(plan.picks.optionalFeatures ?? {})) {
+    if (enabled) next = setOptionalFeatureEnabled(next, featureName, true, compendium, { activeBooks });
   }
   if (plan.picks.asi) {
     next = applyAsiWithHitPoints(
@@ -413,13 +435,34 @@ function wantsSpellsStep(entry: CharacterClass): boolean {
   return casterKindOf(entry) !== undefined || isThirdCaster(entry);
 }
 
-/** The class choices the planned level brings, read on the planned class entry. */
+/** What the planned level brings on its class: the skill and rule choices, the Expertise milestones and the optional features. */
+interface PlannedLevelChoices {
+  choices: ClassLevelChoices;
+  expertise: ExpertiseMilestone[];
+  optionalFeatures: OptionalFeatureOption[];
+}
+
+/** What the planned level brings, read on the planned class entry through the shared classChoices readers. */
 function plannedLevelChoices(
   character: Character,
   plan: { className: string; source: string; fromLevel: number; toLevel: number; subclassName?: string },
   opts: { compendium: Compendium; activeBooks: ActiveBooks }
-): ClassLevelChoices {
-  return classChoicesAtLevel(character, plannedClassEntry(character, plan), plan.fromLevel, opts);
+): PlannedLevelChoices {
+  const entry = plannedClassEntry(character, plan);
+  return {
+    choices: classChoicesAtLevel(character, entry, plan.fromLevel, opts),
+    expertise: newExpertiseMilestones(character, entry, opts),
+    optionalFeatures: newOptionalFeatures(character, entry, plan.fromLevel, opts),
+  };
+}
+
+/** Whether the planned level brings anything for the Class Choices step: a choice, an Expertise milestone or an optional feature. */
+function bringsClassChoices(levelChoices: PlannedLevelChoices): boolean {
+  return (
+    hasClassChoices(levelChoices.choices) ||
+    levelChoices.expertise.length > 0 ||
+    levelChoices.optionalFeatures.length > 0
+  );
 }
 
 /**
@@ -436,19 +479,26 @@ export function setPlanSubclass(
 ): LevelUpPlan {
   const compendium = opts.compendium ?? currentCompendium();
   const activeBooks = opts.activeBooks ?? DEFAULT_ACTIVE_BOOK_CODES;
-  const choices = plannedLevelChoices(
+  const levelChoices = plannedLevelChoices(
     character,
     { className: plan.className, source: plan.source, fromLevel: plan.fromLevel, toLevel: plan.toLevel, subclassName: name },
     { compendium, activeBooks }
   );
-  const classChoices = [...choices.proficiencyChoices, ...choices.ruleChoices];
+  const classChoices = [...levelChoices.choices.proficiencyChoices, ...levelChoices.choices.ruleChoices];
   const offered = new Set(classChoices.map((choice) => choice.id));
   const classChoicePicks = Object.fromEntries(
     Object.entries(plan.picks.classChoicePicks ?? {}).filter(([choiceId]) => offered.has(choiceId))
   );
+  // The Expertise and optional-feature picks of the previous subclass that the new one does not offer go with them.
+  const offeredExpertise = new Set(levelChoices.expertise.flatMap((milestone) => milestone.options.map((o) => o.toLowerCase())));
+  const expertisePicks = (plan.picks.expertisePicks ?? []).filter((pick) => offeredExpertise.has(pick.toLowerCase()));
+  const offeredFeatures = new Set(levelChoices.optionalFeatures.map((option) => option.name));
+  const optionalFeatures = Object.fromEntries(
+    Object.entries(plan.picks.optionalFeatures ?? {}).filter(([name]) => offeredFeatures.has(name))
+  );
 
   const stepIds = new Set<LevelUpStepId>(plan.steps.map((step) => step.id));
-  if (hasClassChoices(choices)) stepIds.add("classChoices");
+  if (bringsClassChoices(levelChoices)) stepIds.add("classChoices");
   else stepIds.delete("classChoices");
   const spells = wantsSpellsStep(plannedClassEntry(character, { className: plan.className, source: plan.source, toLevel: plan.toLevel, subclassName: name }));
   if (spells) stepIds.add("spells");
@@ -459,7 +509,8 @@ export function setPlanSubclass(
     ...plan,
     steps,
     classChoices,
-    picks: { ...plan.picks, subclass: { name, source }, classChoicePicks },
+    expertiseMilestones: levelChoices.expertise,
+    picks: { ...plan.picks, subclass: { name, source }, classChoicePicks, expertisePicks, optionalFeatures },
   };
   // Without a Spells step the learned spells go with it; with one, only the spells it still offers stay picked.
   if (!spells) {
@@ -630,6 +681,30 @@ export function setPlanClassChoicePick(plan: LevelUpPlan, choiceId: string, opti
   return { ...plan, picks: { ...plan.picks, classChoicePicks: { ...plan.picks.classChoicePicks, [choiceId]: next } } };
 }
 
+/**
+ * Toggles one Expertise option on the plan's new milestones. An option no milestone has a free slot for is refused:
+ * the plan is returned unchanged. The given plan is never mutated.
+ */
+export function setPlanExpertisePick(plan: LevelUpPlan, option: string): LevelUpPlan {
+  const current = plan.picks.expertisePicks ?? [];
+  const has = current.some((name) => name.toLowerCase() === option.toLowerCase());
+  if (has) {
+    const expertisePicks = current.filter((name) => name.toLowerCase() !== option.toLowerCase());
+    return { ...plan, picks: { ...plan.picks, expertisePicks } };
+  }
+  const next = [...current, option];
+  const placed = getMilestonePicks(plan.expertiseMilestones ?? [], next).some(({ chosen }) =>
+    chosen.some((name) => name.toLowerCase() === option.toLowerCase())
+  );
+  if (!placed) return plan;
+  return { ...plan, picks: { ...plan.picks, expertisePicks: next } };
+}
+
+/** Sets whether the level's optional feature is enabled on the plan. The given plan is never mutated. */
+export function setPlanOptionalFeature(plan: LevelUpPlan, name: string, enabled: boolean): LevelUpPlan {
+  return { ...plan, picks: { ...plan.picks, optionalFeatures: { ...plan.picks.optionalFeatures, [name]: enabled } } };
+}
+
 /** Removes every pick of one of the plan's class choices. The given plan is never mutated. */
 export function clearPlanClassChoicePick(plan: LevelUpPlan, choiceId: string): LevelUpPlan {
   const classChoicePicks = { ...plan.picks.classChoicePicks };
@@ -652,7 +727,7 @@ export function levelUpClassChoicesView(
     toLevel: plan.toLevel,
     subclassName: plan.picks.subclass?.name,
   });
-  return classChoicesLevelView(character, entry, plan.fromLevel, opts);
+  return classChoicesLevelView(character, entry, plan.fromLevel, opts, plan.picks.expertisePicks ?? []);
 }
 
 /** The subclasses a class offers in the active books. */
@@ -719,8 +794,9 @@ export function levelUpStepComplete(
       return placed >= 2;
     }
     case "classChoices":
-      return (plan.classChoices ?? []).every(
-        (choice) => (plan.picks.classChoicePicks?.[choice.id] ?? []).length >= choice.choose
+      return (
+        (plan.classChoices ?? []).every((choice) => (plan.picks.classChoicePicks?.[choice.id] ?? []).length >= choice.choose) &&
+        expertiseFilled(getMilestonePicks(plan.expertiseMilestones ?? [], plan.picks.expertisePicks ?? []))
       );
     case "spells":
       return true;
@@ -785,6 +861,12 @@ export function levelUpSummary(
     const picked = plan.picks.classChoicePicks?.[choice.id] ?? [];
     if (picked.length > 0) rows.push({ label: choice.traitName, value: picked.join(", ") });
   }
+  const expertise = getMilestonePicks(plan.expertiseMilestones ?? [], plan.picks.expertisePicks ?? []).flatMap((p) => p.chosen);
+  if (expertise.length > 0) rows.push({ label: "Expertise", value: expertise.join(", ") });
+  const features = Object.entries(plan.picks.optionalFeatures ?? {})
+    .filter(([, enabled]) => enabled)
+    .map(([name]) => name);
+  if (features.length > 0) rows.push({ label: "Optional & Replacement Class Features", value: features.join(", ") });
   if (plan.picks.learnedSpells?.length) {
     rows.push({ label: "Spells", value: plan.picks.learnedSpells.map((s) => s.name).join(", ") });
   }
