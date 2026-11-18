@@ -24,6 +24,7 @@ import {
   applyLevelUpPlan,
   chooseAverageHitPoints,
   classStepOptions,
+  clearPlanClassChoicePick,
   flowSteps,
   levelUpStepComplete,
   levelUpSummary,
@@ -226,7 +227,10 @@ export default function LevelUpScreen() {
         return (
           <ClassChoicesStep
             plan={plan}
+            character={character}
+            activeBooks={activeBooks}
             onToggle={(choiceId, option, choose) => commitPlan(setPlanClassChoicePick(plan, choiceId, option, choose))}
+            onClear={(choiceId) => commitPlan(clearPlanClassChoicePick(plan, choiceId))}
           />
         );
       case "spells":

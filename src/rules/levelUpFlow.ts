@@ -23,7 +23,7 @@ import {
   profileSpellContext,
 } from "./spellcasting.ts";
 import { maxHp, recordRolledHitPoints } from "./hp.ts";
-import { classChoicesAtLevel, hasClassChoices } from "./classChoices.ts";
+import { classChoicesAtLevel, classChoicesLevelView, hasClassChoices, type ClassChoicesStepView } from "./classChoices.ts";
 import { currentRandom, rollDie, type RandomSource, type Roll } from "./dice.ts";
 import { totalLevel } from "./proficiencies.ts";
 import { allCatalogClasses, catalogListings, findClassData } from "./catalogs.ts";
@@ -547,6 +547,33 @@ export function setPlanClassChoicePick(plan: LevelUpPlan, choiceId: string, opti
   if (has) next = current.filter((name) => name.toLowerCase() !== option.toLowerCase());
   else next = [...current, option].slice(0, Math.max(1, choose));
   return { ...plan, picks: { ...plan.picks, classChoicePicks: { ...plan.picks.classChoicePicks, [choiceId]: next } } };
+}
+
+/** Removes every pick of one of the plan's class choices. The given plan is never mutated. */
+export function clearPlanClassChoicePick(plan: LevelUpPlan, choiceId: string): LevelUpPlan {
+  const classChoicePicks = { ...plan.picks.classChoicePicks };
+  delete classChoicePicks[choiceId];
+  return { ...plan, picks: { ...plan.picks, classChoicePicks } };
+}
+
+/**
+ * The Class Choices step's view of the plan's new level, read the way `planLevelUp` reads the level's choices: the
+ * planned class entry with the subclass the character holds, after the level before the plan's.
+ */
+export function levelUpClassChoicesView(
+  character: Character,
+  plan: LevelUpPlan,
+  opts: { compendium?: Compendium; activeBooks?: ActiveBooks } = {}
+): ClassChoicesStepView {
+  const held = character.classes.find((c) => sameName(c.className, plan.className));
+  const heldSubclass = held?.subclassName ?? held?.subclass;
+  const entry: CharacterClass = {
+    className: plan.className,
+    source: plan.source,
+    level: plan.toLevel,
+    ...(heldSubclass ? { subclassName: heldSubclass } : {}),
+  };
+  return classChoicesLevelView(character, entry, plan.fromLevel, opts);
 }
 
 /** The subclasses a class offers in the active books. */

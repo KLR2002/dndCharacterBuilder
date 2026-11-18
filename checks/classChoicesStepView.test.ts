@@ -3,7 +3,7 @@ import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { integratedTestCompendium, makeChar, resetTestCompendium } from "./testUtils.ts";
 import type { Character, CharacterClass } from "../src/types/character.ts";
-import { classChoicesStepView } from "../src/rules/classChoices.ts";
+import { classChoicesLevelView, classChoicesStepView } from "../src/rules/classChoices.ts";
 import { isCreationStepValid } from "../src/rules/creationFlow.ts";
 import { offeredRuleChoices } from "../src/rules/ruleChoices.ts";
 import { proficiencyChoiceOffers, skillPickOffers } from "../src/rules/proficiencyChoiceOffers.ts";
@@ -99,6 +99,43 @@ describe("The Class Choices view is complete when every pick it asks for is made
     );
     const view = classChoicesStepView(barbarian, query);
     assert.equal(view.skillPicks.some((offer) => offer.origin === "feat"), false, "the feat's skill pick is shown with the feat");
+    assert.equal(view.complete, true);
+  });
+});
+
+describe("The Level-Up view lists the choices of one class's new level", () => {
+  test("a Battle Master Fighter 6 to 7 gets the maneuver card and nothing else", () => {
+    const fighter = makeChar({ classes: [cl("Fighter", 6, "Battle Master")] });
+    const view = classChoicesLevelView(fighter, cl("Fighter", 7, "Battle Master"), 6, query);
+    assert.deepEqual(view.cards.maneuver.map((choice) => choice.traitName), ["Additional Maneuvers (7th Level)"]);
+    assert.deepEqual(view.startingSkills, []);
+    assert.deepEqual(view.skillPicks, []);
+    assert.deepEqual(view.expertise, { picks: [], invalidPicks: [] });
+    assert.deepEqual(view.optionalFeatures, []);
+    assert.equal(view.applies, true);
+    assert.equal(view.complete, false, "the maneuvers are not picked yet");
+  });
+
+  test("a class's first level lists its starting skill pick", () => {
+    const view = classChoicesLevelView(makeChar(), cl("Rogue", 1), 0, query);
+    assert.equal(view.startingSkills.length, 1);
+    assert.equal(view.applies, true);
+  });
+
+  test("a later class's multiclass skill pick is listed with the skill picks, not the cards", () => {
+    const fighter = makeChar({ classes: [cl("Fighter", 1)] });
+    const view = classChoicesLevelView(fighter, cl("Ranger", 1), 0, query);
+    assert.deepEqual(view.skillPicks.map((offer) => offer.traitName), ["Ranger multiclass skill"]);
+    assert.equal(
+      Object.values(view.cards).flat().some((choice) => choice.categories?.includes("skills")),
+      false,
+      "no skill pick is a card",
+    );
+  });
+
+  test("a level with no choice does not apply", () => {
+    const view = classChoicesLevelView(makeChar({ classes: [cl("Fighter", 1)] }), cl("Fighter", 2), 1, query);
+    assert.equal(view.applies, false);
     assert.equal(view.complete, true);
   });
 });
