@@ -27,3 +27,4 @@ Decided with the user on 2026-11-18 (architecture review candidate 3). Builds on
 4. `04-split-class-progression-section.md`
 5. `05-level-up-class-choice-cards.md`
 6. `06-level-up-expertise-and-optional-features.md`
+7. `07-level-up-replans-choices-on-subclass-pick.md`: found during 05.
