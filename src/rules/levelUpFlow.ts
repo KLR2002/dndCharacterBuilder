@@ -17,12 +17,8 @@ import {
   validateMulticlass,
 } from "./builderTransitions.ts";
 import { learnSpell } from "./characterSpells.ts";
-import {
-  getClassSpellProfiles,
-  getMaxSpellLevel,
-  isSpellAvailableForClass,
-  profileSpellContext,
-} from "./spellcasting.ts";
+import { getClassSpellProfiles } from "./spellcasting.ts";
+import { learnableSpells } from "./learnableSpells.ts";
 import { maxHp, recordRolledHitPoints } from "./hp.ts";
 import {
   classChoicesAtLevel,
@@ -903,14 +899,6 @@ export function newSpellsForLevelUp(
   const profile = getClassSpellProfiles(planned, { activeBooks, compendium, classes }).find((p) =>
     sameName(p.className, plan.className)
   );
-  const maxLevel = getMaxSpellLevel(atLevel, classes);
-  const context = { ...(profile ? profileSpellContext(profile) : {}), classLevel: plan.toLevel };
-  const known = new Set((character.knownSpells ?? []).map((s) => s.name.trim().toLowerCase()));
-  return compendium
-    .for(activeBooks)
-    .spells()
-    .filter((spell) => spell.level <= maxLevel)
-    .filter((spell) => isSpellAvailableForClass(spell, plan.className, activeBooks, context))
-    .filter((spell) => !known.has(spell.name.trim().toLowerCase()))
-    .sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
+  if (!profile) return [];
+  return learnableSpells(planned, profile, { compendium, activeBooks }).spells;
 }
