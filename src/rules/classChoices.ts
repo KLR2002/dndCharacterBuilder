@@ -137,6 +137,53 @@ export interface ClassChoicesStepView {
   complete: boolean;
 }
 
+/** The rule and Proficiency Choices by card: one card per choice group, and the other card for ungrouped rule choices and the rest. */
+function choiceCards(ruleChoices: AvailableRuleChoice[], proficiencies: AvailableRuleChoice[]): Record<ClassChoiceCard, AvailableRuleChoice[]> {
+  return {
+    fightingStyle: ruleChoices.filter((choice) => choice.group === "fightingStyle"),
+    maneuver: ruleChoices.filter((choice) => choice.group === "maneuver"),
+    warlock: ruleChoices.filter((choice) => choice.group === "warlock"),
+    infusion: ruleChoices.filter((choice) => choice.group === "infusion"),
+    other: [...ruleChoices.filter((choice) => !choice.group), ...proficiencies],
+  };
+}
+
+/** Whether a saved pick of a choice holds at least `choose` options. */
+function pickedEnough(picked: readonly string[] | undefined, choose: number): boolean {
+  return (picked ?? []).length >= choose;
+}
+
+/**
+ * The Level-Up Flow's view of one class's new level: the choices `classChoicesAtLevel` gives for the levels after
+ * `fromLevel`, with the skill picks split out as the Class Choices step shows them. Expertise and optional features
+ * are not offered at a level-up yet, so those fields are empty.
+ */
+export function classChoicesLevelView(
+  character: Character,
+  entry: CharacterClass,
+  fromLevel: number,
+  query: ClassChoicesQuery = {},
+): ClassChoicesStepView {
+  const compendium = query.compendium ?? currentCompendium();
+  const activeBooks = query.activeBooks;
+  const choices = classChoicesAtLevel(character, entry, fromLevel, { compendium, activeBooks });
+  const allSkillPicks = skillPickOffers(holding(character, entry), { compendium, activeBooks });
+  const skillIds = new Set(allSkillPicks.map((offer) => offer.id));
+  const levelIds = new Set(choices.proficiencyChoices.map((choice) => choice.id));
+  const skillPicks = allSkillPicks.filter((offer) => levelIds.has(offer.id));
+  const proficiencies = choices.proficiencyChoices.filter((choice) => !skillIds.has(choice.id));
+
+  return {
+    startingSkills: choices.skillChoices,
+    skillPicks,
+    cards: choiceCards(choices.ruleChoices, proficiencies),
+    expertise: { picks: [], invalidPicks: [] },
+    optionalFeatures: [],
+    applies: hasClassChoices(choices),
+    complete: choices.allPicked,
+  };
+}
+
 /**
  * The Class Choices step's view: each held class's choices from `classChoicesAtLevel` at level 0, Expertise milestones
  * and their picks, and the optional features the held classes offer. A feat's Proficiency Choices are not listed here.
@@ -156,13 +203,7 @@ export function classChoicesStepView(character: Character, query: ClassChoicesQu
   const classProficiencies = perClass
     .flatMap((choices) => choices.proficiencyChoices)
     .filter((choice) => !skillIds.has(choice.id));
-  const cards: Record<ClassChoiceCard, AvailableRuleChoice[]> = {
-    fightingStyle: ruleChoices.filter((choice) => choice.group === "fightingStyle"),
-    maneuver: ruleChoices.filter((choice) => choice.group === "maneuver"),
-    warlock: ruleChoices.filter((choice) => choice.group === "warlock"),
-    infusion: ruleChoices.filter((choice) => choice.group === "infusion"),
-    other: [...ruleChoices.filter((choice) => !choice.group), ...classProficiencies],
-  };
+  const cards = choiceCards(ruleChoices, classProficiencies);
 
   const milestones = getAvailableExpertiseMilestones(character, catalogs);
   const picks = getMilestonePicks(milestones, character.chosenExpertise ?? []);
@@ -171,7 +212,6 @@ export function classChoicesStepView(character: Character, query: ClassChoicesQu
 
   const optionalFeatures = getAvailableOptionalFeatures(character, catalogListings(catalogs).classes());
 
-  const pickedEnough = (picked: readonly string[] | undefined, choose: number) => (picked ?? []).length >= choose;
   const startingPicked = startingSkills.every((offer) =>
     pickedEnough(
       character.skillChoices?.find((saved) => saved.id === offer.source && saved.origin === "class")?.picked,
