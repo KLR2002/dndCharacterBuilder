@@ -18,7 +18,9 @@ import {
   rollPlanHitPoints,
   setPlanAsi,
   setPlanClassChoicePick,
+  setPlanExpertisePick,
   setPlanFeatPick,
+  setPlanOptionalFeature,
   setPlanSubclass,
   subclassOptionsForPlan,
   togglePlanSpell,
@@ -50,7 +52,8 @@ function fighterPlan(hitPoints: { mode: "average" } | { mode: "roll" } = { mode:
 
 test("flowSteps lists only the Class step before a class is picked, the plan's steps after", () => {
   assert.deepEqual(flowSteps(null).map((s) => s.id), ["class"]);
-  assert.deepEqual(flowSteps(fighterPlan()).map((s) => s.id), ["class", "hitPoints", "asiFeat", "review"]);
+  // Fighter 4 gains the optional Martial Versatility, so its level brings the Class Choices step too.
+  assert.deepEqual(flowSteps(fighterPlan()).map((s) => s.id), ["class", "hitPoints", "asiFeat", "classChoices", "review"]);
 });
 
 test("classStepOptions lists the held class first with its level change, the others at 1, the missed requirement as a score", () => {
@@ -307,6 +310,69 @@ test("clearPlanClassChoicePick removes one choice's picks and leaves the others"
   const cleared = clearPlanClassChoicePick(picked, "a");
   assert.deepEqual(cleared.picks.classChoicePicks, { b: ["Y"] });
   assert.deepEqual(picked.picks.classChoicePicks, { a: ["X"], b: ["Y"] }, "the given plan is never mutated");
+});
+
+test("a Rogue 5 to 6 plan offers only the new Expertise milestone, minus the skills the held one claims; both picks are required and applied", () => {
+  const compendium = integratedTestCompendium();
+  resetTestCompendium();
+  const opts = { compendium, activeBooks: ALL_BOOKS };
+  const character = makeChar({
+    baseAbilityScores: { str: 10, dex: 16, con: 12, int: 14, wis: 10, cha: 10 },
+    chosenSkills: ["Stealth", "Acrobatics", "Perception", "Deception"],
+    chosenExpertise: ["Stealth", "Acrobatics"],
+    classes: [{ className: "Rogue", source: "PHB", level: 5, subclassName: "Thief", subclass: "Thief", subclassSource: "PHB" }],
+  });
+  const result = planLevelUp(character, { className: "Rogue", hitPoints: { mode: "average" }, ...opts });
+  if (!result.ok) assert.fail(result.reason);
+  const plan = result.plan;
+  assert.equal(plan.steps.some((s) => s.id === "classChoices"), true, "the Expertise milestone brings the Class Choices step");
+
+  const view = levelUpClassChoicesView(character, plan, opts);
+  assert.deepEqual(view.expertise.picks.map(({ milestone }) => milestone.id), ["rogue_6"], "rogue_1 is held, not new");
+  assert.deepEqual(
+    view.expertise.picks[0].from,
+    ["Perception", "Deception", "Thieves' Tools"],
+    "the skills the held milestone claims are not offered; a Rogue's Thieves' Tools are",
+  );
+  assert.equal(levelUpStepComplete(plan, "classChoices", opts), false);
+
+  const onePick = setPlanExpertisePick(plan, "Perception");
+  assert.equal(levelUpStepComplete(onePick, "classChoices", opts), false, "one of the two picks is not enough");
+  const picked = setPlanExpertisePick(onePick, "Deception");
+  assert.equal(levelUpStepComplete(picked, "classChoices", opts), true);
+  assert.equal(levelUpStepComplete(onePick, "review", opts), false, "the unpicked Expertise step blocks Review");
+  assert.equal(levelUpStepComplete(picked, "review", opts), true);
+
+  const applied = applyLevelUpPlan(character, picked, { fullHealOnLevelUp: false, ...opts });
+  assert.deepEqual(applied.chosenExpertise, ["Stealth", "Acrobatics", "Perception", "Deception"]);
+
+  const rows = new Map(levelUpSummary(picked, character, { fullHealOnLevelUp: false, ...opts }).map((r) => [r.label, r.value]));
+  assert.equal(rows.get("Expertise"), "Perception, Deception");
+});
+
+test("a Barbarian 2 to 3 plan whose only new choice is an optional feature shows the step, complete untouched; enabling it applies it", () => {
+  const compendium = integratedTestCompendium();
+  resetTestCompendium();
+  const opts = { compendium, activeBooks: ALL_BOOKS };
+  const character = makeChar({
+    classes: [{ className: "Barbarian", source: "PHB", level: 2, subclassName: "Path of the Berserker", subclass: "Path of the Berserker", subclassSource: "PHB" }],
+  });
+  const result = planLevelUp(character, { className: "Barbarian", hitPoints: { mode: "average" }, ...opts });
+  if (!result.ok) assert.fail(result.reason);
+  const plan = result.plan;
+  assert.equal(plan.steps.some((s) => s.id === "classChoices"), true, "the optional feature brings the Class Choices step");
+  assert.equal((plan.classChoices ?? []).length, 0, "the level brings no other choice");
+  assert.equal(levelUpStepComplete(plan, "classChoices", opts), true, "optional features never block");
+
+  const view = levelUpClassChoicesView(character, plan, opts);
+  assert.deepEqual(view.optionalFeatures.map((o) => o.name), ["Primal Knowledge"]);
+
+  const enabled = setPlanOptionalFeature(plan, "Primal Knowledge", true);
+  const applied = applyLevelUpPlan(character, enabled, { fullHealOnLevelUp: false, ...opts });
+  assert.equal(applied.optionalFeatureReplacements?.["Primal Knowledge"], true);
+
+  const rows = new Map(levelUpSummary(enabled, character, { fullHealOnLevelUp: false, ...opts }).map((r) => [r.label, r.value]));
+  assert.equal(rows.get("Optional & Replacement Class Features"), "Primal Knowledge");
 });
 
 test("a feat offering +1 to one of several abilities keeps the ASI/Feat step incomplete until one is chosen", () => {
