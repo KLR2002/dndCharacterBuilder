@@ -6,9 +6,11 @@ R8 can strip classes that native code or reflection reaches. If the release app 
 
 **Blocked by:** 02
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A release APK built from the worktree for arm64-v8a and x86_64 (`cd android && ./gradlew :app:assembleRelease -PreactNativeArchitectures=<abi>`, in the background with `t3_background_wait`). Report each APK's size next to the 2.2 sizes (arm64-v8a 52.1 MB, x86_64 53.5 MB) and `unzip -lv` showing the `.so` entries as `Defl`.
-- [ ] The x86_64 release APK runs on the emulator (`docs/agents/driving-the-android-emulator.md`): `npm run android:roll` passes, and `ONLY="Actions rolls" npm run layout:android` passes. Paste `adb logcat -d | grep -E "FATAL|ClassNotFound|NoSuchMethod"` (empty).
-- [ ] The app starts, opens a character, changes tabs and opens the Journal portrait picker without a crash (drive it by hand through the emulator guide; name what you did).
-- [ ] `npm run check:all` passes. Stop the emulator, Gradle and adb with `scripts/stop-dev.sh` before you report.
+**Landed:** c6e507d. arm64-v8a 22.07 MB (2.2: 52.1 MB), x86_64 22.62 MB (2.2: 53.5 MB); every `.so` is `Defl`. No keep rules needed. On the x86_64 release APK: `npm run android:roll -- 2d6+3 1d20` passed; `ONLY="Actions" npm run layout:android` passed at 320, 360, 393 and 412 (the scenario is named `Actions`, not `Actions rolls`); logcat grep empty after opening a character, rolling an attack, switching to Spells and Journal and opening the portrait picker. check:all passed. The local release build ran out of Gradle Metaspace with the generated `-XX:MaxMetaspaceSize=512m` and needed `-Dorg.gradle.jvmargs="-Xmx4g -XX:MaxMetaspaceSize=1g"`; the F-Droid recipe already raises it, EAS builds may need the same.
+
+- [x] A release APK built from the worktree for arm64-v8a and x86_64 (`cd android && ./gradlew :app:assembleRelease -PreactNativeArchitectures=<abi>`, in the background with `t3_background_wait`). Report each APK's size next to the 2.2 sizes (arm64-v8a 52.1 MB, x86_64 53.5 MB) and `unzip -lv` showing the `.so` entries as `Defl`.
+- [x] The x86_64 release APK runs on the emulator (`docs/agents/driving-the-android-emulator.md`): `npm run android:roll` passes, and `ONLY="Actions rolls" npm run layout:android` passes. Paste `adb logcat -d | grep -E "FATAL|ClassNotFound|NoSuchMethod"` (empty).
+- [x] The app starts, opens a character, changes tabs and opens the Journal portrait picker without a crash (drive it by hand through the emulator guide; name what you did).
+- [x] `npm run check:all` passes. Stop the emulator, Gradle and adb with `scripts/stop-dev.sh` before you report.

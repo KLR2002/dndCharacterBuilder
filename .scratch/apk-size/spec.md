@@ -1,6 +1,6 @@
 # Spec: Smaller APK
 
-**Status:** in progress
+**Status:** done (arm64-v8a 52.1 → 22.1 MB, x86_64 53.5 → 22.6 MB)
 
 The 2.2 APKs are 52 MB (arm64-v8a), 45 MB (armeabi-v7a), 53 MB (x86, x86_64) and 113 MB (universal). Measured with `apkanalyzer` on `CB5E-2.2-arm64-v8a.apk`:
 
