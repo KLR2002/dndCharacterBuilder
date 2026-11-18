@@ -7,7 +7,7 @@ import {
   View,
 } from "react-native";
 import { useSheetScrollContentPadding } from "../sheet/sheetChrome";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
 import { currentCompendium } from "../../services/compendium";

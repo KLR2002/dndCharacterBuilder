@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { Text, TextInput, TouchableOpacity, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { Character } from "../../types/character";
 import { BackgroundData } from "../../types/dnd5e";
 import { BACKGROUND_FEAT_SOURCE, DND_SKILLS } from "../../constants/rules";

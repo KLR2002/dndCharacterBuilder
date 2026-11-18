@@ -1,7 +1,7 @@
 import type { ActiveBooks } from "../../constants/books";
 import React, { useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { AbilityKey, Character } from "../../types/character";
 import { FeatData } from "../../types/dnd5e";
 import { getFeatAbilityBonusOptions, removeAsiSelection } from "../../rules/leveling";
