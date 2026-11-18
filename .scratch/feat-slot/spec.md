@@ -6,7 +6,7 @@ Decided with the user on 2026-11-18 (architecture review candidate 4). Terms: **
 
 ## Problem
 
-- The scraper (`dnd5eToolsScrap/src/scrapers/feats.ts`, `parseAbilityScores`) keeps only a feat's fixed increases and drops `choose`. Resilient, Athlete, Fey Touched, Skill Expert and others reach the app with `abilityScoreIncrease: null`, and `HALF_FEATS` (52 non-SRD names, `src/rules/leveling.ts:16`) fills the gap. `AncestrySection` and `BackgroundSection` call `getFeatAbilityBonusOptions(name)` without the record, so origin feats rely on that table alone.
+- The scraper (`dnd5eToolsScrap/src/scrapers/feats.ts`, `parseAbilityScores`) keeps only a feat's fixed increases and drops `choose`. Resilient, Athlete, Fey Touched, Skill Expert and others reach the app with `abilityScoreIncrease: null`, and `HALF_FEATS` (51 non-SRD names, `src/rules/leveling.ts:16`) fills the gap. `AncestrySection` and `BackgroundSection` call `getFeatAbilityBonusOptions(name)` without the record, so origin feats rely on that table alone.
 - Four places offer a feat and each assembles offer, prerequisite, increase and sub-choices itself: `src/components/builder/AsiFeatSection.tsx` (984 lines, 10 `useState`, 12 checks of `"fighting initiate"`, `"martial adept"`, `"eldritch adept"`), `src/components/levelUpFlow/AsiFeatStep.tsx` with `src/rules/levelUpFlow.ts` (`featSubChoicesForSelection`, `asiFeatAbilityPending`, `asiFeatStepView`, already generic), and the origin-feat cards in `AncestrySection.tsx` and `BackgroundSection.tsx`.
 - Every place guesses a missing source as `featSource || "PHB"`.
 

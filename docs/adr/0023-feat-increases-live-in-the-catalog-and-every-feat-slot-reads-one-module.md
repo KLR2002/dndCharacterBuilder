@@ -1,7 +1,7 @@
 # 0023 Feat Increase Choices Live in the Catalog, and Every Feat Slot Reads One Module
 
 ## Context
-A feat record states its ability increase as fixed scores or as a choice (`choose`: the scores allowed, the amount). The scraper kept only the fixed numbers, so Resilient, Athlete, Fey Touched, Skill Expert and every other feat with a choice reached the app with no increase, and a hand-written table of 52 feat names (`HALF_FEATS`) filled the gap. That table is non-SRD content in `src/` (ADR 0014) and the same name-based fix ADR 0019 removed for races. The race and background origin-feat cards looked the increase up by name alone, so they depended on the table entirely.
+A feat record states its ability increase as fixed scores or as a choice (`choose`: the scores allowed, the amount). The scraper kept only the fixed numbers, so Resilient, Athlete, Fey Touched, Skill Expert and every other feat with a choice reached the app with no increase, and a hand-written table of 51 feat names (`HALF_FEATS`) filled the gap. That table is non-SRD content in `src/` (ADR 0014) and the same name-based fix ADR 0019 removed for races. The race and background origin-feat cards looked the increase up by name alone, so they depended on the table entirely.
 
 The four places that offer a feat (the builder's ASI section, the Level-Up Flow's ASI/Feat step, and the race and background origin-feat cards) each assembled the offer, the prerequisite check, the increase and the feat's sub-choices themselves. The builder also knew Fighting Initiate, Martial Adept and Eldritch Adept by name to show their sub-choices, although the Level-Up Flow already read them from the Rule Choice pointer table, and every place assumed `PHB` for a feat saved without a source.
 

@@ -4,8 +4,10 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A scraper test (next to `dnd5eToolsScrap/checks/race-ability-choices.test.ts`) fails first, then passes: Resilient (PHB) gives `abilityScoreChoices: [{ from: [all six], count: 1, amount: 1 }]` and no fixed increase; Durable gives `abilityScoreIncrease: [{ Constitution: 1 }]` and no choices; Athlete gives `from: ["str","dex"]` (use the score keys the race path emits). Paste the red output.
-- [ ] In the regenerated `feats.json`, every name in `HALF_FEATS` (`src/rules/leveling.ts:16`) that is in the dump has a fixed increase or an `abilityScoreChoices` entry whose scores equal the table's list. Paste the comparison (a throwaway node one-liner is fine) and name any mismatch.
-- [ ] `npm run check:all` and `npm run check:live` pass.
+**Landed:** 57c41ff. The parser moved to `dnd5eToolsScrap/src/parser/ability-choices.ts` (races byte-identical); `entry` became a known choose key, since Resilient's block carries its own sentence. All 51 `HALF_FEATS` names match the regenerated dump; 41 feats gained `abilityScoreChoices`. The regenerated `feats.json` also carries upstream renderer churn (list spacing in 58 feats, Gunner and Polearm Master markup); `prune-to-srd` leaves `src/data` unchanged. check:all and check:live (141/141) passed.
+
+- [x] A scraper test (next to `dnd5eToolsScrap/checks/race-ability-choices.test.ts`) fails first, then passes: Resilient (PHB) gives `abilityScoreChoices: [{ from: [all six], count: 1, amount: 1 }]` and no fixed increase; Durable gives `abilityScoreIncrease: [{ Constitution: 1 }]` and no choices; Athlete gives `from: ["str","dex"]` (use the score keys the race path emits). Paste the red output.
+- [x] In the regenerated `feats.json`, every name in `HALF_FEATS` (`src/rules/leveling.ts:16`) that is in the dump has a fixed increase or an `abilityScoreChoices` entry whose scores equal the table's list. Paste the comparison (a throwaway node one-liner is fine) and name any mismatch.
+- [x] `npm run check:all` and `npm run check:live` pass.
