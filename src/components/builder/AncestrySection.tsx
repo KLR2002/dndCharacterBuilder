@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { AbilityKey, Character } from "../../types/character";
 import type { RaceData } from "../../types/dnd5e";
@@ -28,9 +28,10 @@ import { Modal } from "../ui/Modal";
 import { SearchBar } from "../ui/SearchBar";
 import { ABILITY_KEYS, ABILITY_LABELS, builderStyles as styles, RuleChoicePicker } from "./builderStyles";
 import { useCharacters } from "../../context/CharacterContext";
-import { getFeats } from "../../services/dataService";
-import { validateFeatPrerequisites, applyOriginFeat, removeOriginFeat } from "../../rules/feats";
-import { featIncreaseOptions, findFeat } from "../../rules/featSlot";
+import { applyOriginFeat, removeOriginFeat } from "../../rules/feats";
+import { applyFeatSlotPick, featIncreaseOptions, featSlotView, findFeat, takenFeatRuleChoices } from "../../rules/featSlot";
+import { pickRuleChoice } from "../../rules/ruleChoices";
+import { FeatList, FeatPickDetails } from "../feats/FeatPicker";
 import { BACKGROUND_FEAT_SOURCE } from "../../constants/rules";
 
 export interface AncestrySectionProps {
@@ -86,7 +87,6 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
   const flexibleMode = userSelectedMode ?? detectedMode ?? "2_1";
 
   const [featModalVisible, setFeatModalVisible] = useState(false);
-  const [featSearch, setFeatSearch] = useState("");
 
   const { activeBooks, isIntegrated } = useCharacters();
 
@@ -116,7 +116,15 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
     if (hasVRGR) return "Lineage Replacement (VRGtR)";
     return "Custom Lineage (TCoE)";
   }, [activeBooks]);
-  const allFeats = useMemo(() => getFeats(activeBooks), [activeBooks]);
+  const raceOriginOffers = useMemo(
+    () =>
+      featSlotView(
+        character,
+        { slot: { kind: "origin", grantedBy: "race" }, featName: null },
+        { compendium: currentCompendium(), activeBooks },
+      ).offered,
+    [character, activeBooks],
+  );
   const raceSpellChoices = useMemo(() => {
     return character.race ? raceSpellRuleChoices(character, currentCompendium(), activeBooks) : [];
   }, [character, activeBooks]);
@@ -507,55 +515,22 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
                 />
               </View>
 
-              {(() => {
-                const bonusOptions = featIncreaseOptions(
+              <FeatPickDetails
+                increase={featIncreaseOptions(
                   findFeat(currentOriginFeat.featName || "", currentOriginFeat.featSource, currentCompendium(), activeBooks)
-                );
-                if (bonusOptions.abilities.length <= 1) return null;
-                return (
-                  <View style={{ gap: 6, marginTop: 4 }}>
-                    <Text style={{ color: theme.accentHover, fontSize: 12, fontWeight: "600" }}>
-                      Choose +{bonusOptions.amount} Ability Score Increase:
-                    </Text>
-                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-                      {bonusOptions.abilities.map((ab) => {
-                        const isSelected = currentOriginFeat.featAbility === ab;
-                        return (
-                          <TouchableOpacity
-                            key={ab}
-                            onPress={() => {
-                              onUpdate((cur) =>
-                                applyOriginFeat(
-                                  cur,
-                                  { ...currentOriginFeat, featAbility: ab },
-                                  currentOriginFeat,
-                                  currentCompendium(),
-                                  activeBooks
-                                )
-                              );
-                            }}
-                            style={[
-                              styles.choiceChip,
-                              {
-                                backgroundColor: isSelected ? theme.accent : theme.surfaceHighlight,
-                                borderColor: isSelected ? theme.accentHover : theme.border,
-                              },
-                            ]}>
-                            <Text
-                              style={{
-                                color: isSelected ? theme.accentText : theme.text,
-                                fontSize: 12,
-                                fontWeight: isSelected ? "700" : "500",
-                              }}>
-                              +{bonusOptions.amount} {ab.toUpperCase()}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
-                    </View>
-                  </View>
-                );
-              })()}
+                )}
+                featAbility={currentOriginFeat.featAbility ?? null}
+                subChoices={takenFeatRuleChoices(character, currentOriginFeat, activeBooks, currentCompendium())}
+                subChoicePicks={Object.fromEntries((character.ruleChoices ?? []).map((rc) => [rc.id, rc.picked]))}
+                onSelectAbility={(ab) =>
+                  onUpdate((cur) =>
+                    applyOriginFeat(cur, { ...currentOriginFeat, featAbility: ab }, currentOriginFeat, currentCompendium(), activeBooks)
+                  )
+                }
+                onToggleSubChoice={(choice, option) =>
+                  onUpdate((cur) => pickRuleChoice(cur, choice, option, currentCompendium(), activeBooks))
+                }
+              />
 
               <GrantedSpellPicks
                 character={character}
@@ -756,106 +731,31 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
         title="Choose Origin Feat"
         subtitle="Select a 1st-level origin feat from your sourcebooks"
         maxHeightPercent={90}>
-        <SearchBar
-          value={featSearch}
-          onChangeText={setFeatSearch}
-          placeholder="Search feats..."
+        <FeatList
+          offered={raceOriginOffers}
+          selectedFeatName={currentOriginFeat?.featName ?? null}
+          onSelectFeat={(f) => {
+            onUpdate((cur) =>
+              applyFeatSlotPick(
+                cur,
+                { slot: { kind: "origin", grantedBy: "race" }, featName: f.name, featSource: f.source },
+                { compendium: currentCompendium(), activeBooks, replacing: currentOriginFeat }
+              )
+            );
+            setFeatModalVisible(false);
+          }}
+          onViewDetail={(f) =>
+            onViewDetail({ title: f.name, source: f.source, description: f.description })
+          }
+          // A feat the background already gives is held once, so the race cannot take it (applyOriginFeat).
+          isDisabled={(offer) =>
+            (character.originFeats ?? []).some(
+              (entry) =>
+                entry.featSource === BACKGROUND_FEAT_SOURCE &&
+                entry.featName?.toLowerCase() === offer.feat.name.toLowerCase()
+            )
+          }
         />
-        <ScrollView style={{ marginTop: 10, maxHeight: 450 }} nestedScrollEnabled>
-          <View style={{ gap: 8 }}>
-            {allFeats
-              .filter((f) => f.name.toLowerCase().includes(featSearch.toLowerCase()))
-              .map((f) => {
-                const prereqCheck = validateFeatPrerequisites(character, f, { catalogs: { compendium: currentCompendium(), activeBooks } });
-                const bonusOptions = featIncreaseOptions(f);
-                const isSelected = currentOriginFeat?.featName?.toLowerCase() === f.name.toLowerCase();
-                // A feat the background already gives is held once, so the race cannot take it (applyOriginFeat).
-                const heldByBackground = (character.originFeats ?? []).some(
-                  (entry) => entry.featSource === BACKGROUND_FEAT_SOURCE && entry.featName?.toLowerCase() === f.name.toLowerCase()
-                );
-
-                return (
-                  <TouchableOpacity
-                    key={`${f.name}__${f.source}`}
-                    activeOpacity={0.7}
-                    disabled={heldByBackground}
-                    onPress={() => {
-                      const initialAbility =
-                        bonusOptions.abilities.length === 1 ? bonusOptions.abilities[0] : undefined;
-                      onUpdate((cur) =>
-                        applyOriginFeat(
-                          cur,
-                          {
-                            level: 1,
-                            type: "feat",
-                            featName: f.name,
-                            featSource: f.source,
-                            featAbility: initialAbility,
-                          },
-                          currentOriginFeat,
-                          currentCompendium(),
-                          activeBooks
-                        )
-                      );
-                      setFeatModalVisible(false);
-                    }}
-                    style={[
-                      styles.featureRow,
-                      {
-                        borderColor: isSelected ? theme.accentHover : theme.border,
-                        backgroundColor: isSelected ? theme.surfaceHighlight : theme.surface,
-                        padding: 10,
-                        borderRadius: 8,
-                      },
-                    ]}>
-                    <View style={{ flex: 1, gap: 4 }}>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                        <Text style={{ color: theme.text, fontSize: 14, fontWeight: "700" }}>{f.name}</Text>
-                        <Badge label={f.source} variant="surface" size="sm" />
-                        {!prereqCheck.met && (
-                          <Badge label={`⚠️ ${prereqCheck.reason}`} variant="danger" size="sm" />
-                        )}
-                      </View>
-                      {bonusOptions.abilities.length > 0 && (
-                        <Text style={{ color: theme.accentHover, fontSize: 11, fontWeight: "600" }}>
-                          Half-Feat (+1 to {bonusOptions.abilities.map((a) => a.toUpperCase()).join("/")})
-                        </Text>
-                      )}
-                      <Text style={{ color: theme.textSecondary, fontSize: 12 }} numberOfLines={2}>
-                        {f.description.replace(/\*\*/g, "").slice(0, 140)}...
-                      </Text>
-                    </View>
-                    <Button
-                      title={isSelected ? "Selected" : "Select"}
-                      variant={isSelected ? "secondary" : "primary"}
-                      size="sm"
-                      disabled={isSelected || heldByBackground}
-                      onPress={() => {
-                        const initialAbility =
-                          bonusOptions.abilities.length === 1 ? bonusOptions.abilities[0] : undefined;
-                        onUpdate((cur) =>
-                          applyOriginFeat(
-                            cur,
-                            {
-                              level: 1,
-                              type: "feat",
-                              featName: f.name,
-                              featSource: f.source,
-                              featAbility: initialAbility,
-                            },
-                            currentOriginFeat,
-                            currentCompendium(),
-                            activeBooks
-                          )
-                        );
-                        setFeatModalVisible(false);
-                      }}
-                    />
-                  </TouchableOpacity>
-                );
-              })}
-          </View>
-        </ScrollView>
       </Modal>
 
     </View>

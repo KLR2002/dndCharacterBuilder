@@ -483,6 +483,25 @@ function backgroundFeatCharacter() {
   });
 }
 
+// A level 1 Variant Human with no origin feat yet: the race's origin feat modal takes Fighting Initiate, and the race card
+// then shows its style choice. Integrated mode only (Fighting Initiate is in the integrated catalog).
+const VARIANT_ORIGIN_ID = "char_variantorigin";
+function variantOriginCharacter() {
+  return makeChar({
+    id: VARIANT_ORIGIN_ID,
+    name: "Ilse",
+    createdAt: 13,
+    updatedAt: 13,
+    startingOption: "equipment",
+    race: { name: "Human", source: catalogSource("races", "Human"), subraceName: "Variant", subraceSource: "PHB" },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [{ className: "Fighter", source: catalogSource("classes", "Fighter"), level: 1 }],
+    currentHp: 12,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+  });
+}
+
 // A level 8 Wizard whose sources grant spells, so the Spells tab shows one card per source. The SRD Baseline has the race
 // only (a Tiefling, cast with Charisma). The integrated catalog adds: a Githyanki with its casting ability picked (Intelligence);
 // Magic Initiate from an origin feat, with its Wizard list picked; a Strixhaven Initiate (Silverquill) with long spell names
@@ -1187,7 +1206,7 @@ export function buildSeed({ root, integrated }) {
       battleMasterCharacter(),
       ...(INTEGRATED ? [magicInitiateCharacter()] : []),
       highElfCharacter(),
-      ...(INTEGRATED ? [backgroundFeatCharacter()] : []),
+      ...(INTEGRATED ? [backgroundFeatCharacter(), variantOriginCharacter()] : []),
       grantedSpellsCharacter(),
       ...(INTEGRATED ? [preparedGrantCharacter(), preparedFighterCharacter()] : []),
       ...(INTEGRATED ? [clericCharacter({ id: CLERIC_ID, name: "Corwin", domain: false })] : []),
@@ -1359,6 +1378,24 @@ export function buildScreens({ integrated }) {
               ready: /background feat/i,
               scrollTo: "Magic Initiate Spell List (choose 1)",
               expect: { texts: ["Feat Added to Character", "Magic Initiate Spell List (choose 1)", "Magic Initiate Cantrip (choose 2)", "Magic Initiate Spell (choose 1)"], fitsWidth: true },
+            },
+          ]
+        : []),
+      // A Variant Human's origin feat: the modal takes Fighting Initiate, and the race card's style choice takes a pick.
+      ...(INTEGRATED
+        ? [
+            {
+              shot: true,
+              name: "Builder origin feat",
+              route: buildRoute(VARIANT_ORIGIN_ID, "race"),
+              ready: "Fighting Initiate Style (1/1):",
+              open: [
+                { tap: { text: "Select Origin Feat", exact: true } },
+                { tap: { label: "Feat Fighting Initiate" } },
+                { tap: { label: "Fighting Initiate Style Archery" } },
+              ],
+              scrollTo: "Fighting Initiate Style",
+              expect: { texts: ["Variant Human Origin Feat", "Fighting Initiate Style (1/1):", "Archery"], fitsWidth: true },
             },
           ]
         : []),

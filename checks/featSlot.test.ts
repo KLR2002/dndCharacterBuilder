@@ -281,3 +281,16 @@ test("a saved feat entry opens the Rule Choice of its feat: Fighting Initiate's 
   const opened = takenFeatRuleChoices(character, selection, ALL_BOOKS, compendium);
   assert.deepEqual(opened.map((choice) => choice.id), [FIGHTING_INITIATE_CHOICE_ID]);
 });
+
+test("a race origin feat entry opens the Rule Choice of its feat: a Variant Human's Fighting Initiate style", () => {
+  const compendium = catalog([FIGHTING_INITIATE]);
+  const selection: AsiSelection = {
+    level: 1,
+    type: "feat",
+    featName: "Fighting Initiate",
+    featSource: "TCE",
+  };
+  const character = makeChar({ ...WIZARD_4, originFeats: [selection] });
+  const opened = takenFeatRuleChoices(character, selection, ALL_BOOKS, compendium);
+  assert.deepEqual(opened.map((choice) => choice.id), [FIGHTING_INITIATE_CHOICE_ID]);
+});
