@@ -214,7 +214,10 @@ export interface FeatData {
   name: string;
   source: string;
   prerequisite: string | null;
+  /** Fixed Increases only. The choice the record leaves to the player is in `abilityScoreChoices`. */
   abilityScoreIncrease: Record<string, number>[] | null;
+  /** The Increase Choices the record states. Absent when it states none. */
+  abilityScoreChoices?: AbilityScoreChoiceData[];
   description: string;
   rawEntries?: any[];
   /** Proficiency Grants extracted from the feat's prose, or from its override. */
