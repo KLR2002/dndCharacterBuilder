@@ -19,9 +19,11 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `checks/spellCounts.test.ts` (SRD compendium from ticket 01, `makeChar()`) covers:
+**Landed:** merge of 55073fe, 5a43ff3; follow-up 66bfe3f. `spellCounts(character, profile, catalogs?)` reads the class record through `heldClass` (subclass record for third casters), the level from the class entry; `spellPage.counts` gives `{ text, warn }` per part (`Cantrips 3/3`, `Spells 5/6`, `Spellbook 8/10`), rendered as badges under the list subtitle; `isCreationStepValid("spells")` requires every count met. Review fixes: the count matched only the owner's exact key, so a single caster's legacy spells (no key, or another book's key for the class) went uncounted; it now counts those and still leaves out feat spells and Pact of the Tome; the Wizard subtitle's "N in spellbook" no longer counts cantrips. Fixture changed: `checks/creationFlowChanges.test.ts` background-release Cleric got its 3 cantrips. Spells layout green at 320 and 393; check:all passed.
+
+- [x] `checks/spellCounts.test.ts` (SRD compendium from ticket 01, `makeChar()`) covers:
   - A Wizard 1 with 3 cantrips and 6 spellbook spells: both met. A Wizard 3 with 8 spellbook spells: due 10, not met.
   - A Sorcerer 1 with 4 cantrips and 2 spells: met. With a feat spell added: still met.
   - A Warlock 3 with Pact of the Tome cantrips: the Tome cantrips are not counted.
@@ -30,6 +32,6 @@
   - A Wizard 3 / Sorcerer 1: each counts by its own level.
   - A stale compendium: both null.
   - An Eldritch Knight 3, with the integrated test compendium: cantrips due 2, spells due 3.
-- [ ] Creation: a Wizard 1 draft with 5 spellbook spells has the Spells step incomplete; with 6, complete.
-- [ ] `npm run check:all` passes.
-- [ ] Scoped layout: `ONLY=Spells WIDTHS=320,393 npm run layout:check` green. Add a `texts` expectation for the counter to the `Builder Spells step` scenario (a Wizard). Open its screenshot at 393 and describe the counter.
+- [x] Creation: a Wizard 1 draft with 5 spellbook spells has the Spells step incomplete; with 6, complete.
+- [x] `npm run check:all` passes.
+- [x] Scoped layout: `ONLY=Spells WIDTHS=320,393 npm run layout:check` green. Add a `texts` expectation for the counter to the `Builder Spells step` scenario (a Wizard). Open its screenshot at 393 and describe the counter.
