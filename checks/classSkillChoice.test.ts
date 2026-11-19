@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { ALL_BOOKS } from "../src/constants/books.ts";
+import { ALL_BOOKS, DEFAULT_ACTIVE_BOOK_CODES } from "../src/constants/books.ts";
 import type { ClassData } from "../src/types/dnd5e.ts";
 import type { Character, CharacterClass } from "../src/types/character.ts";
 import {
@@ -10,11 +10,11 @@ import {
 } from "../src/rules/proficiencySheet.ts";
 import { proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts";
 import { pickRuleChoice } from "../src/rules/ruleChoices.ts";
-import { reconcile } from "../src/rules/characterReconciler.ts";
+import { reconcile, reconcileForActiveBooks } from "../src/rules/characterReconciler.ts";
 import { classChoicesStepView } from "../src/rules/classChoices.ts";
 import { removeClassLevel } from "../src/rules/builderTransitions.ts";
 import { catalogListings } from "../src/rules/catalogs.ts";
-import { srdBaselineCompendium, makeChar, loadSrdCatalog } from "./testUtils.ts";
+import { srdBaselineCompendium, makeChar, loadSrdCatalog, integratedTestCompendium } from "./testUtils.ts";
 
 // The starting skill choice is a Proficiency Choice on the first class's Starting Proficiencies feature (ADR 0015).
 // The SRD Baseline's classes carry the source "SRD".
@@ -22,7 +22,7 @@ import { srdBaselineCompendium, makeChar, loadSrdCatalog } from "./testUtils.ts"
 const compendium = () => srdBaselineCompendium();
 const catalogs = () => ({ compendium: compendium(), activeBooks: ALL_BOOKS });
 const srdClass = (name: string): ClassData => loadSrdCatalog<ClassData[]>("classes").find((c) => c.name === name) as ClassData;
-const fighterId = "SRD/Fighter/Starting Proficiencies@1#skills:choice:from";
+const fighterId = "PHB/Fighter/Starting Proficiencies@1#skills:choice:from";
 const FIGHTER_SKILLS = ["Acrobatics", "Animal Handling", "Athletics", "History", "Insight", "Intimidation", "Perception", "Survival"];
 
 const fighter: CharacterClass = { className: "Fighter", source: "SRD", level: 1 };
@@ -45,7 +45,7 @@ test("a class's starting skill grant is a skills choice of its record's count, f
 test("a starting skill record with no pool is a choice from any skill, with the record's count", () => {
   const anySkills: ClassData = { ...srdClass("Bard"), skillProficiencies: { choose: 3, from: [] } };
   const grant = startingSkillGrantOf(anySkills);
-  assert.equal(grant?.id, "SRD/Bard/Starting Proficiencies@1#skills:choice:any");
+  assert.equal(grant?.id, "PHB/Bard/Starting Proficiencies@1#skills:choice:any");
   assert.equal(grant?.count, 3);
   assert.deepEqual(grant?.pool, { kind: "any" });
 });
@@ -148,5 +148,31 @@ test("removing the only Fighter level releases the starting skill pick", () => {
 test("a Rogue 1 / Fighter 1 offers the Rogue's starting skill choice, and the Fighter's record adds no skill choice", () => {
   const character = makeChar({ classes: [rogue, { className: "Fighter", source: "SRD", level: 1 }] });
   const skillOffers = proficiencyChoiceOffers(character, { compendium: compendium(), activeBooks: ALL_BOOKS }).filter((o) => o.categories?.includes("skills"));
-  assert.deepEqual(skillOffers.map((o) => [o.id, o.choose]), [["SRD/Rogue/Starting Proficiencies@1#skills:choice:from", 4]]);
+  assert.deepEqual(skillOffers.map((o) => [o.id, o.choose]), [["PHB/Rogue/Starting Proficiencies@1#skills:choice:from", 4]]);
+});
+
+test("a starting skill pick made on the SRD Baseline holds once the Integrated Catalog is synced, and back", () => {
+  const fighter = makeChar({ classes: [{ className: "Fighter", source: "SRD", level: 1 }], proficiencyPicks: { [fighterId]: ["Athletics", "Perception"] } });
+  const skillsWith = (character: Character, compendium: ReturnType<typeof srdBaselineCompendium>) =>
+    proficiencySheet(character, { compendium, activeBooks: DEFAULT_ACTIVE_BOOK_CODES }).skills.map((s) => s.name);
+  const integrated = integratedTestCompendium();
+  const synced = reconcileForActiveBooks(fighter, integrated, [...DEFAULT_ACTIVE_BOOK_CODES]);
+  assert.ok(["Athletics", "Perception"].every((name) => skillsWith(synced, integrated).includes(name)));
+  const reverted = reconcileForActiveBooks(synced, srdBaselineCompendium(), [...DEFAULT_ACTIVE_BOOK_CODES]);
+  assert.ok(["Athletics", "Perception"].every((name) => skillsWith(reverted, srdBaselineCompendium()).includes(name)));
+});
+
+test("a starting or multiclass skill pick saved under its SRD-named id moves to the PHB-named id", () => {
+  const saved = makeChar({
+    classes: [{ className: "Fighter", source: "SRD", level: 1 }, { className: "Rogue", source: "SRD", level: 1 }],
+    proficiencyPicks: {
+      "SRD/Fighter/Starting Proficiencies@1#skills:choice:from": ["Athletics", "Perception"],
+      "SRD/Rogue/Multiclass Proficiencies@1#skills:choice:from": ["Stealth"],
+    },
+  });
+  const moved = reconcile(saved, srdBaselineCompendium(), { activeBooks: DEFAULT_ACTIVE_BOOK_CODES });
+  assert.deepEqual(moved.proficiencyPicks, {
+    [fighterId]: ["Athletics", "Perception"],
+    "PHB/Rogue/Multiclass Proficiencies@1#skills:choice:from": ["Stealth"],
+  });
 });

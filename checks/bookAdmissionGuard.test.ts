@@ -38,6 +38,16 @@ const ALLOW_LIST: { file: string; text: string; reason: string }[] = [
     reason: "A held class with no record in the catalog takes the SRD source for its Rule Choice ids. A source is named, not admitted.",
   },
   {
+    file: "rules/proficiencySources/classBase.ts",
+    text: "cls.source !== SRD_SOURCE && cls.source !== SRD_PRINTED_SOURCE",
+    reason: "A grant built from an SRD or PHB class record takes the PHB id the Catalog's own grants use. It names a grant id, not admission.",
+  },
+  {
+    file: "rules/proficiencySources/classBase.ts",
+    text: "aliases: [`${SRD_SOURCE}/${rest}`]",
+    reason: "The SRD-named id such a grant had before is kept as an alias, so a pick saved under it moves. A grant id, not admission.",
+  },
+  {
     file: "rules/srdNames.ts",
     text: "source === SRD_SOURCE ?",
     reason: "The SRD name migration renames only saves whose record is SRD-sourced. It decides which name a save takes, not admission.",
@@ -147,3 +157,4 @@ test("guard: every allow-list entry gives a reason", () => {
     assert.ok(entry.reason.trim().length > 20, `${entry.file} needs a reason`);
   }
 });
+
