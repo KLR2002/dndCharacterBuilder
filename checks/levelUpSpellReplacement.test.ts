@@ -62,6 +62,21 @@ test("a Sorcerer 4 to 5 may forget its own Shield, and the replacement learns Ma
   assert.equal(owned.includes("Mage Hand"), true, "other spells stay");
 });
 
+test("a replaced spell saved under another book's key for the class is forgotten", () => {
+  const sorcerer = makeChar({
+    classes: [{ className: "Sorcerer", source: "PHB", level: 4 }],
+    knownSpells: [
+      { name: "Shield", source: "SRD", ownerKey: "Sorcerer__SRD" },
+      { name: "Mage Hand", source: "SRD", ownerKey: "Sorcerer__PHB" },
+    ],
+  });
+  const plan = planFor(sorcerer, "Sorcerer");
+  const replaced = setPlanReplacedLearn(setPlanReplacedForget(plan, spellNamed("Shield")), spellNamed("Magic Missile"));
+  const withNewPick = togglePlanSpell(replaced, spellNamed("Thunderwave"));
+  const after = applyLevelUpPlan(sorcerer, withNewPick, { activeBooks: ALL_BOOKS, compendium: srdOpts.compendium });
+  assert.equal((after.knownSpells ?? []).some((k) => k.name === "Shield"), false, "Shield is gone");
+});
+
 test("a half-made replacement keeps the Spells step incomplete", () => {
   const sorcerer = sorcerer4WithShield();
   const plan = planFor(sorcerer, "Sorcerer");
