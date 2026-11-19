@@ -36,17 +36,25 @@
 
 **Blocked by:** 02
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Tests, `checks/savedPicksMigration.test.ts`:
+**Landed:** merge ac1705a (d565975, 77b1d30, 5cd4b60); review fix 309d0ab.
+- **The step:** `migrateSavedPicks` in `src/rules/savedPicksMigration.ts` runs nine passes and then `renameSrdNames`. It runs on load for every character and first in `reconcileForActiveBooks`, which runs on books, catalog and selection changes.
+- **What stays in `reconcile`:** `moveExpertisePicksToGrants`, because Expertise milestones still write `chosenExpertise`. The classification table is in Comments below.
+- **No call on creation:** a new record has nothing to move, and no import or restore path exists.
+- **Guard:** `checks/legacyFieldsGuard.test.ts`, an AST scan that failed on a planted write. Review fix: it watches only `chosenSkills`, `skillChoices`, `chosenTools` and `chosenLanguages`, leaving 7 allow-list entries. The `ruleChoices`, `resourceCounters` and `chosenExpertise` entries (21 files) gave no protection, since every edit writes those fields.
+- **Tests:** 8 in `checks/savedPicksMigration.test.ts`. Move tests in 11 files now call `migrateSavedPicks` or `reconcileForActiveBooks`.
+- check:all, check:live, and `ONLY` Builder and Level-Up at 393 passed, SRD and integrated.
+
+- [x] Tests, `checks/savedPicksMigration.test.ts`:
   - A character holding every legacy shape (one per migration pass, built from that pass's existing tests) comes out of `migrateSavedPicks` with each moved, and `reconcile` then leaves it unchanged.
   - `migrateSavedPicks` is idempotent.
   - A Proficiency Choice pick saved under a grant alias moves when `reconcileForActiveBooks` runs with a compendium whose grant carries that alias. That is the catalog-change case.
   - `checks/classSkillChoice.test.ts` "…holds once the Integrated Catalog is synced, and back" and "…saved under its SRD-named id moves…" still pass. The second calls `reconcile`; switch it to `migrateSavedPicks` if the alias move leaves `reconcile`.
   - `reconcile` alone no longer moves a legacy class tool bucket: proof the pass left.
-- [ ] Every existing test of a moved pass that called `reconcile` to trigger the move calls `migrateSavedPicks` instead; list them.
-- [ ] `npm run check:all` and `npm run check:live` pass.
-- [ ] Scoped layout: `ONLY=Builder WIDTHS=393` and `ONLY="Level-Up" WIDTHS=393`, SRD and `-- --integrated`, green.
+- [x] Every existing test of a moved pass that called `reconcile` to trigger the move calls `migrateSavedPicks` instead; list them.
+- [x] `npm run check:all` and `npm run check:live` pass.
+- [x] Scoped layout: `ONLY=Builder WIDTHS=393` and `ONLY="Level-Up" WIDTHS=393`, SRD and `-- --integrated`, green.
 
 ## Comments
 

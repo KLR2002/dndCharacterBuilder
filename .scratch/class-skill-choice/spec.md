@@ -1,6 +1,6 @@
 # Spec: The class skill pick is a Proficiency Choice
 
-**Status:** ready-for-agent
+**Status:** done (full layout gate pending)
 
 Architecture review candidate #7 (2026-11-18). Decided with the user on 2026-11-19. Amends ADR 0015; ADR 0026.
 
