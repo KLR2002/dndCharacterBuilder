@@ -14,9 +14,16 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Tests, `checks/hitPointPool.test.ts`:
+**Landed:** merge 8157c56 (92073d1, d7ea10e, ad29864, 33bd6ca).
+- **The router:** `hitPointPatch` lives in the new `src/rules/hitPointPool.ts`, because `wildShapeHp.ts` already imports `hitPoints.ts`. With no target, the pool is the form while one is active. The Stats tab handlers and `useHpQuickEdit` call it; the header keeps its explicit target.
+- **Decided with the user after the first screenshot**, which showed the form's HP in two cards and hid normal HP: while a form is active, the Active Wild Shape card is the one place to act (Damage, Heal, and a new Temp HP field). The Hit Points card shows normal HP read-only (no buttons, no temp field, the number inert), with HP Settings kept. With no form, the card is unchanged.
+- **New scenario:** `Stats Wild Shape HP` checks that both cards show their own pool. `checks/androidRunner.test.ts` counts `ONLY=Stats` scenarios and went from 5 to 6.
+- **Tests:** 9 in `checks/hitPointPool.test.ts`, red first.
+- check:all passed; `ONLY=Stats` passed at 393, SRD and integrated; `ONLY="Wild Shape"` passed, SRD.
+
+- [x] Tests, `checks/hitPointPool.test.ts`:
   - Without a form, damage uses temp HP first, then current HP.
   - With a form of 10 HP:
     - Damage 4 leaves the form at 6 and normal HP unchanged.
@@ -24,5 +31,5 @@
     - Heal goes to the form, capped at its max.
     - Temp HP goes to the form.
   - With `target: "character"` during a form, damage changes normal HP.
-- [ ] `npm run check:all` passes.
-- [ ] Scoped layout: find the scenarios that show a Wild Shape (`grep -n "activeWildShape" scripts/lib/scenarios.mjs`) and run them with `ONLY=Stats`, at `WIDTHS=393`, SRD and `-- --integrated`, green. If no scenario shows the Stats tab during a form, add `Stats Wild Shape HP` and open its screenshot.
+- [x] `npm run check:all` passes.
+- [x] Scoped layout: find the scenarios that show a Wild Shape (`grep -n "activeWildShape" scripts/lib/scenarios.mjs`) and run them with `ONLY=Stats`, at `WIDTHS=393`, SRD and `-- --integrated`, green. If no scenario shows the Stats tab during a form, add `Stats Wild Shape HP` and open its screenshot.
