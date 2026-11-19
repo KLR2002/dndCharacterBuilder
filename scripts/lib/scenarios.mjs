@@ -1499,6 +1499,7 @@ export function buildScreens({ integrated }) {
   // (scripts/lib/scenario-override.mjs, applyWideOverride) when the page width is at or above `minWidth`, so one
   // scenario can assert a different path at wide widths (the Android runner never applies it).
   const RENDAR_ROUTE = `/character/${CHARACTER_ID}`;
+  const DRUID_ROUTE = `/character/${DRUID_ID}`;
   const WIZARD_ROUTE = `/character/${WIZARD_ID}`;
   const ARTIFICER_ROUTE = `/character/${ARTIFICER_ID}`;
   const LONG_NAME_ROUTE = `/character/${LONG_NAME_ID}`;
@@ -1712,6 +1713,7 @@ export function buildScreens({ integrated }) {
       { name: "Builder Background picks card collapsed", route: buildRoute(CHARACTER_ID, "background"), ready: "Languages", open: [{ tap: { text: "Languages", exact: true } }], scrollTo: "Languages", expect: { texts: ["Languages"], absent: ["Dwarvish"], fitsWidth: true } },
       { shot: true, name: "Stats", route: RENDAR_ROUTE, tabs: ["Stats"], ready: /hit points/i },
       { name: "Stats long header name", route: LONG_NAME_ROUTE, tabs: ["Stats"], ready: /hit points/i, headerName: LONG_NAME },
+      { shot: true, name: "Stats Wild Shape HP", route: DRUID_ROUTE, tabs: ["Stats"], ready: /wild shape hp/i },
       { name: "Stats add tool modal", route: RENDAR_ROUTE, tabs: ["Stats"], open: [{ tap: { label: "Add tool proficiency" } }], modal: "Add Tool Proficiency" },
       { name: "Stats add language modal", route: RENDAR_ROUTE, tabs: ["Stats"], open: [{ tap: { label: "Add language" } }], modal: "Add Language" },
       // The Initiative box opens its breakdown (integrated mode only, where the Rogue's and the Wizard's Initiative Bonuses exist).
