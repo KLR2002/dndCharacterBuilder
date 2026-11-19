@@ -162,13 +162,11 @@ export const StatsTab: React.FC = () => {
   const profBonus = evaluated.proficiencyBonus;
   const { scores, modifiers } = evaluated.effectiveScores;
   const calculatedMaxHp = evaluated.hp.max;
-  const { ac, breakdown: acBreakdown } = evaluated.armorClass;
-  const hasDefenseAc = acBreakdown.includes("(Defense)");
-  const edMatch = acBreakdown.match(/\+\s*(\d+)\s*\(Enhanced Defense\)/);
-  const repMatch = acBreakdown.match(/\+\s*(\d+)\s*\(Repulsion Shield\)/);
-  const infusionBonusAc =
-    (edMatch ? parseInt(edMatch[1], 10) : 0) +
-    (repMatch ? parseInt(repMatch[1], 10) : 0);
+  const { ac, breakdown: acBreakdown, parts: acParts } = evaluated.armorClass;
+  const defensePart = acParts.find(part => part.kind === "fightingStyle");
+  const infusionBonusAc = acParts
+    .filter(part => part.kind === "infusion")
+    .reduce((total, part) => total + part.value, 0);
   const speeds = evaluated.speeds;
   const initiative = evaluated.initiative;
   const saves = evaluated.saves;
@@ -446,9 +444,9 @@ export const StatsTab: React.FC = () => {
           <Ionicons name="shield" size={18} color={theme.accentHover} />
           <Text style={[styles.statBoxValue, { color: theme.text }]}>{ac}</Text>
           <Text style={[styles.statBoxLabel, { color: theme.textMuted }]}>ARMOR CLASS</Text>
-          {(hasDefenseAc || infusionBonusAc > 0) && (
+          {(defensePart || infusionBonusAc > 0) && (
             <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 3, marginTop: 4 }}>
-              {hasDefenseAc && <Badge label="Defense +1" variant="outline" size="sm" />}
+              {defensePart && <Badge label={`Defense +${defensePart.value}`} variant="outline" size="sm" />}
               {infusionBonusAc > 0 && <Badge label={`Infused +${infusionBonusAc}`} variant="outline" size="sm" />}
             </View>
           )}

@@ -59,13 +59,35 @@ function isItemInfusedWith(
   return false;
 }
 
-export function armorClass(character: Character, opts: RulesOptions): { ac: number; breakdown: string } {
+/** One term of an armor class: its kind, its label in the breakdown, and its value. */
+export type ArmorClassPart = {
+  kind: "base" | "ability" | "shield" | "fightingStyle" | "infusion" | "magic";
+  label: string;
+  value: number;
+};
+
+export type ArmorClassResult = { ac: number; breakdown: string; parts: ArmorClassPart[] };
+
+/** The breakdown text of one part: "14 (Armor)", or the bare number when the part has no label. */
+function renderPart(part: ArmorClassPart): string {
+  return part.label ? `${part.value} (${part.label})` : `${part.value}`;
+}
+
+function resultOf(parts: ArmorClassPart[]): ArmorClassResult {
+  return {
+    ac: parts.reduce((total, part) => total + part.value, 0),
+    breakdown: parts.map(renderPart).join(" + "),
+    parts,
+  };
+}
+
+export function armorClass(character: Character, opts: RulesOptions): ArmorClassResult {
   const { dex, con, wis } = effectiveScores(character, opts).modifiers;
   const equipped = (opts.items ?? character.items).filter(i => i.isEquipped);
   const armor = equipped.find(i => i.ac != null && armorCategory(i) !== "shield");
   const shield = equipped.find(i => armorCategory(i) === "shield");
   const shieldBonus = shield ? (shield.ac ?? 2) : 0;
-  const shieldText = shield ? ` + ${shieldBonus} (Shield)` : "";
+  const shieldParts: ArmorClassPart[] = shield ? [{ kind: "shield", label: "Shield", value: shieldBonus }] : [];
 
   const artificer = (character.classes || []).find(
     (c) => c.className.toLowerCase() === "artificer"
@@ -73,24 +95,18 @@ export function armorClass(character: Character, opts: RulesOptions): { ac: numb
   const artificerLevel = artificer ? artificer.level : 0;
   const edBonus = artificerLevel >= 10 ? 2 : 1;
 
-  let infusionAcBonus = 0;
-  let infusionBreakdown = "";
+  const infusionParts: ArmorClassPart[] = [];
 
   const armorHasED = isItemInfusedWith(character, armor, "Enhanced Defense", shield ? undefined : "armor");
   const shieldHasED = isItemInfusedWith(character, shield, "Enhanced Defense", armor ? undefined : "shield");
   const shieldHasRepulsion = isItemInfusedWith(character, shield, "Repulsion Shield", "shield");
 
-  if (armorHasED) {
-    infusionAcBonus += edBonus;
-    infusionBreakdown += ` + ${edBonus} (Enhanced Defense)`;
-  } else if (shieldHasED) {
-    infusionAcBonus += edBonus;
-    infusionBreakdown += ` + ${edBonus} (Enhanced Defense)`;
+  if (armorHasED || shieldHasED) {
+    infusionParts.push({ kind: "infusion", label: "Enhanced Defense", value: edBonus });
   }
 
   if (shieldHasRepulsion) {
-    infusionAcBonus += 1;
-    infusionBreakdown += ` + 1 (Repulsion Shield)`;
+    infusionParts.push({ kind: "infusion", label: "Repulsion Shield", value: 1 });
   }
 
   let magicAcBonus = 0;
@@ -108,30 +124,45 @@ export function armorClass(character: Character, opts: RulesOptions): { ac: numb
     }
   }
 
-  const magicAcText = magicAcBonus > 0 ? ` + ${magicAcBonus} (Magic Item)` : "";
+  const magicParts: ArmorClassPart[] = magicAcBonus > 0 ? [{ kind: "magic", label: "Magic Item", value: magicAcBonus }] : [];
 
   if (armor) {
     const category = armorCategory(armor);
     const appliedDex = category === "heavy" ? 0 : category === "medium" ? Math.min(dex, 2) : dex;
     const hasDefense = hasFightingStyle(character, "Defense");
-    const defenseBonus = hasDefense ? 1 : 0;
-    const defenseText = hasDefense ? " + 1 (Defense)" : "";
-    return {
-      ac: armor.ac! + appliedDex + shieldBonus + defenseBonus + infusionAcBonus + magicAcBonus,
-      breakdown: `${armor.ac} (Armor)${category === "heavy" ? "" : ` + ${appliedDex} (Dex${category === "medium" ? " max 2" : ""})`}${shieldText}${defenseText}${infusionBreakdown}${magicAcText}`
-    };
+    const dexParts: ArmorClassPart[] = category === "heavy"
+      ? []
+      : [{ kind: "ability", label: category === "medium" ? "Dex max 2" : "Dex", value: appliedDex }];
+    const defenseParts: ArmorClassPart[] = hasDefense ? [{ kind: "fightingStyle", label: "Defense", value: 1 }] : [];
+    return resultOf([
+      { kind: "base", label: "Armor", value: armor.ac! },
+      ...dexParts,
+      ...shieldParts,
+      ...defenseParts,
+      ...infusionParts,
+      ...magicParts,
+    ]);
   }
   const defense = unarmoredDefenseClass(character);
-  if (defense === "Barbarian") return {
-    ac: 10 + dex + con + shieldBonus + infusionAcBonus + magicAcBonus,
-    breakdown: `10 + ${dex} (Dex) + ${con} (Con)${shieldText}${infusionBreakdown}${magicAcText}`
-  };
-  if (defense === "Monk" && !shield) return {
-    ac: 10 + dex + wis + magicAcBonus,
-    breakdown: `10 + ${dex} (Dex) + ${wis} (Wis)${magicAcText}`
-  };
-  return {
-    ac: 10 + dex + shieldBonus + infusionAcBonus + magicAcBonus,
-    breakdown: `10 + ${dex} (Dex)${shieldText}${infusionBreakdown}${magicAcText}`
-  };
+  if (defense === "Barbarian") return resultOf([
+    { kind: "base", label: "", value: 10 },
+    { kind: "ability", label: "Dex", value: dex },
+    { kind: "ability", label: "Con", value: con },
+    ...shieldParts,
+    ...infusionParts,
+    ...magicParts,
+  ]);
+  if (defense === "Monk" && !shield) return resultOf([
+    { kind: "base", label: "", value: 10 },
+    { kind: "ability", label: "Dex", value: dex },
+    { kind: "ability", label: "Wis", value: wis },
+    ...magicParts,
+  ]);
+  return resultOf([
+    { kind: "base", label: "", value: 10 },
+    { kind: "ability", label: "Dex", value: dex },
+    ...shieldParts,
+    ...infusionParts,
+    ...magicParts,
+  ]);
 }
