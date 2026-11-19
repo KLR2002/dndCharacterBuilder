@@ -21,8 +21,10 @@ Add a guard test, `checks/spellsTabComponents.test.ts` (follow `checks/builderSt
 
 **Blocked by:** 04
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `wc -l src/components/tabs/SpellsTab.tsx src/components/spells/*.tsx` (paste it). SpellsTab is under 600 lines.
-- [ ] `npm run check:all` passes.
-- [ ] Scoped layout: `ONLY=Spells WIDTHS=320,393,1280 npm run layout:check` is green (paste the summary line).
+**Landed:** merge of aa6b254, 3408f30, 9a58a3c, 22d97f7; guard fix 83e73ff. `addSpellsOffer(character, ownerKey, catalogs)` returns `{ spells, restrictedSchools, knownNames }`; ritual entries, granted innate spells (`details`, `remaining`) and the swap offer (`original`) carry what the tab used to look up. SpellsTab 1582 → 578 lines; new in `src/components/spells/`: `SpellRow`, `SpellLevelGroups`, `SpellResourceCards`, `RitualBookCard`, `GrantedSpellCard` (with `LockedSpellCard`, `AtWillSpellCard`), `MetamagicModal`, `SubclassSwapModal`, `InscribeRitualModal`, `metamagicOptions.ts`, `spellFormat.ts`. The Add Spells modal stays in the tab. `checks/spellsTabComponents.test.ts` allows value imports from `spellPage` and the Ledger's 13 write functions, bans `dataService`, and bans the character context in `spells/` (the implementer's `useCharacter` pattern matched no real hook; fixed). `ONLY=Spells` green at 320, 393 and 1280, `Builder Spells step` at 393; check:all and check:live passed.
+
+- [x] `wc -l src/components/tabs/SpellsTab.tsx src/components/spells/*.tsx` (paste it). SpellsTab is under 600 lines.
+- [x] `npm run check:all` passes.
+- [x] Scoped layout: `ONLY=Spells WIDTHS=320,393,1280 npm run layout:check` is green (paste the summary line).
