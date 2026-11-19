@@ -1,6 +1,6 @@
 # Spec: The SRD Baseline stays SRD
 
-**Status:** ready-for-agent
+**Status:** done (full layout gate pending, run with `.scratch/book-admission/`)
 
 Grown from quick fix 06 (`.scratch/quick-fixes-nov-2026/issues/06-prune-to-srd-keeps-the-baseline.md`). Decided with the user on 2026-11-19.
 
@@ -36,6 +36,7 @@ Grown from quick fix 06 (`.scratch/quick-fixes-nov-2026/issues/06-prune-to-srd-k
    - It renames a saved spell or item with source `"SRD"` whose name matches a catalog record carrying `srdName`.
    - Without an Integrated Catalog, the old name stays: the spell or item is kept and shown by name, without details, until the player syncs.
    - The Catalog Format is not raised: an older catalog has no `srdName`, so it renames nothing.
+   - The Compendium's `findSpell` and `findItem` also match `srdName` for an SRD-sourced or unsourced name, because an Integrated Catalog keeps the PHB name. Added in review on 2026-11-19.
 
 ## Tickets
 
