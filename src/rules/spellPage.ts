@@ -15,6 +15,7 @@ import {
   type SpellSlotLedgerEntry,
 } from "./characterSpells.ts";
 import { learnableSpells } from "./learnableSpells.ts";
+import { spellCounts, type SpellCounts } from "./spellCounts.ts";
 import {
   getAtWillInvocationSpells,
   getMaxRitualBookLevel,
@@ -75,6 +76,17 @@ export interface SpellPageLevel {
   rows: SpellPageRow[];
 }
 
+/** One count of the open owner, as the Spells tab states it. `warn` marks a count that is not met. */
+export interface SpellPageCount {
+  text: string;
+  warn: boolean;
+}
+
+export interface SpellPageCounts {
+  cantrips: SpellPageCount | null;
+  spells: SpellPageCount | null;
+}
+
 export interface SpellPage {
   owners: SpellPageOwner[];
   /** The open Spell Owner's key, or null when the character has no class spell profile. */
@@ -89,6 +101,8 @@ export interface SpellPage {
   } | null;
   listTitle: string;
   listSubtitle: string;
+  /** The open owner's cantrips and spells against what its class level is due. Neither is blocked. */
+  counts: SpellPageCounts;
   canAddSpells: boolean;
   levels: SpellPageLevel[];
   /** The open Spell Owner's class profile, for the write calls. Null when the character has none. */
@@ -192,6 +206,7 @@ export function spellPage(character: Character, catalogs: CharacterCatalogs, own
       prepared: null,
       listTitle: "",
       listSubtitle: "",
+      counts: { cantrips: null, spells: null },
       canAddSpells: false,
       levels: [],
       ...resources,
@@ -216,6 +231,7 @@ export function spellPage(character: Character, catalogs: CharacterCatalogs, own
     prepared: preparedCounter(character, open, compendium, alwaysPrepared),
     listTitle: isMonk ? "MONK KI SPELLS" : `${open.className.toUpperCase()} SPELLBOOK & CANTRIPS`,
     listSubtitle: listSubtitle(character, open, compendium, alwaysPrepared, knownCount, subclassKnownCount),
+    counts: countLabels(spellCounts(character, open, catalogs)),
     canAddSpells: !isMonk,
     levels: buildLevels(character, open, profiles, catalogs, compendium),
     profile: open,
@@ -392,6 +408,22 @@ export function addSpellsOffer(character: Character, ownerKey: string, catalogs:
     restrictedSchools: learnable.restrictedSchools,
     knownNames: profile.knownSpells.map((k) => k.name),
   };
+}
+
+/** The counter texts. A spellbook warns only below its count, since a Wizard may copy spells in beyond it. */
+function countLabels(counts: SpellCounts): SpellPageCounts {
+  const cantrips = counts.cantrips && {
+    text: `Cantrips ${counts.cantrips.known}/${counts.cantrips.due}`,
+    warn: counts.cantrips.known !== counts.cantrips.due,
+  };
+  const spells = counts.spells && {
+    text:
+      counts.spells.kind === "spellbook"
+        ? `Spellbook ${counts.spells.known}/${counts.spells.due}`
+        : `Spells ${counts.spells.known}/${counts.spells.due}`,
+    warn: counts.spells.kind === "spellbook" ? counts.spells.known < counts.spells.due : counts.spells.known !== counts.spells.due,
+  };
+  return { cantrips: cantrips ?? null, spells: spells ?? null };
 }
 
 function ownerLabel(profile: ClassSpellProfile): string {
