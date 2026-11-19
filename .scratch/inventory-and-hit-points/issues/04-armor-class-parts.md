@@ -16,13 +16,20 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Tests in `checks/ac*.test.ts` (extend the existing file):
+**Landed:** merge e30cff1 (a56c811 pins, bb7910c).
+- **Parts:** `armorClass` returns `parts: { kind, label, value }[]`, with kinds base, ability, shield, fightingStyle, infusion and magic. `breakdown` is rendered from them and `ac` is their sum.
+- **Text unchanged:** five breakdown pins in the new `checks/ac.test.ts` were written against the old code and still pass.
+- **Stats tab:** the Defense and Infused badges read `parts`, with no regex left.
+- **Gap:** no layout scenario asserts the badge text, so the unit tests on `parts` cover it.
+- check:all passed; `ONLY=Stats` at 393 passed, SRD and integrated.
+
+- [x] Tests in `checks/ac*.test.ts` (extend the existing file):
   - `parts` sum to `ac` in each branch: armor, unarmored Barbarian, unarmored Monk, plain.
   - Defense gives a `fightingStyle` part.
   - Enhanced Defense gives an `infusion` part.
   - `breakdown` text is unchanged for those cases (pin it before the change).
-- [ ] `grep -n "acBreakdown\.\(includes\|match\)" src/components/tabs/StatsTab.tsx` finds nothing.
-- [ ] `npm run check:all` passes.
-- [ ] Scoped layout: `ONLY=Stats WIDTHS=393`, SRD and `-- --integrated`, green.
+- [x] `grep -n "acBreakdown\.\(includes\|match\)" src/components/tabs/StatsTab.tsx` finds nothing.
+- [x] `npm run check:all` passes.
+- [x] Scoped layout: `ONLY=Stats WIDTHS=393`, SRD and `-- --integrated`, green.

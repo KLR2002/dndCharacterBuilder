@@ -1,6 +1,6 @@
 # Spec: Inventory and Hit Point transitions in the rules
 
-**Status:** ready-for-agent
+**Status:** done (full layout gate pending)
 
 Architecture review candidate #8 (2026-11-18). Decided with the user on 2026-11-19.
 
@@ -31,6 +31,7 @@ Architecture review candidate #8 (2026-11-18). Decided with the user on 2026-11-
    - With a form active, Damage hits the form, with the excess carrying over, and Heal and temp HP go to the form.
    - Without one, they change normal HP.
    - The Stats tab and the quick-edit hook call one function. An explicit target (the header's normal-HP badge) still wins.
+   - Refined with the user on 2026-11-19, after a screenshot: while a form is active, the Active Wild Shape card is the one place to act on it (Damage, Heal, Temp HP). The Hit Points card shows normal HP read-only.
 4. **The AC result carries its parts.** `armorClass` returns structured parts beside the text, and the Stats tab reads them, not the string.
 
 ## Tickets
