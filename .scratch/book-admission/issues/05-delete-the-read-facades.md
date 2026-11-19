@@ -13,6 +13,7 @@
   - `src/components/builder/AncestrySection.tsx` ~103-114: VRGR and TCE.
   - `src/components/tabs/FeaturesTab.tsx` ~80: MM.
   - `src/components/WildShapeModal.tsx` ~72: MM.
+- **`raceLookup.ts` ~80** (`pickRecord`'s `isActive`, a preference among a held race's records) still compares books by hand and case-sensitively. It cannot import the Compendium: `compendium.ts` imports `raceLookup`. Move the rule's predicate (`bookAdmitter` in `compendium.ts`) into a new module with no imports, `src/rules/bookAdmission.ts`, exporting `admitsBook(activeBooks, source)`. `compendium.ts` uses it for its listings and `raceLookup` for its preference: an active record is admitted and not `SRD`, as in `pickSpell`. Test: a held race resolves to the record of a mixed-case active book.
 - **Guard.** Add `checks/bookAdmissionGuard.test.ts`. Under `src/rules`, `src/components` and `src/app`, outside `src/services/compendium.ts`, no line may:
   - upper- or lower-case a value named like books (`activeBooks`, `books`, `upperBooks`)
   - call `.includes(`, `.some(` or `.has(` on `activeBooks`
