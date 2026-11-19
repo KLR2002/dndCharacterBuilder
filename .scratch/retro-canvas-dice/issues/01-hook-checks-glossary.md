@@ -6,7 +6,7 @@
 
 **Status:** done
 
-**Landed:** chore/retro-canvas-dice @ e25a952 (b80518e). `checks/preCommitHook.test.ts`, 4 tests: the GLOSSARY case failed against the old hook, all pass on the new one; run inside a real commit's hook, the main repository's config stayed unchanged.
+**Landed:** chore/retro-canvas-dice @ 6758304 (68ab644). `checks/preCommitHook.test.ts`, 4 tests: the GLOSSARY case failed against the old hook, all pass on the new one; run inside a real commit's hook, the main repository's config stayed unchanged.
 
 - [x] A Markdown-only commit that stages `GLOSSARY.md` runs the glossary test; the commit fails when the test fails.
 - [x] A Markdown-only commit without `GLOSSARY.md` is skipped as before; a commit with any non-Markdown file runs `CHECK_CMD` as before.

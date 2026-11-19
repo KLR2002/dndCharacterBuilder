@@ -12,7 +12,7 @@
 
 **Status:** done
 
-**Landed:** merge c36cd11 (9704983, 636a1da, 0c9e376).
+**Landed:** merge 4f472bf (c633995, 666864a, a6dcf1c).
 - **Scraper:** `{ any: N }` gives `{ choose: N, from: [] }`. A scraper test was red before the fix.
 - **Format:** Catalog Format 18; ADR 0015 lists it.
 - **SRD Baseline:** the diff is the Bard's count alone. A real SRD Bard test (choose 3 of 18) replaces the synthetic one.

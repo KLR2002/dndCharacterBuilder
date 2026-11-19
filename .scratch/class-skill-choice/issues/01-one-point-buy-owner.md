@@ -14,7 +14,7 @@
 
 **Status:** done
 
-**Landed:** merge c0415ce (70510c8).
+**Landed:** merge ccc48e2 (317d576).
 - **Module:** `src/rules/pointBuy.ts` owns `POINT_BUY_BUDGET`, `POINT_BUY_COST` (moved from constants), `pointBuySpent`, `canSetPointBuyScore` and `pointBuyValid`. BuilderTab and the creation Abilities check read it; no `27` literal is left.
 - **Behaviour:** unchanged. Lowering a score is still refused when the set stays over budget (for example after switching from manual).
 - **Tests:** 5 in `checks/pointBuy.test.ts`.

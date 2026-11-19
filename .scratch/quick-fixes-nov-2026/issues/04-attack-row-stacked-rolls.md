@@ -15,7 +15,7 @@ The badge column must be able to shrink and its labels wrap (`CODING_STANDARDS.m
 
 **Status:** done
 
-**Landed:** 02a5cb8 (with a6e204b: the off-hand row stays flush with its card). The scenario fails at 393 before the change ("Longsword" split, damage beside to-hit) and passes at 320, 393 and 1280; check:all passed. The seeded character has one weapon, so only the weapon row is asserted; the unarmed, off-hand and spell rows share AttackRow but have no check.
+**Landed:** dcb9ed0 (with 05c30a9: the off-hand row stays flush with its card). The scenario fails at 393 before the change ("Longsword" split, damage beside to-hit) and passes at 320, 393 and 1280; check:all passed. The seeded character has one weapon, so only the weapon row is asserted; the unarmed, off-hand and spell rows share AttackRow but have no check.
 
 - [x] The "Actions rolls" layout scenario (`scripts/layout-check.mjs`, `checkActionRolls`) asserts, at each width, that every attack name renders without a mid-word break (each word of the title lies on one line: compare a `Range` over each word against its line boxes) and, below 600 px and at 380 px or wider, that the damage badge's top is below the to-hit badge's bottom. It fails on the current code at 393 (paste the failing output in the report), and passes after the change.
 - [x] All four rows use `AttackRow`; `ActionsTab.tsx` has no other `attackRow` style use.

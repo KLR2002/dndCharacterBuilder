@@ -25,7 +25,7 @@
 
 **Status:** done
 
-**Landed:** merge 84f9e9f (6b4d1b1, 29d5225).
+**Landed:** merge fb12e10 (76a2995, 0f3f9a0).
 - **`admits`:** `CompendiumListings.admits(source?)`; unscoped listings admit all. Scoped listings filter with one `bookAdmitter` (lower-cased set, SRD and sourceless admitted), and the cache key is lower-cased. `resolve` lost its `fromBaseline` flag, which nothing else read.
 - **Upper-casing removed** before `for()` in maneuvers, fightingStyles (three calls, including the cleric and druid cantrip lookups), spellPage `inscribeOffer`, and six warlockChoices sites. The `upperBooks` that feed `isSpellAvailableForClass` and the Ritual Book set stay for tickets 02 and 03.
 - **Glossary:** **Book Admission**, `_Avoid_: source gate, book whitelist`.

@@ -38,7 +38,7 @@
 
 **Status:** done
 
-**Landed:** merge ac1705a (d565975, 77b1d30, 5cd4b60); review fix 309d0ab.
+**Landed:** merge 9cb9b60 (1b06568, 58aad30, 41ab4ff); review fix af0cb81.
 - **The step:** `migrateSavedPicks` in `src/rules/savedPicksMigration.ts` runs nine passes and then `renameSrdNames`. It runs on load for every character and first in `reconcileForActiveBooks`, which runs on books, catalog and selection changes.
 - **What stays in `reconcile`:** `moveExpertisePicksToGrants`, because Expertise milestones still write `chosenExpertise`. The classification table is in Comments below.
 - **No call on creation:** a new record has nothing to move, and no import or restore path exists.

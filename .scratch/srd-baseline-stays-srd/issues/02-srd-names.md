@@ -24,7 +24,7 @@
 
 **Status:** done
 
-**Landed:** merge 7d23458 (ed65408, 169a19a, eb25ddd); review fix bb6fe1a.
+**Landed:** merge cca5daf (6fd987c, 64b9726, 07d5aa2); review fix d104968.
 - **Scraper:** `srdNameOf` emits `srdName`. Regenerated spells and items: 17 spells and 14 items gain it; 32 spell descriptions changed only in list spacing; "Wand of Viscid Globs" also drifted.
 - **Prune:** `applySrdNames` in `scripts/srdBaseline.ts` renames records and rewrites old names in every string of the baseline files. The Land list now reads `acid arrow`, and Bag of Holding and Portable Hole name Handy Haversack.
 - **Migration:** `renameSrdNames` in `src/rules/srdNames.ts`, called on load. It renames `knownSpells`, `preparedSpells` keys, `ritualBook` and inventory `items`. Names saved without a source are left alone: `subclassSpellSwaps`, `ruleChoices` picks, `startingEquipmentPicks`, infusion targets.

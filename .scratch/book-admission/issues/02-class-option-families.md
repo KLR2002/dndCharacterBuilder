@@ -13,7 +13,7 @@ Keep each function's signature unless it needs the Compendium or listings to ask
 
 **Status:** done
 
-**Landed:** merge 150998e (8db934a characterization, 9357dd7).
+**Landed:** merge 88b2585 (87de2c8 characterization, 9472df6).
 - **Ritual Book:** `isSpellEligibleForRitualBook` takes an optional Compendium and asks `admits`; `inscribeOffer` passes its own.
 - **Infusions:** the gate is `admits("TCE") || admits("ERLW")`, so an empty list now offers none (red before).
 - **Mystic Arcanum** passes `activeBooks` unchanged. Fighting Styles and maneuvers needed nothing beyond ticket 01.

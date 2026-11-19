@@ -18,7 +18,7 @@
 
 **Status:** done
 
-**Landed:** merge 44f0313 (5630469, a8951cf). `metamagicAllowance(character)` lives in `src/rules/spellcasting.ts` (the Ledger imports the Reconciler, so placing it in `characterSpells.ts` would be a cycle); `toggleMetamagic` in `characterSpells.ts`; `releaseMetamagicOverAllowance` in `characterReconciler.ts` after `pruneInvalidMysticArcanum`, notice `"<Option> removed: Metamagic allows <n>"`; `migrateCharacter` folds `metamagicOptions` into `chosenMetamagic` and the field is gone from `Character` (typecheck baseline re-recorded: only property counts in five messages changed). Tests in `checks/metamagicLedger.test.ts`; `ONLY="Spells sorcery"` green at 393; check:all passed.
+**Landed:** merge e6d2ba2 (3c55171, 92de267). `metamagicAllowance(character)` lives in `src/rules/spellcasting.ts` (the Ledger imports the Reconciler, so placing it in `characterSpells.ts` would be a cycle); `toggleMetamagic` in `characterSpells.ts`; `releaseMetamagicOverAllowance` in `characterReconciler.ts` after `pruneInvalidMysticArcanum`, notice `"<Option> removed: Metamagic allows <n>"`; `migrateCharacter` folds `metamagicOptions` into `chosenMetamagic` and the field is gone from `Character` (typecheck baseline re-recorded: only property counts in five messages changed). Tests in `checks/metamagicLedger.test.ts`; `ONLY="Spells sorcery"` green at 393; check:all passed.
 
 - [x] Tests:
   - The allowance at Sorcerer 2, 3, 10 and 17.
