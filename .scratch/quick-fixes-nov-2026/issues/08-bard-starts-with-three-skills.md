@@ -10,8 +10,15 @@
 
 **Blocked by:** None
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A scraper test: a raw class with `[{ "any": 3 }]` gives `choose: 3, from: []`.
-- [ ] An SRD Bard 1 is offered a starting skill Proficiency Choice of 3 from all 18 skills.
-- [ ] `npm run check:all` and `npm run check:live` pass.
+**Landed:** merge c36cd11 (9704983, 636a1da, 0c9e376).
+- **Scraper:** `{ any: N }` gives `{ choose: N, from: [] }`. A scraper test was red before the fix.
+- **Format:** Catalog Format 18; ADR 0015 lists it.
+- **SRD Baseline:** the diff is the Bard's count alone. A real SRD Bard test (choose 3 of 18) replaces the synthetic one.
+- **Regenerated classes:** this also carried scraper drift beyond the Bard. Misty Wanderer's italic *misty step*; the Full Moon druid's known spells lose `sacred flame`; the EGW expanded filter loses `!XGE`. None of these reach `src/data`.
+- check:all and check:live passed.
+
+- [x] A scraper test: a raw class with `[{ "any": 3 }]` gives `choose: 3, from: []`.
+- [x] An SRD Bard 1 is offered a starting skill Proficiency Choice of 3 from all 18 skills.
+- [x] `npm run check:all` and `npm run check:live` pass.
