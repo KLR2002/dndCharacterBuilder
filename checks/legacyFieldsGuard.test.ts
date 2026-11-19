@@ -5,7 +5,9 @@ import { createRequire } from "node:module";
 import { join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
-// The saved fields that the migration passes read (ADR 0026). A current transition must not write them: the
+// The legacy fields the migration passes read (ADR 0026). The passes also read old ids inside current fields
+// (Fighting Style ids in ruleChoices, innate counters in resourceCounters); every edit writes those fields, so
+// a file list cannot tell an old id from a current one and they are not guarded here. A current transition must not write them: the
 // passes move a legacy shape on load and on a Catalog change, not on every edit, so a new writer would leave its
 // state unmoved until the next load. This guard scans src/ for writes to these fields (an object literal key,
 // a property assignment, or a delete) and fails on any write from a file the allowlist does not name for that
@@ -19,128 +21,40 @@ const GUARDED_FIELDS = [
   "skillChoices",
   "chosenTools",
   "chosenLanguages",
-  "chosenExpertise",
-  "ruleChoices",
-  "resourceCounters",
 ] as const;
 
 /**
- * A file, by path relative to src/, the guarded fields it may write, and why. A write in a file listed here is a current
- * transition or a migration pass. The fighting-style and innate-counter fields (`ruleChoices`, `resourceCounters`) are
- * current fields too, so their entries name the files that write them, not every write inside them.
+ * A file, by path relative to src/, the guarded fields it may write, and why. A write in a file listed here clears or
+ * filters a legacy field, or is a migration pass.
  */
 const ALLOWED_WRITERS: Record<string, { fields: readonly string[]; reason: string }> = {
   "components/builder/BackgroundSection.tsx": {
     fields: ["chosenLanguages", "chosenTools"],
     reason: "clears the background's tool and language buckets to empty when the background changes",
   },
-  "components/builder/ClassSteps.tsx": {
-    fields: ["ruleChoices"],
-    reason: "reads the saved picks into the class step's view; nothing is stored",
-  },
-  "components/builder/classChoiceWiring.ts": {
-    fields: ["ruleChoices"],
-    reason: "removes one class Rule Choice when the player clears it",
-  },
-  "components/levelUpFlow/ClassChoicesStep.tsx": {
-    fields: ["ruleChoices"],
-    reason: "returns the step's choice view; nothing is stored",
-  },
-  "components/tabs/FeaturesTab.tsx": {
-    fields: ["resourceCounters"],
-    reason: "the player adjusts or resets a resource counter's current value",
-  },
   "context/CharacterContext.tsx": {
-    fields: ["chosenSkills", "chosenExpertise", "resourceCounters"],
+    fields: ["chosenSkills"],
     reason: "a new character starts with empty fields",
   },
   "rules/ancestryEngine.ts": {
-    fields: ["chosenLanguages", "chosenTools", "ruleChoices"],
-    reason: "a lineage change empties the race's tool and language buckets and removes the race's Rule Choices; clearing one ancestry choice",
-  },
-  "rules/backgroundSpells.ts": {
-    fields: ["ruleChoices"],
-    reason: "passes the saved picks to a spell-availability check; nothing is stored",
+    fields: ["chosenLanguages", "chosenTools"],
+    reason: "a lineage change empties the race's tool and language buckets",
   },
   "rules/builderTransitions.ts": {
-    fields: ["ruleChoices", "skillChoices", "chosenSkills", "chosenLanguages", "chosenTools"],
+    fields: ["skillChoices", "chosenSkills", "chosenLanguages", "chosenTools"],
     reason: "current transitions remove the entries a lineage, class or background held, and empty its buckets; none adds a name",
-  },
-  "rules/characterReconciler.ts": {
-    fields: ["ruleChoices", "resourceCounters"],
-    reason: "subclass teardown removes the subclass's own Rule Choices and counters",
-  },
-  "rules/characterSpells.ts": {
-    fields: ["resourceCounters"],
-    reason: "a spell's own use counter, set when the player uses the spell",
-  },
-  "rules/choices/artificerInfusions.ts": {
-    fields: ["ruleChoices"],
-    reason: "records an Artificer infusion pick",
-  },
-  "rules/choices/featSpells.ts": {
-    fields: ["ruleChoices", "resourceCounters"],
-    reason: "feat spell picks and counters are pruned and released by current passes; the legacy race pick and cantrip moves run inside migrateCharacter on load",
-  },
-  "rules/choices/fightingStyles.ts": {
-    fields: ["ruleChoices"],
-    reason: "the fighting style picker writes the id the held class gives; its legacy move is a load-time migration; other entries are removed when their owner is",
-  },
-  "rules/choices/maneuvers.ts": {
-    fields: ["ruleChoices"],
-    reason: "records the maneuver picks",
-  },
-  "rules/choices/types.ts": {
-    fields: ["ruleChoices"],
-    reason: "setRuleChoicePick, the single writer of a Rule Choice pick",
-  },
-  "rules/choices/warlockChoices.ts": {
-    fields: ["ruleChoices"],
-    reason: "records Warlock picks and removes the ones a changed Warlock level or pact releases",
-  },
-  "rules/classChoices.ts": {
-    fields: ["ruleChoices"],
-    reason: "returns the class choices view; nothing is stored",
-  },
-  "rules/expertise.ts": {
-    fields: ["chosenExpertise"],
-    reason: "Expertise milestones still write chosenExpertise (toggleExpertiseChoice); pruneInvalidExpertise releases a mark nothing holds",
-  },
-  "rules/grantedSpells.ts": {
-    fields: ["resourceCounters"],
-    reason: "moveLegacyInnateCounters, a migration pass",
   },
   "rules/legacyBackgroundSkills.ts": {
     fields: ["chosenSkills"],
     reason: "dropLegacyBackgroundSkills, a migration pass",
   },
   "rules/migrateCharacter.ts": {
-    fields: ["ruleChoices", "chosenSkills", "skillChoices"],
+    fields: ["chosenSkills", "skillChoices"],
     reason: "load-time normalization of older saves, before migrateSavedPicks runs",
   },
   "rules/proficiencyPicks.ts": {
-    fields: ["chosenTools", "chosenLanguages", "chosenSkills", "skillChoices", "chosenExpertise"],
-    reason: "the migration passes write the buckets they move names out of; moveExpertisePicksToGrants stays in reconcile",
-  },
-  "rules/rest.ts": {
-    fields: ["resourceCounters"],
-    reason: "a rest resets resource counters",
-  },
-  "rules/ruleChoices.ts": {
-    fields: ["ruleChoices"],
-    reason: "a long rest clears the choices the player may change",
-  },
-  "rules/spellcasting.ts": {
-    fields: ["ruleChoices"],
-    reason: "passes the saved picks to spell checks as a view; nothing is stored",
-  },
-  "rules/subclassChoiceTable.ts": {
-    fields: ["ruleChoices"],
-    reason: "clears one subclass Rule Choice",
-  },
-  "rules/wildShape.ts": {
-    fields: ["resourceCounters"],
-    reason: "Wild Shape sets its own counter",
+    fields: ["chosenTools", "chosenLanguages", "chosenSkills", "skillChoices"],
+    reason: "the migration passes write the buckets they move names out of",
   },
 };
 
