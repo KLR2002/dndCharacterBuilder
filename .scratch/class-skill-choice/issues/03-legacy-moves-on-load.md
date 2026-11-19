@@ -47,3 +47,26 @@
 - [ ] Every existing test of a moved pass that called `reconcile` to trigger the move calls `migrateSavedPicks` instead; list them.
 - [ ] `npm run check:all` and `npm run check:live` pass.
 - [ ] Scoped layout: `ONLY=Builder WIDTHS=393` and `ONLY="Level-Up" WIDTHS=393`, SRD and `-- --integrated`, green.
+
+## Comments
+
+Classification of the reconciler passes. Writers are the `src/` sites that write the field the pass reads.
+
+| Pass | Input the pass reads | Writers (file:line) | Verdict |
+| --- | --- | --- | --- |
+| `moveLegacyFightingStyleIds` | a class style id under another source than the class is held under | `rules/choices/types.ts:159` (`setRuleChoicePick`), ids from `heldStyleId` (`rules/choices/fightingStyles.ts:57`), reading the same unscoped class list as the pass (`fightingStyles.ts:138`) | migrate |
+| `moveAliasedProficiencyPicks` | a `proficiencyPicks` key that is a former grant id | `rules/proficiencyPools.ts:219-224` writes `grant.id`; `components/levelUpFlow/ClassChoicesStep.tsx:18` writes the choice id | migrate; runs in `reconcileForActiveBooks` on a Catalog change |
+| `moveLegacyClassToolPicks` | `chosenTools.class` | none (`BackgroundSection.tsx:530-531` and `ancestryEngine.ts:152-153` write other buckets) | migrate |
+| `moveLegacyClassSkillPicks` | a first-class `skillChoices` entry (`Class: <name>` or `class__…`) | none; `builderTransitions.ts:647-648` only filters; `migrateCharacter.ts:137-139` writes it on load | migrate |
+| `moveLegacySourcePicks` | race and background `chosenTools` and `chosenLanguages` buckets | none that add a name; empties at `ancestryEngine.ts:175-176`, `builderTransitions.ts:951-952`, `BackgroundSection.tsx:530-531` (the pass ignores empty buckets) | migrate |
+| `moveLegacySkillPicks` | `skillChoices` entries with origin race or background | none that add; removals at `builderTransitions.ts:472`, `:886`, `:950` | migrate |
+| `moveExpertisePicksToGrants` | `chosenExpertise` names that no milestone holds and a skill grant offers | `expertise.ts:225`, `:245` (`toggleExpertiseChoice`, called from `levelUpFlow.ts:311` and `classChoiceWiring.ts:36`); a level or class removal can leave a name a grant now offers | stays in `reconcile` (Expertise milestones still write `chosenExpertise`) |
+| `dropLegacyMulticlassSkillEntries` | an empty `multiclass_skill_*` entry | none; the id is only read at `builderTransitions.ts:641` | migrate |
+| `dropLegacyBackgroundSkills` | a background skill copy in `chosenSkills` whose background is off | none that add to `chosenSkills`; removals at `builderTransitions.ts:473`, `:648`, `:882`, `:949`; a book switch is a `reconcileForActiveBooks` trigger | migrate |
+| `moveLegacyInnateCounters` | a `resourceCounters` key `innate_spell_*` whose current id differs | `grantedSpells.ts:289-291`: a race's counter already has its current id; feat counters use `featCounterId` | migrate |
+| `renameSrdNames` | an SRD name a Catalog prints under another name | none; a Catalog change | migrate (moved into the step) |
+
+Decisions:
+- `migrateSavedPicks` runs on load for every character (`CharacterContext.tsx`, in place of the `renameSrdNames` call) and first in `reconcileForActiveBooks`, before `reconcile`.
+- Call sites of `migrateSavedPicks`: `src/context/CharacterContext.tsx` (load) and `src/rules/characterReconciler.ts` (`reconcileForActiveBooks`). Creation (`createCharacter`) does not call it: a new record holds no saved picks. The only other load path is `e2eSeedImport.ts`, which writes storage read back through the same load.
+- `checks/legacyFieldsGuard.test.ts` covers `ruleChoices` and `resourceCounters` by file, not by id, because both are current fields. A new write inside an allowed file is not caught.
