@@ -105,6 +105,13 @@ test("with no saved source held and no active book listed, catalog order decides
   assert.equal(findHeldRace(backward, { name: "Sample Folk", source: "OLD" }, ["OTHER"]).race?.source, "ALT");
 });
 
+test("without a saved source match, a mixed-case active book's record is used", () => {
+  const races = [folkUnder("TST"), race("Sample Folk", "MiXeD", { speed: { walk: 35 } })];
+  const found = findHeldRace(races, { name: "Sample Folk", source: "OLD" }, ["mixed"]).race;
+  assert.equal(found?.source, "MiXeD");
+  assert.equal(found?.speed.walk, 35);
+});
+
 test("a name held without a source is scoped to the active books", () => {
   const races = [race("Sample Folk", "TST"), race("Sample Folk", "ALT")];
   assert.equal(findHeldRace(races, { name: "Sample Folk" }, ["ALT"]).race?.source, "ALT");
