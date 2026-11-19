@@ -23,6 +23,7 @@ import type {
 } from "../types/dnd5e.ts";
 import { isCatalogStale, type CompendiumCollections } from "./compendiumStorage.ts";
 import { findHeldRace, type HeldRace } from "../rules/raceLookup.ts";
+import { admitsBook } from "../rules/bookAdmission.ts";
 import { SRD_SOURCE } from "../constants/books.ts";
 
 /** Read-only, synchronous view over one catalog bundle (SRD Baseline or Integrated Catalog). */
@@ -73,12 +74,6 @@ function resolve<T extends Sourced>(integrated: boolean, own: readonly T[] | und
   if (!integrated) return [...(own ?? [])];
   if (own?.length) return own.filter((r) => r.source !== SRD_SOURCE);
   return [...baselineRecords];
-}
-
-// The book-admission rule (ADR 0025), shared by every scoped listing.
-function bookAdmitter(activeBooks: readonly string[]): (source?: string) => boolean {
-  const books = new Set(activeBooks.map((b) => b.toLowerCase()));
-  return (source) => !source || source === SRD_SOURCE || books.has(source.toLowerCase());
 }
 
 // Computes the list on first call. Later calls return the same array, frozen at runtime, so a
@@ -138,7 +133,7 @@ export function createCompendium(
   };
 
   function scoped(activeBooks: readonly string[]): CompendiumListings {
-    const admits = bookAdmitter(activeBooks);
+    const admits = (source?: string) => admitsBook(activeBooks, source);
     return {
       ...unscoped,
       admits,
