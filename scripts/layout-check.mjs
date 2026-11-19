@@ -2408,8 +2408,24 @@ async function openLevelUp(page) {
   await page.getByLabel("Roll hit points").first().waitFor({ state: "visible", timeout: 10000 });
 }
 
+// Learns the spells the open Spells step still offers, one Learn button at a time: an enabled button this walk has not
+// picked yet. Once a count is full the rest are disabled, so the walk stops with the counts exactly met.
+async function learnDueSpells(page) {
+  const picked = new Set();
+  for (let i = 0; i < 30; i++) {
+    const offered = await page.locator('[aria-label^="Learn "]').evaluateAll((els) =>
+      els.filter((el) => el.getAttribute("aria-disabled") !== "true").map((el) => el.getAttribute("aria-label"))
+    );
+    const next = offered.find((label) => !picked.has(label));
+    if (!next) return;
+    picked.add(next);
+    await page.getByLabel(next, { exact: true }).first().click();
+    await settle(page);
+  }
+}
+
 // Walks from the Hit Points step to Review: the given HP mode, then on every later step the first
-// Subclass option, a CON (+2) ASI and the first offered spell where those steps appear. `fail` reports
+// Subclass option, a CON (+2) ASI and the due spells where those steps appear. `fail` reports
 // violations seen along the way (e.g. a Subclass chip under 48dp).
 async function walkToReview(page, hpMode, fail = () => {}) {
   await page.getByLabel(hpMode === "roll" ? "Roll hit points" : "Average hit points").first().click();
@@ -2428,11 +2444,7 @@ async function walkToReview(page, hpMode, fail = () => {}) {
       await con.click();
       await settle(page);
     }
-    const learn = page.getByLabel(/^Learn /).first();
-    if ((await learn.count()) > 0) {
-      await learn.click();
-      await settle(page);
-    }
+    await learnDueSpells(page);
     await continueFlow(page, fail);
   }
   fail('walkToReview never reached Review (no "Level up" button after 8 steps)');
@@ -2629,11 +2641,7 @@ async function checkLevelUpFeatReplace(ctx, width, meta) {
   // Walk to Review (the level may bring a Spells step after ASI/Feat).
   for (let i = 0; i < 4; i++) {
     if ((await page.getByText("Level up", { exact: true }).count()) > 0) break;
-    const learn = page.getByLabel(/^Learn /).first();
-    if ((await learn.count()) > 0) {
-      await learn.click();
-      await settle(page);
-    }
+    await learnDueSpells(page);
     await continueFlow(page, fail);
   }
   const listedFeat = INTEGRATED ? choiceFeat : noChoiceFeat;
@@ -2993,17 +3001,17 @@ async function checkSpellsAfterLevelUp(ctx, width, meta) {
     await settle(page);
     await page.getByText("Add Spells", { exact: true }).first().click();
     await page.waitForSelector('[role="dialog"]', { state: "visible", timeout: 10000 }).catch(() => fail("the Add Spells modal did not open"));
-    await page.getByPlaceholder("Search Wizard spells...").fill("Burning Hands");
+    await page.getByPlaceholder("Search Wizard spells...").fill("Charm Person");
     await page.getByText("Add", { exact: true }).first().click();
     await settle(page);
     await page.keyboard.press("Escape");
     await page.waitForSelector('[role="dialog"]', { state: "hidden", timeout: 10000 }).catch(() => fail("Escape did not close the Add Spells modal"));
-    if (!(await page.getByLabel("Remove Burning Hands").first().isVisible().catch(() => false)))
-      fail("the learned spell \"Burning Hands\" has no Remove control after the level-up");
+    if (!(await page.getByLabel("Remove Charm Person").first().isVisible().catch(() => false)))
+      fail("the learned spell \"Charm Person\" has no Remove control after the level-up");
     else {
-      await page.getByLabel("Remove Burning Hands").first().click();
+      await page.getByLabel("Remove Charm Person").first().click();
       await settle(page);
-      if (!(await assertAbsentFor(async () => (await page.getByLabel("Remove Burning Hands").count()) > 0))) fail("forgetting did not remove \"Burning Hands\"");
+      if (!(await assertAbsentFor(async () => (await page.getByLabel("Remove Charm Person").count()) > 0))) fail("forgetting did not remove \"Charm Person\"");
     }
     await maybeShot(page, join(SHOTS, `SpellsAfterLevelUp-learn-${width}.png`), meta);
   }
