@@ -16,8 +16,7 @@ import {
   spendHitDie,
   recoverHitDie,
 } from "../../rules/hitDice";
-import { damage, heal } from "../../rules/hitPoints";
-import { setWildShapeTempHp } from "../../rules/wildShapeHp";
+import { hitPointPatch } from "../../rules/hitPointPool";
 import { formatModifier } from "../../rules/abilities";
 import { evaluateCharacter } from "../../rules/characterEvaluation";
 import { listSuperiorityPools } from "../../rules/combatDice";
@@ -144,7 +143,12 @@ export const StatsTab: React.FC = () => {
     return hdEntries.map(([die, p]) => `${p.total}${die}`).join(" + ");
   }, [hdEntries]);
 
-  const hpQuickEdit = useHpQuickEdit(currentCharacter, evaluated?.hp.max ?? 0);
+  const activeForm = currentCharacter?.activeWildShape ?? null;
+  const hpQuickEdit = useHpQuickEdit(
+    currentCharacter,
+    evaluated?.hp.max ?? 0,
+    activeForm ? "wildShape" : "character"
+  );
 
   if (!currentCharacter || !evaluated) return null;
 
@@ -178,23 +182,15 @@ export const StatsTab: React.FC = () => {
   const passiveInsight = skills.find((s) => s.name === "Insight")?.passiveBonus ?? 10;
   const allConditions = currentCompendium().for().conditions();
 
-  // HP Handlers
-  const hpState = { currentHp: currentCharacter.currentHp, tempHp: currentCharacter.tempHp };
-
-  const applyDamage = (amount: number) => {
-    updateCharacter(currentCharacter.id, damage(hpState, amount));
-  };
-
-  const applyHeal = (amount: number) => {
-    updateCharacter(currentCharacter.id, heal(hpState, amount, calculatedMaxHp));
+  // HP Handlers: while a form is active they change the form's HP (see hitPointPool.ts).
+  const applyHp = (kind: "damage" | "heal", amount: number) => {
+    updateCharacter(currentCharacter.id, hitPointPatch(currentCharacter, { kind, amount }, calculatedMaxHp));
   };
 
   const setTempHp = () => {
     const val = parseInt(tempHpAmount, 10);
     if (!isNaN(val) && val >= 0) {
-      // While a form is active, temp HP goes on the form (see wildShapeHp.ts), not the character.
-      const patch = currentCharacter.activeWildShape ? setWildShapeTempHp(currentCharacter, val) : { tempHp: val };
-      updateCharacter(currentCharacter.id, patch);
+      updateCharacter(currentCharacter.id, hitPointPatch(currentCharacter, { kind: "temp", amount: val }, calculatedMaxHp));
       setTempHpAmount("");
     }
   };
@@ -330,10 +326,10 @@ export const StatsTab: React.FC = () => {
     <>
       <Card style={styles.hpCard}>
         <HitPointBlock
-          label="HIT POINTS"
-          currentHp={currentCharacter.currentHp}
-          maxHp={calculatedMaxHp}
-          tempHp={currentCharacter.tempHp}
+          label={activeForm ? "WILD SHAPE HP" : "HIT POINTS"}
+          currentHp={activeForm ? activeForm.currentHp : currentCharacter.currentHp}
+          maxHp={activeForm ? activeForm.maxHp : calculatedMaxHp}
+          tempHp={activeForm ? (activeForm.tempHp ?? 0) : currentCharacter.tempHp}
           numberProps={hpQuickEdit.triggerProps}
           headerRight={
             <TouchableOpacity
@@ -348,8 +344,8 @@ export const StatsTab: React.FC = () => {
           }
           amount={hpChangeAmount}
           onAmountChange={setHpChangeAmount}
-          onDamage={() => applyDamage(parseInt(hpChangeAmount, 10) || 1)}
-          onHeal={() => applyHeal(parseInt(hpChangeAmount, 10) || 1)}
+          onDamage={() => applyHp("damage", parseInt(hpChangeAmount, 10) || 1)}
+          onHeal={() => applyHp("heal", parseInt(hpChangeAmount, 10) || 1)}
         />
 
         {/* Temp HP Row */}
