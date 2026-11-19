@@ -3,7 +3,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
-import { reconcile, reconcileForActiveBooks } from "../src/rules/characterReconciler.ts";
+import { reconcileForActiveBooks } from "../src/rules/characterReconciler.ts";
+import { migrateSavedPicks } from "../src/rules/savedPicksMigration.ts";
 import type { Character, CharacterClass } from "../src/types/character.ts";
 import type { InnateSpellProfile } from "../src/rules/innateMagic.ts";
 import type { AdditionalSpells, RaceData } from "../src/types/dnd5e.ts";
@@ -108,7 +109,7 @@ test("a saved use of a race's spell under the counter id an older release gave i
       innate_spell_create_water: { id: "innate_spell_create_water", name: "Innate: Create or Destroy Water", current: 0, max: 1, resetOn: "long" },
     },
   });
-  const opened = reconcile(waterGenasi, compendium, { activeBooks: ALL_BOOKS });
+  const opened = migrateSavedPicks(waterGenasi, compendium, ALL_BOOKS);
   assert.equal(opened.resourceCounters?.innate_spell_create_water, undefined, "the counter under the old id is gone");
   assert.equal(opened.resourceCounters?.innate_spell_create_or_destroy_water?.current, 0, "the use is kept under the spell's own id");
 });

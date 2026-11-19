@@ -17,6 +17,7 @@ import { DEFAULT_ACTIVE_BOOK_CODES, ALL_BOOKS } from "../src/constants/books.ts"
 import type { InnateSpellEntry, InnateSpellProfile } from "../src/rules/innateMagic.ts";
 import { parseSpellFilter, pruneInvalidFeatSpellPicks } from "../src/rules/choices/featSpells.ts";import { STARTING_EQUIPMENT_TYPES } from "../src/rules/startingEquipmentTypes.ts";
 import { reconcile } from "../src/rules/characterReconciler.ts";
+import { migrateSavedPicks } from "../src/rules/savedPicksMigration.ts";
 import type { AvailableRuleChoice } from "../src/rules/choices/types.ts";
 import { makeChar, srdBaselineCompendium } from "./testUtils.ts";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
@@ -949,7 +950,7 @@ test("live catalog: a Water Genasi of level 3 has its Create or Destroy Water co
       innate_spell_create_water: { id: "innate_spell_create_water", name: "Innate: Create or Destroy Water", current: 0, max: 1, resetOn: "long" as const },
     },
   };
-  const moved = reconcile(savedUnderOldId, live!.compendium, { activeBooks: ALL_BOOKS });
+  const moved = migrateSavedPicks(savedUnderOldId, live!.compendium, ALL_BOOKS);
   assert.equal(moved.resourceCounters?.innate_spell_create_water, undefined, "the counter under the older id is gone");
   assert.equal(moved.resourceCounters?.innate_spell_create_or_destroy_water?.current, 0, "the saved use is kept under the spell's id");
 });

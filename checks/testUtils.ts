@@ -1,5 +1,6 @@
 import type { Character } from "../src/types/character.ts";
-import { DEFAULT_ACTIVE_BOOK_CODES, ALL_BOOKS } from "../src/constants/books.ts";
+import { DEFAULT_ACTIVE_BOOK_CODES, ALL_BOOKS, type ActiveBooks } from "../src/constants/books.ts";
+import { skillPickOffers } from "../src/rules/proficiencyChoiceOffers.ts";
 import { readFileSync, existsSync } from "node:fs";
 import { createCompendium, integrate, revertToSrd, type Compendium } from "../src/services/compendium.ts";
 import { loadCompendiumData, REQUIRED_CATALOG_FORMAT, type CompendiumCollections } from "../src/services/compendiumStorage.ts";
@@ -203,3 +204,17 @@ export async function hydrateCompendiumFromStorage(): Promise<void> {
 }
 
 resetTestCompendium();
+
+/**
+ * The first class's starting skill Proficiency Choice as the Class Choices step offers it: its grant id, pick count and
+ * the skills it offers. Undefined when the first class offers none. Tests pick it through `proficiencyPicks`.
+ */
+export function startingSkillPickOf(
+  character: Character,
+  query: { compendium?: Compendium; activeBooks?: ActiveBooks } = {},
+): { id: string; choose: number; from: string[] } | undefined {
+  const offer = skillPickOffers(character, { compendium: query.compendium, activeBooks: query.activeBooks ?? ALL_BOOKS }).find((choice) =>
+    choice.traitName.endsWith("starting skills"),
+  );
+  return offer && { id: offer.id, choose: offer.choose, from: offer.options.map((option) => option.name) };
+}

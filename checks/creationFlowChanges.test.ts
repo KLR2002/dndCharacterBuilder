@@ -1,9 +1,8 @@
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { ALL_BOOKS } from "../src/constants/books.ts";
-import { makeChar, loadTestCatalog } from "./testUtils.ts";
+import { makeChar, loadTestCatalog, startingSkillPickOf } from "./testUtils.ts";
 import { currentCompendium } from "../src/services/compendium.ts";
-import { skillChoiceOffers } from "../src/rules/proficiencySheet.ts";
 import { allCatalogClasses, allCatalogRaces } from "../src/rules/catalogs.ts";
 import { applyStartingGrants } from "../src/rules/builderTransitions.ts";
 import {
@@ -71,20 +70,8 @@ function finishedFighter(): Character {
     ],
     creationProgress: { currentStep: "equipment" },
   });
-  const skillOffer = skillChoiceOffers(base, flowOpts).find((offer) => offer.source === "Class: Fighter")!;
-  const withSkills: Character = {
-    ...base,
-    skillChoices: [
-      {
-        id: skillOffer.source,
-        origin: "class",
-        choose: skillOffer.choose,
-        from: skillOffer.from,
-        picked: skillOffer.from.slice(0, skillOffer.choose),
-      },
-    ],
-    chosenSkills: skillOffer.from.slice(0, skillOffer.choose),
-  };
+  const skillOffer = startingSkillPickOf(base, flowOpts)!;
+  const withSkills: Character = { ...base, proficiencyPicks: { [skillOffer.id]: skillOffer.from.slice(0, skillOffer.choose) } };
   // Complete the starting equipment picks and claim the kit, as the Equipment step does.
   let equipped = withSkills;
   for (const offer of startingEquipmentOffers(equipped, catalogs())) {
@@ -176,14 +163,11 @@ describe("Changing an earlier step releases what it invalidates", () => {
     assert.equal(creationStepNeedsAttention(rogue, "classChoices"), true);
 
     // Re-pick the Rogue's subclass, class skills and the four Expertise its level 6 offers, then walk the flow forward to Class Choices.
-    const offer = skillChoiceOffers(rogue, flowOpts).find((o) => o.source === "Class: Rogue")!;
+    const offer = startingSkillPickOf(rogue, flowOpts)!;
     const rePicked: Character = {
       ...rogue,
       classes: [{ ...rogue.classes[0], subclassName: "Thief", subclass: "Thief", subclassSource: "PHB" }],
-      skillChoices: [
-        { id: offer.source, origin: "class", choose: offer.choose, from: offer.from, picked: offer.from.slice(0, offer.choose) },
-      ],
-      chosenSkills: offer.from.slice(0, offer.choose),
+      proficiencyPicks: { [offer.id]: offer.from.slice(0, offer.choose) },
       chosenExpertise: offer.from.slice(0, 4),
     };
     let walked = rePicked;

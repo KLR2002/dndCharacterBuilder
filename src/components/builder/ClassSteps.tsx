@@ -29,8 +29,6 @@ export interface ClassStepsProps {
   effectiveScores: Record<AbilityKey, number>;
   /** The Class Choices step's view: its skill picks, choice cards, Expertise and optional features. */
   classChoices: ClassChoicesStepView;
-  autoGranted: string[];
-  onToggleStartingSkill: (skill: string, source: string) => void;
   onToggleRuleChoice: (choice: AvailableRuleChoice, option: string) => void;
   onClearChoice: (choice: AvailableRuleChoice) => void;
   onToggleExpertise: (item: string) => void;
@@ -77,8 +75,6 @@ export const ClassSteps: React.FC<ClassStepsProps> = ({
   totalLevel,
   effectiveScores,
   classChoices,
-  autoGranted,
-  onToggleStartingSkill,
   onToggleRuleChoice,
   onClearChoice,
   onToggleExpertise,
@@ -114,8 +110,6 @@ export const ClassSteps: React.FC<ClassStepsProps> = ({
   const picks = {
     ruleChoices: character.ruleChoices,
     proficiencyPicks: character.proficiencyPicks,
-    skillChoices: character.skillChoices,
-    chosenSkills: character.chosenSkills,
   };
 
   return (
@@ -149,11 +143,8 @@ export const ClassSteps: React.FC<ClassStepsProps> = ({
         <ClassChoiceCards
           view={classChoices}
           picks={picks}
-          autoGranted={autoGranted}
-          primaryClass={primaryClass}
           onToggleRuleChoice={onToggleRuleChoice}
           onClearChoice={onClearChoice}
-          onToggleStartingSkill={onToggleStartingSkill}
           onToggleExpertise={onToggleExpertise}
           onPruneInvalidExpertise={onPruneInvalidExpertise}
           theme={theme}

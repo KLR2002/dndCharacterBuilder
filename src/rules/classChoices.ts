@@ -5,15 +5,16 @@ import { catalogListings, type CharacterCatalogs } from "./catalogs.ts";
 import type { AvailableRuleChoice, ChoiceGroup } from "./choices/types.ts";
 import { availableSubclassRuleChoices } from "./ruleChoices.ts";
 import { proficiencyChoiceOffers, skillPickOffers, type SkillPickOffer } from "./proficiencyChoiceOffers.ts";
-import { featuresOf, skillChoiceOffers, type SkillChoiceOffer } from "./proficiencySheet.ts";
+import { moveLegacyClassSkillPicks } from "./proficiencyPicks.ts";
+import { featuresOf } from "./proficiencySheet.ts";
 import { getAvailableExpertiseMilestones, getMilestonePicks, type ExpertiseMilestone } from "./expertise.ts";
 import { getAvailableOptionalFeatures, type OptionalFeatureOption } from "./optionalFeatures.ts";
 
 /**
  * The one answer to "which choices does this class bring at this level for this character": the choices
- * the class brings for the levels after `fromLevel` up to the entry's level - its starting skill pick
- * when it is the character's first class, its class and subclass Proficiency Choices (a later class's
- * multiclass skill pick included), and its class and subclass rule choices. The Creation Flow reads it
+ * the class brings for the levels after `fromLevel` up to the entry's level - its class and subclass Proficiency
+ * Choices (the first class's starting skill pick and a later class's multiclass skill pick included), and its class
+ * and subclass rule choices. The Creation Flow reads it
  * over the whole held level, the Level-Up Flow over the one new level, so the two flows cannot disagree
  * about a Class Choices step. The Proficiency Sheet stays the one reader of the proficiency sources.
  */
@@ -24,8 +25,6 @@ export interface ClassChoicesQuery {
 }
 
 export interface ClassLevelChoices {
-  /** The starting skill pick, when the class is the character's first and the range includes level 1. */
-  skillChoices: SkillChoiceOffer[];
   /** The class's and subclass's Proficiency Choices in the level range. */
   proficiencyChoices: AvailableRuleChoice[];
   /** The class's and subclass's rule choices in the level range. */
@@ -63,11 +62,6 @@ export function classChoicesAtLevel(
   const planned = holding(character, entry);
   const inRange = (level: number) => level > fromLevel && level <= entry.level;
 
-  // The starting skill pick belongs to the first class only; a later class's skill pick is its
-  // multiclass Proficiency Choice, listed with the proficiency choices below.
-  const isFirst = planned.classes.length > 0 && sameName(planned.classes[0].className, entry.className);
-  const skillChoices = isFirst && inRange(1) ? skillChoiceOffers(planned, { compendium, activeBooks }) : [];
-
   // The grants of the entry's own class and subclass features, so another held class's choices do not leak in.
   const ownGrantIds = new Set(
     featuresOf(planned, catalogListings({ compendium, activeBooks }), activeBooks)
@@ -83,10 +77,6 @@ export function classChoicesAtLevel(
     (choice) => inRange(choice.level),
   );
 
-  const skillPicked = skillChoices.every((offer) => {
-    const picked = character.skillChoices?.find((saved) => saved.id === offer.source && saved.origin === "class")?.picked ?? [];
-    return picked.length >= offer.choose;
-  });
   const proficiencyPicked = proficiencyChoices.every(
     (offer) => (character.proficiencyPicks?.[offer.id] ?? []).length >= offer.choose,
   );
@@ -96,16 +86,15 @@ export function classChoicesAtLevel(
   });
 
   return {
-    skillChoices,
     proficiencyChoices,
     ruleChoices,
-    allPicked: skillPicked && proficiencyPicked && rulePicked,
+    allPicked: proficiencyPicked && rulePicked,
   };
 }
 
 /** Whether the class brings any choice at all in the level range. */
 export function hasClassChoices(choices: ClassLevelChoices): boolean {
-  return choices.skillChoices.length > 0 || choices.proficiencyChoices.length > 0 || choices.ruleChoices.length > 0;
+  return choices.proficiencyChoices.length > 0 || choices.ruleChoices.length > 0;
 }
 
 /** The cards of the Class Choices step: one per choice group, and the other card. */
@@ -119,9 +108,7 @@ export type ExpertiseMilestonePick = ReturnType<typeof getMilestonePicks>[number
  * step's skip and completeness from it, and the Class tab's section renders its lists.
  */
 export interface ClassChoicesStepView {
-  /** The first class's starting skill pick, shown first in the Skills card. */
-  startingSkills: SkillChoiceOffer[];
-  /** The skill Proficiency Choices: class, subclass and multiclass picks. A feat's pick is shown with the feat. */
+  /** The skill Proficiency Choices: starting, class, subclass and multiclass picks. A feat's pick is shown with the feat. */
   skillPicks: SkillPickOffer[];
   /** The rule and Proficiency Choices by card. */
   cards: Record<ClassChoiceCard, AvailableRuleChoice[]>;
@@ -197,7 +184,7 @@ export function newOptionalFeatures(
  * gains, with the skill picks split out as the Class Choices step shows them.
  */
 export function classChoicesLevelView(
-  character: Character,
+  saved: Character,
   entry: CharacterClass,
   fromLevel: number,
   query: ClassChoicesQuery = {},
@@ -206,6 +193,7 @@ export function classChoicesLevelView(
   const compendium = query.compendium ?? currentCompendium();
   const activeBooks = query.activeBooks;
   const catalogs = { compendium, activeBooks };
+  const character = moveLegacyClassSkillPicks(saved, compendium);
   const choices = classChoicesAtLevel(character, entry, fromLevel, catalogs);
   const allSkillPicks = skillPickOffers(holding(character, entry), catalogs);
   const skillIds = new Set(allSkillPicks.map((offer) => offer.id));
@@ -217,7 +205,6 @@ export function classChoicesLevelView(
   const optionalFeatures = newOptionalFeatures(character, entry, fromLevel, catalogs);
 
   return {
-    startingSkills: choices.skillChoices,
     skillPicks,
     cards: choiceCards(choices.ruleChoices, proficiencies),
     expertise: { picks: expertise, invalidPicks: [] },
@@ -231,15 +218,16 @@ export function classChoicesLevelView(
  * The Class Choices step's view: each held class's choices from `classChoicesAtLevel` at level 0, Expertise milestones
  * and their picks, and the optional features the held classes offer. A feat's Proficiency Choices are not listed here.
  */
-export function classChoicesStepView(character: Character, query: ClassChoicesQuery = {}): ClassChoicesStepView {
+export function classChoicesStepView(saved: Character, query: ClassChoicesQuery = {}): ClassChoicesStepView {
   const compendium = query.compendium ?? currentCompendium();
   const activeBooks = query.activeBooks;
   const catalogs = { compendium, activeBooks };
+  // A saved first-class skill entry the reconciler has not moved yet reads as the starting skill's pick.
+  const character = moveLegacyClassSkillPicks(saved, compendium);
   const perClass = (character.classes ?? []).map((entry) =>
     classChoicesAtLevel(character, entry, 0, { compendium, activeBooks }),
   );
 
-  const startingSkills = perClass.flatMap((choices) => choices.skillChoices);
   const skillPicks = skillPickOffers(character, { compendium, activeBooks });
   const skillIds = new Set(skillPicks.map((offer) => offer.id));
   const ruleChoices = perClass.flatMap((choices) => choices.ruleChoices);
@@ -255,12 +243,6 @@ export function classChoicesStepView(character: Character, query: ClassChoicesQu
 
   const optionalFeatures = getAvailableOptionalFeatures(character, catalogListings(catalogs).classes());
 
-  const startingPicked = startingSkills.every((offer) =>
-    pickedEnough(
-      character.skillChoices?.find((saved) => saved.id === offer.source && saved.origin === "class")?.picked,
-      offer.choose,
-    ),
-  );
   const proficiencyPicked = (offer: AvailableRuleChoice) => pickedEnough(character.proficiencyPicks?.[offer.id], offer.choose);
   const rulePicked = ruleChoices.every((choice) =>
     pickedEnough(character.ruleChoices?.find((saved) => saved.id === choice.id)?.picked, choice.choose),
@@ -268,18 +250,16 @@ export function classChoicesStepView(character: Character, query: ClassChoicesQu
   const expertisePicked = expertiseFilled(picks);
 
   return {
-    startingSkills,
     skillPicks,
     cards,
     expertise: { picks, invalidPicks },
     optionalFeatures,
     applies:
-      startingSkills.length > 0 ||
       skillPicks.length > 0 ||
       classProficiencies.length > 0 ||
       ruleChoices.length > 0 ||
       milestones.length > 0 ||
       optionalFeatures.length > 0,
-    complete: startingPicked && skillPicks.every(proficiencyPicked) && classProficiencies.every(proficiencyPicked) && rulePicked && expertisePicked,
+    complete: skillPicks.every(proficiencyPicked) && classProficiencies.every(proficiencyPicked) && rulePicked && expertisePicked,
   };
 }

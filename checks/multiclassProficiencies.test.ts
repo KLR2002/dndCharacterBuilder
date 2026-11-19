@@ -6,6 +6,7 @@ import { proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts
 import { classBaseProficiencies } from "../src/rules/proficiencySources/classBase.ts";
 import { addMulticlassLevel, removeClassLevel } from "../src/rules/builderTransitions.ts";
 import { reconcile } from "../src/rules/characterReconciler.ts";
+import { migrateSavedPicks } from "../src/rules/savedPicksMigration.ts";
 import { inMemoryCompendium, integratedTestCompendium, makeChar, srdBaselineCompendium } from "./testUtils.ts";
 import { wardenClass } from "./proficiencySheetFixture.ts";
 import type { Character, CharacterClass } from "../src/types/character.ts";
@@ -210,5 +211,5 @@ test("an old save holding an empty multiclass skill entry loads without it", () 
     classes: [fighter, { className: "Rogue", source: "PHB", level: 1 }],
     skillChoices: [{ id: "multiclass_skill_rogue", origin: "class", choose: 1, from: ["Stealth"], picked: [] }],
   });
-  assert.equal(reconcile(old, srdBaselineCompendium(), { activeBooks: ALL_BOOKS }).skillChoices, undefined);
+  assert.equal(migrateSavedPicks(old, srdBaselineCompendium(), ALL_BOOKS).skillChoices, undefined);
 });

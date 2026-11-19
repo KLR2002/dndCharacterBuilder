@@ -2,7 +2,7 @@ import type { ActiveBooks } from "../constants/books.ts";
 import type { AsiSelection, Character, CharacterClass, CreationProgress, CreationStepId } from "../types/character.ts";
 import { CREATION_STEP_ORDER } from "../types/character.ts";
 import type { ClassData, RaceData, SubraceData } from "../types/dnd5e.ts";
-import { POINT_BUY_COST } from "../constants/rules.ts";
+import { pointBuyValid } from "./pointBuy.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { allCatalogClasses, allCatalogRaces, type CharacterCatalogs } from "./catalogs.ts";
 import { heldClass } from "./classData.ts";
@@ -10,6 +10,7 @@ import { ABILITIES } from "./abilities.ts";
 import { applyAsiSelection, asiLevels, getPendingLevelChoices, removeAsiSelection, subclassLevel } from "./leveling.ts";
 import { getSubclassName } from "./ruleChoices.ts";
 import { classChoicesStepView } from "./classChoices.ts";
+import { moveLegacyClassSkillPicks } from "./proficiencyPicks.ts";
 import { findHeldRace } from "./raceLookup.ts";
 import { isCastingClass, spellOwnerKey } from "./spellcasting.ts";
 import { spellCounts } from "./spellCounts.ts";
@@ -134,9 +135,6 @@ export function creationStepNeedsAttention(character: Character, step: CreationS
   return character.creationProgress?.needsAttention?.includes(step) ?? false;
 }
 
-/** The point-buy budget a creation's base scores may spend (2014 rules). */
-const POINT_BUY_BUDGET = 27;
-
 /**
  * Whether the Abilities step's method is fully picked: the whole standard array, scores within point buy,
  * or — for rolled — six rolled results with every one placed on exactly one ability. Manual asks for nothing.
@@ -146,15 +144,7 @@ function abilitiesValid(character: Character): boolean {
     const picks = character.standardArrayPicks ?? {};
     return ABILITIES.every((ability) => typeof picks[ability] === "number");
   }
-  if (character.abilityMethod === "pointBuy") {
-    let spent = 0;
-    for (const ability of ABILITIES) {
-      const score = character.baseAbilityScores?.[ability] ?? 8;
-      if (score < 8 || score > 15) return false;
-      spent += POINT_BUY_COST[score] ?? 0;
-    }
-    return spent <= POINT_BUY_BUDGET;
-  }
+  if (character.abilityMethod === "pointBuy") return pointBuyValid(character.baseAbilityScores ?? {});
   if (character.abilityMethod === "rolled") {
     const results = character.rolledAbilities ?? [];
     const picks = character.rolledAbilityPicks ?? {};
@@ -373,12 +363,18 @@ function changeCreationClass(
   return { ...reconciled, ...followed };
 }
 
-/** The class-origin picks the Class Choices step holds: its skill choices and its class/subclass rule choices. */
-function classChoiceSignature(character: Character): string {
-  return JSON.stringify([
-    (character.skillChoices ?? []).filter((sc) => sc.origin === "class"),
-    (character.ruleChoices ?? []).filter((rc) => rc.origin === "class" || rc.origin === "subclass"),
-  ]);
+/**
+ * The picks the Class Choices step holds: the picks on its Proficiency Choices (its skill picks and the other proficiency
+ * offers) and its class/subclass rule choices.
+ */
+function classChoiceSignature(saved: Character, opts: CreationFlowOptions): string {
+  const character = moveLegacyClassSkillPicks(saved, opts.compendium ?? currentCompendium());
+  const view = classChoicesStepView(character, opts);
+  const proficiencyOffers = [...view.skillPicks, ...Object.values(view.cards).flat()].filter((offer) => offer.pick === "proficiency");
+  const picked = [...new Set(proficiencyOffers.map((offer) => offer.id))]
+    .sort()
+    .flatMap((id) => (character.proficiencyPicks?.[id]?.length ? [[id, character.proficiencyPicks[id]]] : []));
+  return JSON.stringify([picked, (character.ruleChoices ?? []).filter((rc) => rc.origin === "class" || rc.origin === "subclass")]);
 }
 
 function spellsSignature(character: Character): string {
@@ -419,7 +415,7 @@ function computeNeedsAttention(
   const released: Partial<Record<CreationStepId, boolean>> = {
     subclass: heldSubclassCount(before) > heldSubclassCount(after),
     subrace: JSON.stringify(before.race ?? null) !== JSON.stringify(after.race ?? null),
-    classChoices: classChoiceSignature(before) !== classChoiceSignature(after),
+    classChoices: classChoiceSignature(before, opts) !== classChoiceSignature(after, opts),
     asiFeats: JSON.stringify(before.asiSelections ?? []) !== JSON.stringify(after.asiSelections ?? []),
     spells: spellsSignature(before) !== spellsSignature(after),
     equipment: equipmentSignature(before) !== equipmentSignature(after),

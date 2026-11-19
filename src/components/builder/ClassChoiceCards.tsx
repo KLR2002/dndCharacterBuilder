@@ -4,27 +4,19 @@ import type { ClassChoicesStepView } from "../../rules/classChoices";
 import type { Character } from "../../types/character";
 import type { AvailableRuleChoice } from "../../rules/ruleChoices";
 import { pickedOptionNames } from "../../rules/ruleChoices";
-import { normalizeSkillName } from "../../rules/skills";
 import { Badge } from "../ui/Badge";
 import { CollapsibleCard } from "../ui/CollapsibleCard";
-import { RuleChoicePicker, SkillPicker } from "./builderStyles";
+import { RuleChoicePicker } from "./builderStyles";
 
 /** The saved picks the cards read to show what the player chose. */
-export type ClassChoicePicks = Pick<
-  Character,
-  "ruleChoices" | "proficiencyPicks" | "skillChoices" | "chosenSkills"
->;
+export type ClassChoicePicks = Pick<Character, "ruleChoices" | "proficiencyPicks">;
 
 export interface ClassChoiceCardsProps {
   /** The Class Choices step's view: the skill picks, the choice cards and the Expertise milestones. */
   view: ClassChoicesStepView;
   picks: ClassChoicePicks;
-  /** The skills the rules grant, which a skill pick cannot take. */
-  autoGranted: string[];
-  primaryClass?: string;
   onToggleRuleChoice: (choice: AvailableRuleChoice, option: string) => void;
   onClearChoice: (choice: AvailableRuleChoice) => void;
-  onToggleStartingSkill: (skill: string, source: string) => void;
   onToggleExpertise: (item: string) => void;
   onPruneInvalidExpertise: () => void;
   theme: any;
@@ -37,17 +29,14 @@ export interface ClassChoiceCardsProps {
 export const ClassChoiceCards: React.FC<ClassChoiceCardsProps> = ({
   view,
   picks,
-  autoGranted,
-  primaryClass,
   onToggleRuleChoice,
   onClearChoice,
-  onToggleStartingSkill,
   onToggleExpertise,
   onPruneInvalidExpertise,
   theme,
 }) => {
-  const { startingSkills, skillPicks, cards } = view;
-  const hasSkillCard = startingSkills.length > 0 || skillPicks.length > 0;
+  const { skillPicks, cards } = view;
+  const hasSkillCard = skillPicks.length > 0;
   const hasCardChoice = Object.values(cards).some((choices) => choices.length > 0);
 
   const {
@@ -128,36 +117,10 @@ export const ClassChoiceCards: React.FC<ClassChoiceCardsProps> = ({
     );
   };
 
-  // One card for every skill pick: the starting picker, then the Proficiency Choices that are skill picks.
-  // Each is named by its source, and a pick whose grant gives Expertise is tagged on the picked names.
+  // One card for every skill pick: the starting skill, the class and subclass skill picks, and a later class's multiclass
+  // skill. Each is named by its source, and a pick whose grant gives Expertise is tagged on the picked names.
   const skillsCard = !hasSkillCard ? null : (
     <CollapsibleCard key="prog_skills" title="Skills" style={{ gap: 12 }}>
-      {startingSkills.map((sc) => {
-        const choiceEntry = picks.skillChoices?.find(
-          (c) => c.id === sc.source,
-        );
-        const normFrom = sc.from.map(normalizeSkillName);
-        const normAuto = autoGranted.map(normalizeSkillName);
-        const chosen = choiceEntry
-          ? choiceEntry.picked
-          : (picks.chosenSkills || []).filter(
-              (s) =>
-                normFrom.includes(normalizeSkillName(s)) &&
-                !normAuto.includes(normalizeSkillName(s)),
-            );
-        return (
-          <SkillPicker
-            key={sc.source}
-            label={`${primaryClass} starting skills`}
-            choose={sc.choose}
-            from={sc.from}
-            chosen={chosen}
-            autoGranted={autoGranted}
-            onToggle={(skill) => onToggleStartingSkill(skill, sc.source)}
-            theme={theme}
-          />
-        );
-      })}
       {skillPicks.map((offer) =>
         renderChoice(offer, offer.expertise ? "Expertise" : undefined),
       )}

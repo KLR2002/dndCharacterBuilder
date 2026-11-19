@@ -13,6 +13,7 @@ Skills, tools, languages, weapons, armor and saving throws were granted by per-s
 
 - A skills grant whose feature text doubles the proficiency bonus for the skills it grants carries an `expertise` mark, written by the scraper (catalog format 7). The Proficiency Sheet marks those skills, fixed or picked, as having Expertise and stores nothing. A scraper test fails when a feature's text doubles the bonus and the feature has neither the mark nor a review entry (`REVIEWED_NOT_A_SKILL_GRANT`). The Expertise milestones stay for features that double the bonus on a skill the character already holds.
 - A later class's skill choice from its `multiclassing` record is a Proficiency Choice on a `Multiclass Proficiencies` feature of that class entry, with a grant id built from the class's source and name.
+- The first class's starting skill choice, from its record's skill choice, is a Proficiency Choice on its `Starting Proficiencies` feature, with a grant id built the same way (`<source>/<class>/Starting Proficiencies@1#skills:choice:from`, or `:any` for a pool of any skill). The Catalog carries no grant for it, so no Catalog Format changes.
 
 ## Known exceptions
 None remain.

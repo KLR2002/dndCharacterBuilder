@@ -5,7 +5,8 @@ import { normalizeArmorProficiency, normalizeWeaponProficiency } from "../profic
 import { normalizeSkillName } from "../skills.ts";
 import { findClassData } from "../catalogs.ts";
 import { heldClass } from "../classData.ts";
-import type { ChoiceProficiencyGrant } from "../proficiencyPools.ts";
+import { STARTING_PROFICIENCIES, type ChoiceProficiencyGrant } from "../proficiencyPools.ts";
+import { SRD_SOURCE } from "../../constants/books.ts";
 
 /** The feature a later class's multiclass skill choice is printed on. The Class card titles its pick after the class. */
 export const MULTICLASS_FEATURE = "Multiclass Proficiencies";
@@ -59,6 +60,20 @@ export function multiclassGrantsOf(entry: { className: string; source?: string }
 }
 
 /**
+ * The id and aliases of a grant built here from a class record. The SRD Baseline's classes are the PHB's records with source
+ * SRD (scripts/srdBaseline.ts), and the grants the Catalog carries for them keep PHB ids, so a pick holds whichever catalog
+ * is loaded. A grant built from an SRD or a PHB class does the same: its id names the PHB, and the SRD-named id it had before
+ * is an alias, which moves a pick saved under it (moveAliasedProficiencyPicks).
+ */
+function builtGrantId(cls: ClassData, rest: string): { id: string; aliases?: string[] } {
+  if (cls.source !== SRD_SOURCE && cls.source !== SRD_PRINTED_SOURCE) return { id: `${cls.source}/${rest}` };
+  return { id: `${SRD_PRINTED_SOURCE}/${rest}`, aliases: [`${SRD_SOURCE}/${rest}`] };
+}
+
+/** The book the SRD Baseline's class records are printed in. */
+const SRD_PRINTED_SOURCE = "PHB";
+
+/**
  * The skill choice a class grants a character who takes it as a later class, as a Proficiency Choice. The pool is the
  * record's list, or every skill when the record names none. The id names the class and the kind of pool, never the
  * pool or the count (ADR 0015). Undefined when the record gives no skill choice.
@@ -70,12 +85,42 @@ export function multiclassSkillGrantOf(cls: ClassData): ChoiceProficiencyGrant |
   const pool = names.length > 0 ? ({ kind: "names", names } as const) : ({ kind: "any" } as const);
   return {
     // The feature is gained at level 1 of the class, so the id carries level 1.
-    id: `${cls.source}/${cls.name}/${MULTICLASS_FEATURE}@1#skills:choice:${pool.kind === "names" ? "from" : "any"}`,
+    ...builtGrantId(cls, `${cls.name}/${MULTICLASS_FEATURE}@1#skills:choice:${pool.kind === "names" ? "from" : "any"}`),
     kind: "choice",
     category: "skills",
     count: choice.choose.count ?? 1,
     pool,
   };
+}
+
+/**
+ * The starting skill choice the first class grants, as a Proficiency Choice on its Starting Proficiencies feature. The
+ * pool is the record's list, or every skill when the record names none. The id names the class and the kind of pool,
+ * never the pool or the count (ADR 0015). Undefined when the record gives no skill choice.
+ */
+export function startingSkillGrantOf(cls: ClassData): ChoiceProficiencyGrant | undefined {
+  const choice = cls.skillProficiencies;
+  if (!choice || !(choice.choose > 0)) return undefined;
+  const names = (choice.from ?? []).map((skill: string) => normalizeSkillName(plainText(skill)));
+  const pool = names.length > 0 ? ({ kind: "names", names } as const) : ({ kind: "any" } as const);
+  return {
+    ...builtGrantId(cls, `${cls.name}/${STARTING_PROFICIENCIES}@1#skills:choice:${pool.kind === "names" ? "from" : "any"}`),
+    kind: "choice",
+    category: "skills",
+    count: choice.choose,
+    pool,
+  };
+}
+
+/**
+ * Whether a saved skill entry is the first class's starting skill picks from before the starting skill was a Proficiency
+ * Choice. Such an entry is keyed by the class name (`Class: <name>`) or by a migrated save's `class__<name>__<source>__skills`.
+ */
+export function isLegacyFirstClassSkillEntry(entry: { id: string; origin: string }, first: CharacterClass): boolean {
+  return (
+    entry.origin === "class" &&
+    (entry.id === `Class: ${first.className}` || entry.id === `class__${first.className}__${first.source}__skills`)
+  );
 }
 
 /**

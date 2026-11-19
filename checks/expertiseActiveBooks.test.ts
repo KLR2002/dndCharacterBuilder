@@ -85,9 +85,11 @@ test("a skill an active source also grants keeps its mark when the book is disab
     skillChoices: [{ id: "Class: Rogue", origin: "class", choose: 1, from: ["Investigation"], picked: ["Investigation"] }],
     chosenExpertise: ["Investigation"],
   });
-  const pruned = reconcile(char, catalog(), { activeBooks: PHB_ONLY });
+  const pruned = reconcileForActiveBooks(char, catalog(), PHB_ONLY);
   assert.deepEqual(pruned.chosenExpertise, ["Investigation"]);
-  assert.deepEqual(pruned.chosenSkills, ["Investigation", "Stealth"]);
+  // The class's saved skill moved into its starting skill choice, and the sheet still holds it.
+  assert.deepEqual(pruned.chosenSkills, ["Stealth"]);
+  assert.ok(proficiencySheet(pruned, { compendium: catalog(), activeBooks: PHB_ONLY }).skills.some((entry) => entry.name === "Investigation"));
   assert.equal(pruned.needsReview, undefined);
 });
 
@@ -107,7 +109,7 @@ test("a background's skill is held through its grant while its book is enabled, 
 
 test("a skill copy a turned-off background left in the skill bucket is dropped, and its Expertise released", () => {
   // An older save wrote the background's skill into the bucket. Nothing else picked it.
-  const pruned = reconcile(smugglerRogue({ chosenSkills: ["Investigation", "Stealth"] }), catalog(), { activeBooks: PHB_ONLY });
+  const pruned = reconcileForActiveBooks(smugglerRogue({ chosenSkills: ["Investigation", "Stealth"] }), catalog(), PHB_ONLY);
   assert.deepEqual(pruned.chosenSkills, ["Stealth"]);
   assert.deepEqual(pruned.chosenExpertise, ["Stealth"]);
   assert.deepEqual(pruned.needsReview, [
