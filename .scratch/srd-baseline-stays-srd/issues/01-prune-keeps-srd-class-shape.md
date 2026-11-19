@@ -24,17 +24,19 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Tests (`checks/srdBaseline.test.ts`, feeding `pruneClasses` a small raw input):
+**Landed:** merge 07bf9f0 (53f7b13) and review fix. `pruneClasses` in `scripts/srdBaseline.ts` (imported by the `.mjs` script); class descriptions `""`, folded and `spellChoice` options sourced `SRD`; regenerated `classes.json` (Hunter 16 → 5 features, Land `spellChoice`, Open Hand ability) and `feats.json` (Grappler spacing). The premise did not hold: no Hunter pick was offered in either mode, because the subclass choice table had no Hunter rows. The implementer added rows for all four tiers. Review fix: the rows are `PHB__Ranger__Hunter__…` with source `PHB`, like the Circle of the Land row, so the integrated Hunter's PHB options match the row's book; the SRD tests use the default books, and the SRD "PHB off" case moved to book-admission ticket 04 (the row filter at `ruleChoices.ts` ~194 drops `PHB` rows when PHB is off, Land included). The spell-choice reader admits `SRD` options by hand until book-admission. New scenario `Class Choices SRD Hunter` (green at 393, SRD and integrated); 11 tests in `checks/srdBaseline.test.ts`; check:all and check:live passed.
+
+- [x] Tests (`checks/srdBaseline.test.ts`, feeding `pruneClasses` a small raw input):
   - A class description becomes `""`.
   - A non-SRD subclass is dropped.
   - A folded option and a `spellChoice` option become source `SRD`.
-- [ ] Tests on the regenerated baseline, through the function the Class Choices step reads (find it from `src/rules/classChoices.ts`):
+- [x] Tests on the regenerated baseline, through the function the Class Choices step reads (find it from `src/rules/classChoices.ts`):
   - An SRD Ranger 3 Hunter is offered one Hunter's Prey pick of Colossus Slayer, Giant Killer and Horde Breaker, with the PHB book switched off.
   - An SRD Ranger 7 Hunter also gets Defensive Tactics.
   - The Features tab text for Hunter's Prey lists the three options: `describeClassFeature` with the SRD source and default books.
   - A saved SRD Ranger 5 Hunter made before this change loads through `migrateCharacter` and reconciles without error, and its Hunter's Prey pick is pending.
-- [ ] Paste the `git diff --stat src/data` and the Hunter's feature names after the run.
-- [ ] `npm run check:all` and `npm run check:live` pass.
-- [ ] Scoped layout: find the scenarios that seed a Ranger (`grep -rn "Ranger" checks/layout`) and run them at `WIDTHS=393`, SRD. If one shows the Class Choices step for a Ranger at level 3 or above, open its screenshot and describe the Hunter's Prey pick. If none does, add `Class Choices SRD Hunter` (a Ranger 3 Hunter in the builder's Class Choices step, seeded the way the other Class Choices scenarios are) and describe its screenshot.
+- [x] Paste the `git diff --stat src/data` and the Hunter's feature names after the run.
+- [x] `npm run check:all` and `npm run check:live` pass.
+- [x] Scoped layout: find the scenarios that seed a Ranger (`grep -rn "Ranger" checks/layout`) and run them at `WIDTHS=393`, SRD. If one shows the Class Choices step for a Ranger at level 3 or above, open its screenshot and describe the Hunter's Prey pick. If none does, add `Class Choices SRD Hunter` (a Ranger 3 Hunter in the builder's Class Choices step, seeded the way the other Class Choices scenarios are) and describe its screenshot.

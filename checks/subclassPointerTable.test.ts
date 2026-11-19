@@ -33,10 +33,10 @@ const FROZEN_IDS = [
   "PHB__Barbarian__Path of the Totem Warrior__Totem Spirit 3",
   "PHB__Barbarian__Path of the Totem Warrior__Aspect of the Beast 6",
   "PHB__Barbarian__Path of the Totem Warrior__Totemic Attunement 14",
-  "SRD__Ranger__Hunter__Hunter's Prey 3",
-  "SRD__Ranger__Hunter__Defensive Tactics 7",
-  "SRD__Ranger__Hunter__Multiattack 11",
-  "SRD__Ranger__Hunter__Superior Hunter's Defense 15",
+  "PHB__Ranger__Hunter__Hunter's Prey 3",
+  "PHB__Ranger__Hunter__Defensive Tactics 7",
+  "PHB__Ranger__Hunter__Multiattack 11",
+  "PHB__Ranger__Hunter__Superior Hunter's Defense 15",
 ] as const;
 
 const BASELINE_PATH = new URL("./fixtures/subclassChoiceBaseline.json", import.meta.url);

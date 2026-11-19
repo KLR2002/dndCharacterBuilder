@@ -24,6 +24,7 @@ Where a function has no Compendium, add a parameter defaulting to `currentCompen
 - [ ] New tests:
   - Mixed-case books give the same ancestry and subclass Rule Choices and subclass offers as upper-case.
   - A Hunter's Prey option sourced `SRD` is listed by `describeClassFeature` with books `["XGE"]`.
+  - With the SRD Baseline and books `["SRD"]` (what "Revert to SRD" saves), an SRD Ranger 3 Hunter is offered Hunter's Prey and an SRD Druid 2 Land is offered its Biome pick. Today the `PHB`-sourced rows are dropped at `ruleChoices.ts` ~194; see `checks/srdBaseline.test.ts`.
   - The book warnings: an integrated character with an XGE feat and books `["PHB"]` warns; the same character with the SRD Baseline does not; an SRD race never warns.
 - [ ] Paste `grep -nE "toUpperCase|SRD_SOURCE|activeBooks\??\.(includes|some)"` over the eight files. What remains must not be admission.
 - [ ] `npm run check:all` and `npm run check:live` pass.
