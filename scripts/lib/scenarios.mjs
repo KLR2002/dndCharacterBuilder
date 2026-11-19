@@ -1049,6 +1049,30 @@ function arcanumCharacter() {
   });
 }
 
+// A level 4 Sorcerer holding Shield under its own key, so its level 5 plan offers the spell swap: forget Shield, learn
+// Magic Missile. The Level-Up Flow replacement scenario walks it to Review.
+export const LEVEL_UP_SORCERER_ID = "char_levelup_sorcerer";
+function levelUpSorcererCharacter() {
+  const classSource = catalogSource("classes", "Sorcerer");
+  const spellSource = (name) => catalogSource("spells", name);
+  const ownerKey = `Sorcerer__${classSource}`;
+  return makeChar({
+    id: LEVEL_UP_SORCERER_ID,
+    name: "Vesna",
+    createdAt: 24,
+    updatedAt: 24,
+    startingOption: "equipment",
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    baseAbilityScores: { str: 8, dex: 14, con: 12, int: 10, wis: 10, cha: 16 },
+    classes: [{ className: "Sorcerer", source: classSource, level: 4 }],
+    currentHp: 26,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+    knownSpells: ["Shield", "Mage Hand"].map((name) => ({ name, source: spellSource(name), ownerKey })),
+  });
+}
+
 // A level 2 Sorcerer: its Sorcery Points card shows the points alone, with no Metamagic button.
 const SORCERER_TWO_ID = "char_sorcerer_two";
 function sorcererTwoCharacter() {
@@ -1433,6 +1457,7 @@ export function buildSeed({ root, integrated }) {
       arcanumCharacter(),
       arcanumOtherClassCharacter(),
       sorcererTwoCharacter(),
+      levelUpSorcererCharacter(),
       actionsCharacter(),
       ...(INTEGRATED ? [aberrantSorcererCharacter()] : []),
     ],
