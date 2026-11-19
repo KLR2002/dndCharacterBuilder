@@ -290,6 +290,29 @@ test("failed init exposes initError and retryInitialization loads characters, se
   assert.equal((await storage.loadCharacters())[0].notes, "edited");
 });
 
+test("createCharacter called while the first load is pending waits for it and creates the draft", { timeout: 3000 }, async () => {
+  const h = await providerHarness([makeChar()], { waitForInit: false });
+  assert.equal(h.value.isLoading, true);
+  const created = h.value.createCharacter({ name: "", creationProgress: { currentStep: "class" } });
+  for (let i = 0; i < 100 && h.value.isLoading; i++) {
+    await new Promise(resolve => setImmediate(resolve));
+    h.render();
+  }
+  const draft = await created;
+  h.render();
+  assert.equal(draft.creationProgress?.currentStep, "class");
+  assert.equal(h.value.characters.length, 2);
+  assert.equal((await storage.loadCharacters()).length, 2);
+});
+
+test("createCharacter called while a failing first load is pending rejects and writes nothing", { timeout: 3000 }, async () => {
+  const h = await providerHarness("not json", { waitForInit: false });
+  await assert.rejects(h.value.createCharacter({ name: "Blocked" }), /Load characters successfully/);
+  h.render();
+  assert.equal(h.value.initError?.includes("@dnd5e_characters"), true);
+  assert.equal(h.kv.get("@dnd5e_characters"), "not json");
+});
+
 test("retry after success preserves a queued edit and ignores external KV changes", { timeout: 3000 }, async () => {
   const h = await providerHarness();
   const edit = h.value.updateCharacter("char_test", { notes: "unsaved edit" });
