@@ -35,6 +35,30 @@ const STAT_NAMES: Record<string, string> = {
   cha: "Charisma",
 };
 
+/**
+ * Copies the count progressions a record states, under the names the Catalog uses. A progression the record lacks is
+ * absent from the result, not empty.
+ */
+function countProgressions<K extends string>(record: any, fields: Record<K, string>): Partial<Record<K, number[]>> {
+  const counts: Partial<Record<K, number[]>> = {};
+  for (const key of Object.keys(fields) as K[]) {
+    const value = record[fields[key]];
+    if (Array.isArray(value)) counts[key] = [...value];
+  }
+  return counts;
+}
+
+const CLASS_COUNT_FIELDS = {
+  cantripsKnown: "cantripProgression",
+  spellsKnown: "spellsKnownProgression",
+  spellbookSpellsGained: "spellsKnownProgressionFixed",
+} as const;
+
+const SUBCLASS_COUNT_FIELDS = {
+  cantripsKnown: "cantripProgression",
+  spellsKnown: "spellsKnownProgression",
+} as const;
+
 /** Finds the first `options` entry in a feature's entry tree. */
 function findOptionsEntry(entries: any): any | undefined {
   if (!Array.isArray(entries)) return undefined;
@@ -254,6 +278,7 @@ export async function scrapeClasses(
             ability: STAT_NAMES[raw.spellcastingAbility] || raw.spellcastingAbility,
             progression: raw.casterProgression || "full",
             preparedSpells: raw.preparedSpells ? cleanTags(raw.preparedSpells, "plain") : undefined,
+            ...countProgressions(raw, CLASS_COUNT_FIELDS),
           }
         : null;
 
@@ -346,6 +371,7 @@ export async function scrapeClasses(
             ? STAT_NAMES[sc.spellcastingAbility] || sc.spellcastingAbility
             : undefined,
           features: scFeatures,
+          ...countProgressions(sc, SUBCLASS_COUNT_FIELDS),
           ...(additionalSpells ? { additionalSpells } : {}),
           ...(spellChoice ? { spellChoice } : {}),
           description: renderEntries(sc.entries, "markdown"),
