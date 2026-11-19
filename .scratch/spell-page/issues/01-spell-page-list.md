@@ -31,14 +31,16 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `checks/spellPage.test.ts` (node:test, `makeChar()` from `checks/testUtils.ts`) covers:
+**Landed:** merge a08b949 (9512a6b, 77b2745). `src/rules/spellPage.ts` (380 lines) returns owners, owner, header, prepared (with `overLimit`), list title/subtitle, `canAddSpells`, levels of rows; `SPELL_LEVEL_NAMES` shared with `SpellLearnList`. SpellsTab keys the open owner by `ownerKey`; banners, EK/AT detection, class-name badge tables and `groupedSpells` deleted. `spellPage` runs its own evaluation beside the tab's until ticket 02 moves the remaining reads. 7 tests in `checks/spellPage.test.ts`; `ONLY=Spells` green at 320 and 393; check:all passed.
+
+- [x] `checks/spellPage.test.ts` (node:test, `makeChar()` from `checks/testUtils.ts`) covers:
   - A Cleric 3 / Wizard 3: two owners. The Cleric page shows a domain spell with a badge naming the subclass, locked, not forgettable. The Wizard page lists only Wizard spells. The prepared counter text is correct for both.
   - Choosing the Wizard by key while the Wizard is the second profile gives the Wizard page. An unknown key gives the first.
   - A Warlock with Pact of the Tome cantrips: the Tome rows carry the Pact of the Tome badge and `canForget` is false. An at-will invocation spell appears under level 0 with the `"CANTRIPS & AT-WILL"` title.
   - An Eldritch Knight (or Arcane Trickster) knowing one spell inside its schools and one outside: only the outside one has "Any school". A Wizard never has it.
   - A subclass spell that is replaceable has `swap.canSwap`; after a swap, `canReset` and `originalName`.
-- [ ] `grep -n "Eldritch Knight\|Arcane Trickster\|Warlock__Tome\|getSubclassPrepared" src/components/tabs/SpellsTab.tsx` prints nothing (paste it).
-- [ ] `npm run check:all` passes.
-- [ ] Scoped layout: `ONLY=Spells WIDTHS=320,393 npm run layout:check` is green (paste the summary line).
+- [x] `grep -n "Eldritch Knight\|Arcane Trickster\|Warlock__Tome\|getSubclassPrepared" src/components/tabs/SpellsTab.tsx` prints nothing (paste it).
+- [x] `npm run check:all` passes.
+- [x] Scoped layout: `ONLY=Spells WIDTHS=320,393 npm run layout:check` is green (paste the summary line).
