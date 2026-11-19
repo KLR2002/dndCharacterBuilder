@@ -6,7 +6,9 @@ Fix it at the seam: either the add action waits for initialization (the context 
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The scenario above passes on a fresh server, run alone, at 393 (paste the red run first).
-- [ ] `npm run check:all` passes.
+**Landed:** merge da96b4f (32cb246). `createCharacter` awaits the pending `initialization` promise before `requireReady()`; a failed load still leaves `ready` false and throws as before. Waiting was chosen over disabling the button because Home has no loading state to follow. `master` has the same bug. Two tests in `checks/context.test.ts`; the scenario was red alone on a fresh server (`did not show "Choose Your Class:"`, the Expo log showing the `requireReady` error) and green after; check:all passed. The other writers (`updateCharacter`, `createFolder`, `deleteCharacter`) still throw if used before the load; no cold-start path reaches them that we know of.
+
+- [x] The scenario above passes on a fresh server, run alone, at 393 (paste the red run first).
+- [x] `npm run check:all` passes.
