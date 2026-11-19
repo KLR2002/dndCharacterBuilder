@@ -353,9 +353,8 @@ function inscribeOffer(
 ): SpellData[] {
   if (warlockLevel < 2) return [];
   const inscribed = new Set((character.ritualBook ?? []).map((r) => r.name.toLowerCase().trim()));
-  const upperBooks = activeBooks?.map((b) => b.toUpperCase());
   return compendium
-    .for(upperBooks)
+    .for(activeBooks)
     .spells()
     .filter((s) => isSpellEligibleForRitualBook(s, warlockLevel, activeBooks))
     .filter((s) => !inscribed.has(s.name.toLowerCase().trim()))

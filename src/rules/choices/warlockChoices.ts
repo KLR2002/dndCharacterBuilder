@@ -91,8 +91,7 @@ export function warlockPactBoonChoices(
   const warlock = classes.find((c) => c.className.toLowerCase() === "warlock");
   if (!warlock || warlock.level < 3) return [];
 
-  const upperBooks = activeBooks ? activeBooks.map((b) => b.toUpperCase()) : undefined;
-  const allOptions = compendium.for(upperBooks).optionsAndFeatures();
+  const allOptions = compendium.for(activeBooks).optionsAndFeatures();
   const boonOptions = allOptions
     .filter(
       (o) =>
@@ -140,8 +139,7 @@ export function warlockTomeCantripChoices(
   );
   if (!hasPactOfTheTome) return [];
 
-  const upperBooks = activeBooks ? activeBooks.map((b) => b.toUpperCase()) : undefined;
-  const allCantrips = compendium.for(upperBooks).spells().filter((s) => s.level === 0);
+  const allCantrips = compendium.for(activeBooks).spells().filter((s) => s.level === 0);
 
   return [
     {
@@ -164,8 +162,7 @@ export function getSpellLookupMap(
   activeBooks: ActiveBooks,
   compendium: Compendium = currentCompendium()
 ): Map<string, SpellData> {
-  const upperBooks = activeBooks ? activeBooks.map((b) => b.toUpperCase()) : undefined;
-  const allSpells = compendium.for(upperBooks).spells();
+  const allSpells = compendium.for(activeBooks).spells();
   const spellMap = new Map<string, SpellData>();
   for (const s of allSpells) {
     const key = s.name.toLowerCase().trim();
@@ -303,8 +300,7 @@ export function warlockAncientSecretsStartingRituals(
 
   if (!hasInvocation(character, "Book of Ancient Secrets")) return [];
 
-  const upperBooks = activeBooks ? activeBooks.map((b) => b.toUpperCase()) : undefined;
-  const all1stRituals = compendium.for(upperBooks).spells().filter(
+  const all1stRituals = compendium.for(activeBooks).spells().filter(
     (s) => s.level === 1 && s.ritual === true
   );
 
@@ -435,7 +431,7 @@ export function warlockMysticArcanumChoices(
   if (!warlock || warlock.level < 11) return [];
 
   const upperBooks = activeBooks ? activeBooks.map((b) => b.toUpperCase()) : undefined;
-  const allSpells = compendium.for(upperBooks).spells();
+  const allSpells = compendium.for(activeBooks).spells();
   const subclassName = warlock.subclassName || warlock.subclass;
 
   const out: AvailableRuleChoice[] = [];
@@ -729,8 +725,7 @@ export function warlockInvocationChoices(
   compendium: Compendium = currentCompendium()
 ): AvailableRuleChoice[] {
   const out: AvailableRuleChoice[] = [];
-  const upperBooks = activeBooks ? activeBooks.map((b) => b.toUpperCase()) : undefined;
-  const allOptions = compendium.for(upperBooks).optionsAndFeatures();
+  const allOptions = compendium.for(activeBooks).optionsAndFeatures();
 
   const invocationOptions: OptionFeatureData[] = [];
   const seenInvocationNames = new Set<string>();
