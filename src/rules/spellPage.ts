@@ -356,7 +356,7 @@ function inscribeOffer(
   return compendium
     .for(activeBooks)
     .spells()
-    .filter((s) => isSpellEligibleForRitualBook(s, warlockLevel, activeBooks))
+    .filter((s) => isSpellEligibleForRitualBook(s, warlockLevel, activeBooks, compendium))
     .filter((s) => !inscribed.has(s.name.toLowerCase().trim()))
     .sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
 }

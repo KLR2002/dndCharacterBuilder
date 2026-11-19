@@ -2,7 +2,6 @@ import type { ActiveBooks } from "../../constants/books.ts";
 import type { Character, KnownSpell, RitualBookEntry, RuleChoiceEntry } from "../../types/character.ts";
 import type { OptionFeatureData, SpellData } from "../../types/dnd5e.ts";
 import { currentCompendium, type Compendium } from "../../services/compendium.ts";
-import { SRD_SOURCE } from "../../constants/books.ts";
 import { isSpellAvailableForClass } from "../spellcasting.ts";
 import { type AvailableRuleChoice, type ChoiceOwner, formatCantripOptions } from "./types.ts";
 
@@ -183,23 +182,19 @@ export function getMaxRitualBookLevel(warlockLevel: number): number {
 
 /**
  * Checks whether a spell is eligible to be inscribed into a Book of Ancient Secrets ritual book.
- * Must have ritual: true, level >= 1, level <= getMaxRitualBookLevel(warlockLevel), and source in activeBooks (if provided).
+ * Must have ritual: true, level >= 1, level <= getMaxRitualBookLevel(warlockLevel), and a source the
+ * compendium admits for activeBooks.
  */
 export function isSpellEligibleForRitualBook(
   spell: SpellData,
   warlockLevel: number,
-  activeBooks: ActiveBooks
+  activeBooks: ActiveBooks,
+  compendium: Compendium = currentCompendium()
 ): boolean {
   if (spell.ritual !== true) return false;
   if (spell.level < 1) return false;
   if (spell.level > getMaxRitualBookLevel(warlockLevel)) return false;
-  if (activeBooks && activeBooks.length > 0) {
-    const upperBooks = new Set([SRD_SOURCE, ...activeBooks.map((b) => b.toUpperCase())]);
-    if (!upperBooks.has(spell.source.toUpperCase())) {
-      return false;
-    }
-  }
-  return true;
+  return compendium.for(activeBooks).admits(spell.source);
 }
 
 /**
@@ -430,7 +425,6 @@ export function warlockMysticArcanumChoices(
   const warlock = classes.find((c) => c.className.toLowerCase() === "warlock");
   if (!warlock || warlock.level < 11) return [];
 
-  const upperBooks = activeBooks ? activeBooks.map((b) => b.toUpperCase()) : undefined;
   const allSpells = compendium.for(activeBooks).spells();
   const subclassName = warlock.subclassName || warlock.subclass;
 
@@ -441,7 +435,7 @@ export function warlockMysticArcanumChoices(
       const eligible = allSpells
         .filter((s) => s.level === m.spellLevel)
         .filter((s) =>
-          isSpellAvailableForClass(s, "Warlock", upperBooks, {
+          isSpellAvailableForClass(s, "Warlock", activeBooks, {
             subclassName,
             classLevel: warlock.level,
             ruleChoices: character.ruleChoices,
