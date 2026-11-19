@@ -156,3 +156,86 @@ test("a replaceable Clockwork Soul spell offers a swap, and after a swap it offe
   assert.equal(replaced.swap?.canReset, true);
   assert.equal(replaced.swap?.originalName, granted.name);
 });
+
+test("sorcery points start at Sorcerer 2, and Metamagic's allowance steps at 3, 10 and 17", () => {
+  const sorcerer = (level: number) =>
+    makeChar({
+      baseAbilityScores: { str: 8, dex: 14, con: 14, int: 10, wis: 10, cha: 16 },
+      classes: [{ className: "Sorcerer", source: "PHB", level }],
+    });
+
+  const two = spellPage(sorcerer(2), catalogs);
+  assert.equal(two.sorceryPoints?.max, 2);
+  assert.equal(two.metamagic, null);
+
+  assert.equal(spellPage(sorcerer(3), catalogs).metamagic?.allowance, 2);
+  assert.equal(spellPage(sorcerer(10), catalogs).metamagic?.allowance, 3);
+  assert.equal(spellPage(sorcerer(17), catalogs).metamagic?.allowance, 4);
+});
+
+test("a Mystic Arcanum tier takes the Warlock's DC and attack bonus while another class's page is open", () => {
+  const warlockCleric = makeChar({
+    baseAbilityScores: { str: 8, dex: 14, con: 14, int: 10, wis: 16, cha: 18 },
+    classes: [
+      { className: "Warlock", source: "PHB", level: 11 },
+      { className: "Cleric", source: "PHB", level: 1 },
+    ],
+    ruleChoices: [
+      { id: "Warlock__Mystic Arcanum 11", trait: "Mystic Arcanum (6th Level)", picked: ["Circle of Death"], choose: 1, from: ["Circle of Death"], origin: "class" },
+    ],
+  });
+  const all = spellPage(warlockCleric, catalogs);
+  const warlockKey = all.owners.find((o) => o.label.startsWith("Warlock"))?.ownerKey;
+  const clericKey = all.owners.find((o) => o.label.startsWith("Cleric"))?.ownerKey;
+  assert.ok(warlockKey && clericKey, "both owners are listed");
+
+  const warlock = spellPage(warlockCleric, catalogs, warlockKey).header;
+  const page = spellPage(warlockCleric, catalogs, clericKey);
+  assert.equal(page.owner, clericKey);
+  const tier = page.mysticArcanum[0];
+  assert.ok(tier, "the chosen tier is listed");
+  assert.equal(tier.chosenSpellName, "Circle of Death");
+  assert.equal(tier.dc, warlock?.spellSaveDc);
+  assert.equal(tier.attackBonus, warlock?.spellAttackBonus);
+});
+
+test("used spell slots above the total are clamped, and the page exposes the open profile", () => {
+  const wizard = makeChar({
+    baseAbilityScores: { str: 8, dex: 14, con: 14, int: 16, wis: 10, cha: 10 },
+    classes: [{ className: "Wizard", source: "PHB", level: 3 }],
+    usedSpellSlots: { 1: 99 },
+  });
+  const page = spellPage(wizard, catalogs);
+  const first = page.slots?.find((s) => s.level === 1);
+  assert.ok(first);
+  assert.equal(first.used, first.total);
+  assert.equal(first.remaining, 0);
+  assert.equal(page.profile?.className, "Wizard");
+});
+
+test("the Book of Ancient Secrets offer leaves out inscribed rituals and spells above the book's level", () => {
+  const warlock = makeChar({
+    baseAbilityScores: { str: 8, dex: 14, con: 14, int: 10, wis: 10, cha: 16 },
+    classes: [{ className: "Warlock", source: "PHB", level: 4 }],
+    ruleChoices: [
+      { id: "PHB__Warlock__Invocations 2", trait: "Eldritch Invocations (2nd Level)", picked: ["Book of Ancient Secrets"], choose: 2, from: ["Book of Ancient Secrets"], origin: "class" },
+    ],
+    ritualBook: [{ name: "Detect Magic", source: "PHB", level: 1, isStarting: true }],
+  });
+  const book = spellPage(warlock, catalogs).ritualBook;
+  assert.ok(book, "the book is listed");
+  assert.equal(book.maxLevel, 2);
+  assert.equal(book.entries.length, 1);
+  const offer = book.inscribeOffer;
+  assert.ok(offer.length > 0, "there are rituals to inscribe");
+  assert.ok(!offer.some((s) => s.name === "Detect Magic"), "an inscribed ritual is not offered");
+  assert.ok(offer.every((s) => s.level >= 1 && s.level <= 2 && s.ritual === true), "only rituals up to the book's level");
+});
+
+test("a character without a class profile still reads the granted, locked and at-will cards", () => {
+  const bare = spellPage(makeChar(), catalogs);
+  assert.deepEqual(bare.grantedCards, []);
+  assert.deepEqual(bare.lockedCards, []);
+  assert.deepEqual(bare.atWillCards, []);
+  assert.equal(bare.profile, null);
+});
