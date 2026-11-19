@@ -17,12 +17,14 @@
 
 **Blocked by:** 03
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Tests:
+**Landed:** merge 3fbbc3a (the implementer's two commits); follow-up: the forget passes the stored owner key. `picks.replacedSpell` holds optional `forget`/`learn` halves (complete with both or neither); setters `setPlanReplacedForget`, `setPlanReplacedLearn`, `clearPlanReplacedSpell`; `ownKnownSpells` in `spellCounts.ts` is the one owner rule for counting and forgetting; `levelUpReplacementOptions` feeds `SpellsStep`'s "Replace a spell" section; apply order: new picks, forget, learn. Review row label `Replace`, value `Shield → Magic Missile`. Custom layout check `Level-Up Flow replace a spell` (SRD only; the integrated Sorcerer 4→5 plan has other steps), green at 320 and 393; Level-Up green at 393 SRD and integrated. 8 tests in `checks/levelUpSpellReplacement.test.ts`; check:all and check:live passed.
+
+- [x] Tests:
   - A Sorcerer 4 → 5 replaces Shield with Magic Missile: after apply, Shield is gone for the Sorcerer and Magic Missile is known. The counts are unchanged apart from the new level's picks.
   - A half-made replacement keeps the step incomplete.
   - A Wizard plan offers no replacement.
   - A Wizard 3 / Sorcerer 3 levelling Sorcerer can only forget Sorcerer spells, and a Wizard-known Shield is not offered to forget.
-- [ ] `npm run check:all` and `npm run check:live` pass (last ticket).
-- [ ] Scoped layout: add a scenario, `Level-Up Flow replace a spell`: a Sorcerer level-up with a replacement chosen, the Review row visible. Run it at 320 and 393, with `ONLY="Level-Up" WIDTHS=393` SRD green. Open the screenshot and describe it.
+- [x] `npm run check:all` and `npm run check:live` pass (last ticket).
+- [x] Scoped layout: add a scenario, `Level-Up Flow replace a spell`: a Sorcerer level-up with a replacement chosen, the Review row visible. Run it at 320 and 393, with `ONLY="Level-Up" WIDTHS=393` SRD green. Open the screenshot and describe it.

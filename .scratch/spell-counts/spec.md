@@ -1,6 +1,6 @@
 # Spec: How many spells a class learns
 
-**Status:** ready-for-agent
+**Status:** done
 
 Split from `.scratch/spell-sources/` (2026-11-18). Decided with the user on 2026-11-19. Builds on `.scratch/spell-page/`. ADR 0024.
 
