@@ -332,7 +332,6 @@ export interface Character {
   usedPactSlots?: number; // Legacy alias, preserved for old tabs until their migration.
   sorceryPointsUsed: number;
   chosenMetamagic: string[];
-  metamagicOptions?: string[];
 
   // Inventory
   items: InventoryItem[];

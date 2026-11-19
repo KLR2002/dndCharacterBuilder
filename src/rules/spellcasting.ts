@@ -103,6 +103,14 @@ export function getSpellcastingAbility(c: CharacterClass, classes: readonly Clas
   return spellAbilityOf(c, classes);
 }
 
+/** How many Metamagic options the character may hold: none below Sorcerer 3, then 2, 3 from Sorcerer 10 and 4 from 17. */
+export function metamagicAllowance(character: Pick<Character, "classes">): number {
+  const sorcerer = (character.classes ?? []).find((c) => c.className.toLowerCase() === "sorcerer");
+  const level = sorcerer?.level ?? 0;
+  if (level < 3) return 0;
+  return level >= 17 ? 4 : level >= 10 ? 3 : 2;
+}
+
 export function getMaxSpellLevel(c: CharacterClass, classes: readonly ClassData[] = allCatalogClasses()): number {
   if (isThirdCaster(c)) {
     return PHB_THIRD_CASTER_SLOTS[Math.min(c.level, 20)]?.length || 0;

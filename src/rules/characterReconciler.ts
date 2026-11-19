@@ -3,7 +3,7 @@ import type { Character, CharacterClass, KnownSpell } from "../types/character.t
 import type { ClassData } from "../types/dnd5e.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { GIANT_BARBARIAN_OWNER_KEY, GIANT_POWER_CANTRIPS } from "../constants/rules.ts";
-import { getMaxSpellLevel } from "./spellcasting.ts";
+import { getMaxSpellLevel, metamagicAllowance } from "./spellcasting.ts";
 import { pruneInvalidExpertise } from "./expertise.ts";
 import { fightingStyleOwnerOf, moveLegacyFightingStyleIds, pruneInvalidFightingStyles } from "./choices/fightingStyles.ts";
 import { maneuverOwnerOf, pruneInvalidManeuvers } from "./choices/maneuvers.ts";
@@ -87,6 +87,7 @@ export function reconcile(
   updated = syncAncientSecretsRituals(updated, compendium);
   updated = syncGiantPowerCantrip(updated);
   updated = pruneInvalidMysticArcanum(updated);
+  updated = releaseMetamagicOverAllowance(updated);
   updated = releaseOverLevelClassSpells(updated, compendium, options.activeBooks);
   updated = pruneInvalidInfusions(updated, compendium);
   updated = moveAliasedProficiencyPicks(updated, compendium, options.activeBooks);
@@ -120,6 +121,18 @@ export function reconcileForActiveBooks(
 ): Character {
   const reconciled = releaseStrandedExpandedSpells(reconcile(character, compendium, { activeBooks }), compendium, activeBooks);
   return JSON.stringify(reconciled) === JSON.stringify(character) ? character : reconciled;
+}
+
+/**
+ * Releases Metamagic picks above the allowance that a lost Sorcerer level leaves. The picks kept are the first ones in saved
+ * order; each released pick gets a review notice.
+ */
+function releaseMetamagicOverAllowance(character: Character): Character {
+  const allowance = metamagicAllowance(character);
+  const chosen = character.chosenMetamagic ?? [];
+  if (chosen.length <= allowance) return character;
+  const notices = chosen.slice(allowance).map((option) => `${option} removed: Metamagic allows ${allowance}`);
+  return withNotices({ ...character, chosenMetamagic: chosen.slice(0, allowance) }, notices);
 }
 
 /**

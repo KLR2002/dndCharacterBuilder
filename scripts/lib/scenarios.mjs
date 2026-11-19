@@ -998,7 +998,6 @@ function sorcererWarlockCharacter() {
     currentHp: 18,
     startingGrantsApplied: true,
     backgroundGrantsApplied: true,
-    metamagicOptions: ["Careful Spell"],
     chosenMetamagic: ["Careful Spell"],
   });
 }
@@ -1044,6 +1043,57 @@ function arcanumCharacter() {
     race: { name: "Human", source: catalogSource("races", "Human") },
     background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
     classes: [{ className: "Warlock", source: catalogSource("classes", "Warlock"), level: 11 }],
+    currentHp: 40,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+  });
+}
+
+// A level 2 Sorcerer: its Sorcery Points card shows the points alone, with no Metamagic button.
+const SORCERER_TWO_ID = "char_sorcerer_two";
+function sorcererTwoCharacter() {
+  return makeChar({
+    id: SORCERER_TWO_ID,
+    name: "Lys",
+    createdAt: 23,
+    updatedAt: 23,
+    startingOption: "equipment",
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [{ className: "Sorcerer", source: catalogSource("classes", "Sorcerer"), level: 2 }],
+    currentHp: 12,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+  });
+}
+
+// A level 11 Warlock who is also a level 1 Wizard, with a Mystic Arcanum chosen. Its Wizard page shows the arcanum
+// row with the Warlock's DC and attack bonus (Charisma 18 at total level 12: DC 16, +8).
+const ARCANUM_OTHER_ID = "char_arcanum_other";
+function arcanumOtherClassCharacter() {
+  return makeChar({
+    id: ARCANUM_OTHER_ID,
+    name: "Oren",
+    createdAt: 24,
+    updatedAt: 24,
+    startingOption: "equipment",
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    baseAbilityScores: { str: 8, dex: 14, con: 14, int: 16, wis: 10, cha: 18 },
+    classes: [
+      { className: "Warlock", source: catalogSource("classes", "Warlock"), level: 11 },
+      { className: "Wizard", source: catalogSource("classes", "Wizard"), level: 1 },
+    ],
+    ruleChoices: [
+      {
+        id: "Warlock__Mystic Arcanum 11",
+        trait: "Mystic Arcanum (6th Level)",
+        origin: "class",
+        choose: 1,
+        from: ["Circle of Death"],
+        picked: ["Circle of Death"],
+      },
+    ],
     currentHp: 40,
     startingGrantsApplied: true,
     backgroundGrantsApplied: true,
@@ -1381,6 +1431,8 @@ export function buildSeed({ root, integrated }) {
       rolledCharacter(ROLLED_ID, "Bram", null),
       rolledCharacter(ROLLED_PICKS_ID, "Ivo", { str: 0, dex: 1, con: 2, int: 3, wis: 4, cha: 5 }),
       arcanumCharacter(),
+      arcanumOtherClassCharacter(),
+      sorcererTwoCharacter(),
       actionsCharacter(),
       ...(INTEGRATED ? [aberrantSorcererCharacter()] : []),
     ],
@@ -1654,6 +1706,27 @@ export function buildScreens({ integrated }) {
         ready: /add spells/i,
         scrollTo: "SORCERY POINTS",
         expect: { texts: ["SORCERY POINTS", "Metamagic (1/2)", "Careful Spell"], fitsWidth: true },
+      },
+      // A Sorcerer 2 has sorcery points but no Metamagic: the card shows the points and no Metamagic button.
+      {
+        shot: true,
+        name: "Spells sorcery points level 2",
+        route: `/character/${SORCERER_TWO_ID}`,
+        tabs: ["Spells"],
+        ready: /add spells/i,
+        scrollTo: "SORCERY POINTS",
+        expect: { texts: ["SORCERY POINTS", "2 / 2 Available (Long Rest reset)"], absentMatching: [/Metamagic \(/], fitsWidth: true },
+      },
+      // With the Wizard page open, a Warlock's chosen Mystic Arcanum shows the Warlock's DC and attack bonus.
+      {
+        shot: true,
+        name: "Spells mystic arcanum on another class page",
+        route: `/character/${ARCANUM_OTHER_ID}`,
+        tabs: ["Spells"],
+        ready: /MYSTIC ARCANUM/,
+        open: [{ tap: { text: "Wizard (" } }],
+        scrollTo: "MYSTIC ARCANUM",
+        expect: { texts: ["MYSTIC ARCANUM", "Circle of Death", "1 action • 150 feet • DC 16 • +8 Atk"], fitsWidth: true },
       },
       // A level 5 Artificer's slots come from its own table: four first-level and two second-level, and no third-level row.
       ...(INTEGRATED
