@@ -21,7 +21,7 @@ An ability score increase a race or subrace gives to a named score (a Tiefling's
 _Avoid_: Fixed racial bonus, static ASI
 
 **Increase Choice**:
-An ability score increase a race or subrace lets the player place: an amount, how many scores get it, and the scores it may go to (a Half-Elf's +1 to two scores other than Charisma). Under Origin Customization it may go to any score. Like every racial increase, it never lands on a score another racial increase already raises.
+An ability score increase a race, subrace or feat lets the player place: an amount, how many scores get it, and the scores it may go to (a Half-Elf's +1 to two scores other than Charisma, Resilient's +1 to any one score). It is stated by the Catalog, never known from the race's or feat's name. Under Origin Customization a racial one may go to any score, and like every racial increase it never lands on a score another racial increase already raises.
 _Avoid_: Choice racial bonus, chosen ASI, floating increase
 
 **Flexible Increases**:
@@ -83,6 +83,10 @@ _Avoid_: Racial casting, bonus cantrip, innate slots
 **Feat Prerequisite**:
 A requirement (minimum ability score, armor or weapon proficiency, spellcasting capability, character level, or race) that must be satisfied before taking a feat.
 _Avoid_: Feat lock, qualification, feat gate
+
+**Feat Slot**:
+A place where a character takes one feat: a class level's Ability Score Improvement taken as a feat, or an *Origin Feat* granted by the race or background. Every Feat Slot offers feats the same way and asks the same of a pick: the feat's *Feat Prerequisite*, its *Increase Choice* if it has one, and the Rule Choices it opens.
+_Avoid_: Feat choice, feat pick slot
 
 **Class Spell List**:
 The canonical collection of spells a class can learn or prepare from its spellcasting feature in the sourcebook where the class or spell was defined.

@@ -5,7 +5,9 @@ import type { FeatData, SpellData } from "../types/dnd5e.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { effectiveScores, formatModifier } from "./abilities.ts";
 import { asiLevels, casterKindOf, heldClass, hitDieOf, isThirdCaster } from "./classData.ts";
-import { getFeatAbilityBonusOptions, subclassLevel, type FeatAbilityBonusOptions } from "./leveling.ts";
+import { subclassLevel } from "./leveling.ts";
+import { featIncreaseOptions, findFeat, type FeatAbilityBonusOptions } from "./featIncrease.ts";
+import { featPickView, type FeatSlotPick } from "./featSlot.ts";
 import {
   applyAsiWithHitPoints,
   changeSubclass,
@@ -419,10 +421,21 @@ export function featSubChoicesForSelection(
   opts: { compendium?: Compendium; activeBooks?: ActiveBooks } = {}
 ): AvailableRuleChoice[] {
   if (selection.type !== "feat" || !selection.featName) return [];
-  const compendium = opts.compendium ?? currentCompendium();
-  const activeBooks = opts.activeBooks ?? DEFAULT_ACTIVE_BOOK_CODES;
-  const planned: Character = { ...character, asiSelections: [...(character.asiSelections ?? []), selection] };
-  return featGrantedRuleChoices(planned, activeBooks, compendium);
+  return featPickView(character, asiPickOf(selection), opts).subChoices;
+}
+
+/** The Feat Slot pick an ASI/Feat selection of the Level-Up Flow stands for. */
+function asiPickOf(selection: AsiSelection): FeatSlotPick {
+  return {
+    slot: {
+      kind: "asi",
+      className: selection.className ?? "",
+      classLevel: selection.classLevel ?? selection.level,
+    },
+    featName: selection.featName ?? null,
+    featSource: selection.featSource,
+    featAbility: selection.featAbility,
+  };
 }
 
 /** The feat sub-choices of the plan's ASI/Feat pick, read on the Character with the pick added. */
@@ -445,16 +458,10 @@ export function asiFeatAbilityPending(
   opts: { compendium?: Compendium; activeBooks?: ActiveBooks } = {}
 ): boolean {
   if (asi.type !== "feat" || !asi.featName) return false;
-  const featName = asi.featName;
-  const featSource = asi.featSource;
   const compendium = opts.compendium ?? currentCompendium();
   const activeBooks = opts.activeBooks ?? DEFAULT_ACTIVE_BOOK_CODES;
-  const feat = compendium
-    .for(activeBooks)
-    .feats()
-    .find((f) => sameName(f.name, featName) && (!featSource || f.source === featSource));
-  const bonus = getFeatAbilityBonusOptions(featName, feat);
-  return bonus.type === "choice" && !asi.featAbility;
+  const feat = findFeat(asi.featName, asi.featSource, compendium, activeBooks);
+  return featIncreaseOptions(feat).type === "choice" && !asi.featAbility;
 }
 
 /** What the ASI/Feat step shows, derived from the plan's pick alone. */
@@ -490,8 +497,8 @@ export function asiFeatStepView(
   if (asi?.type === "feat" && asi.featName) {
     const featName = asi.featName;
     const matches = (f: FeatData) => sameName(f.name, featName) && (!asi.featSource || f.source === asi.featSource);
-    const feat = feats.find(matches) ?? compendium.for(activeBooks).feats().find(matches) ?? null;
-    const featAbilityOptions = getFeatAbilityBonusOptions(featName, feat ?? undefined);
+    const feat = feats.find(matches) ?? findFeat(featName, asi.featSource, compendium, activeBooks);
+    const featAbilityOptions = featIncreaseOptions(feat);
     const featAbility = asi.featAbility ?? (featAbilityOptions.type === "fixed" ? featAbilityOptions.abilities[0] : null);
     return {
       tab: "feat",

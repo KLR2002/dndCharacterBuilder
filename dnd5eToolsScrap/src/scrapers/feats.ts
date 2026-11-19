@@ -1,15 +1,14 @@
-import type { ToolsClient } from "../types/models.ts";
+import type { ToolsClient , FeatModel , AdditionalSpells } from "../types/models.ts";
 import { resolveAllCopies } from "../parser/copy-resolver.ts";
 import { renderEntries } from "../parser/entry-renderer.ts";
 import { cleanTags } from "../parser/tag-cleaner.ts";
-import type { FeatModel } from "../types/models.ts";
 import type { ProficiencyReport } from "../types/proficiency.ts";
+import { scrapeAbilityChoices } from "../parser/ability-choices.ts";
 import { newProficiencyReport, resolveFeatureGrants, type GrantSubject } from "../parser/proficiency-grants.ts";
 import { PROFICIENCY_GRANT_OVERRIDES } from "../overrides/proficiency-grants.ts";
 import { resolveInitiativeBonuses } from "../parser/initiative-bonuses.ts";
 import { INITIATIVE_BONUS_OVERRIDES } from "../overrides/initiative-bonuses.ts";
 import { parseAdditionalSpells } from "../parser/additional-spells.ts";
-import type { AdditionalSpells } from "../types/models.ts";
 
 const STAT_NAMES: Record<string, string> = {
   str: "Strength",
@@ -33,12 +32,14 @@ export async function scrapeFeats(
   for (const raw of resolvedFeats) {
     const prerequisite = formatPrerequisites(raw.prerequisite);
     const additionalSpells = parseAdditionalSpells(raw.additionalSpells);
+    const name = cleanTags(raw.name, "plain");
 
     feats.push({
-      name: cleanTags(raw.name, "plain"),
+      name,
       source: raw.source,
       prerequisite,
       abilityScoreIncrease: parseAbilityScores(raw.ability),
+      ...scrapeAbilityChoices(raw.ability, { owner: "Feat", feature: name, level: 0 }, report),
       description: renderEntries(raw.entries, "markdown"),
       rawEntries: raw.entries,
       ...(additionalSpells ? { additionalSpells } : {}),
@@ -80,10 +81,10 @@ export function additionalSpellsByFeat(rawData: { feat?: any[] }): Map<string, A
   return grants;
 }
 
-function parseAbilityScores(ability: any): Array<Record<string, number>> | null {
+function parseAbilityScores(ability: any): Record<string, number>[] | null {
   if (!ability) return null;
   const list = Array.isArray(ability) ? ability : [ability];
-  const result: Array<Record<string, number>> = [];
+  const result: Record<string, number>[] = [];
 
   for (const item of list) {
     if (!item || typeof item !== "object") continue;

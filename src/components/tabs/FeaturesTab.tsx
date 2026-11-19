@@ -32,6 +32,7 @@ import {
 } from "../../rules/optionalFeatures";
 import { adoptWildShape, getWildShapeLimits } from "../../rules/wildShape";
 import { describeClassFeature } from "../../rules/featureOptions";
+import { findFeat } from "../../rules/featSlot";
 import { ResourceCounter } from "../../types/character";
 import type { BeastData } from "../../types/dnd5e";
 import { Badge } from "../ui/Badge";
@@ -340,7 +341,7 @@ export const FeaturesTab: React.FC = () => {
             id: `feat_${asi.featName}_${asi.level}`,
             name: `${asi.featName} (Feat, Lvl ${asi.level})`,
             origin: "Feat",
-            source: asi.featSource || "PHB",
+            source: findFeat(asi.featName ?? "", asi.featSource, currentCompendium(), activeBooks)?.source ?? asi.featSource ?? "",
             description: fData?.description || "Feat benefits.",
           });
         }

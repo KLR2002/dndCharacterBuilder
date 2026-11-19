@@ -8,8 +8,9 @@ import {
   removeAsiSelection,
   subclassLevel,
   asiLevels,
-  getFeatAbilityBonusOptions,
 } from "../src/rules/leveling.ts";
+import { featIncreaseOptions } from "../src/rules/featSlot.ts";
+import type { FeatData } from "../src/types/dnd5e.ts";
 import { effectiveScores } from "../src/rules/abilities.ts";
 import type { CharacterClass, AsiSelection, RuleChoiceEntry } from "../src/types/character.ts";
 
@@ -250,21 +251,33 @@ test("removeAsiSelection removes the specified ASI selection", () => {
   assert.equal(initial.asiSelections.length, 3);
 });
 
-test("half-feats: getFeatAbilityBonusOptions detects fixed and choice ability score increases", () => {
-  const actor = getFeatAbilityBonusOptions("Actor");
-  assert.equal(actor.type, "fixed");
-  assert.deepEqual(actor.abilities, ["cha"]);
-  assert.equal(actor.amount, 1);
+test("featIncreaseOptions reads a fixed +1 and an Increase Choice from the record, and none otherwise", () => {
+  const withFields = (overrides: Partial<FeatData>): FeatData => ({
+    name: "Invented Feat",
+    source: "PHB",
+    prerequisite: null,
+    abilityScoreIncrease: null,
+    description: "",
+    ...overrides,
+  });
 
-  const resilient = getFeatAbilityBonusOptions("Resilient");
-  assert.equal(resilient.type, "choice");
-  assert.deepEqual(resilient.abilities, ["str", "dex", "con", "int", "wis", "cha"]);
-  assert.equal(resilient.amount, 1);
+  const fixed = featIncreaseOptions(withFields({ abilityScoreIncrease: [{ Cha: 1 }] }));
+  assert.equal(fixed.type, "fixed");
+  assert.deepEqual(fixed.abilities, ["cha"]);
+  assert.equal(fixed.amount, 1);
 
-  const alert = getFeatAbilityBonusOptions("Alert");
-  assert.equal(alert.type, "none");
-  assert.deepEqual(alert.abilities, []);
-  assert.equal(alert.amount, 0);
+  const choice = featIncreaseOptions(
+    withFields({ abilityScoreChoices: [{ from: ["str", "dex"], count: 1, amount: 1 }] }),
+  );
+  assert.equal(choice.type, "choice");
+  assert.deepEqual(choice.abilities, ["str", "dex"]);
+  assert.equal(choice.amount, 1);
+
+  const none = featIncreaseOptions(withFields({}));
+  assert.equal(none.type, "none");
+  assert.deepEqual(none.abilities, []);
+  assert.equal(none.amount, 0);
+  assert.equal(featIncreaseOptions(null).type, "none");
 });
 
 test("half-feats: effectiveScores includes ability increase from half-feat selections", () => {
