@@ -6,6 +6,7 @@ import type { AvailableRuleChoice, RuleChoiceOrigin } from "./choices/types.ts";
 import type { ProficiencyCategory } from "../types/dnd5e.ts";
 import type { FeatureInstance } from "./types.ts";
 import { featuresOf, MULTICLASS_FEATURE, proficiencySheet } from "./proficiencySheet.ts";
+import { customBackgroundFeature } from "./customBackground.ts";
 import { weaponPickMarksMonkWeapon } from "./kenseiWeapons.ts";
 import {
   clearProficiencyPick,
@@ -117,11 +118,13 @@ function choiceOfferEntries(character: Character, query: ProficiencyChoiceQuery)
   const listings = catalogListings({ compendium, activeBooks });
   const items = listings.items();
   const features = featuresOf(character, listings, activeBooks);
+  // A custom background's feature is the player's own, not a catalog record, so no book admits or refuses it.
+  const customId = customBackgroundFeature(character)?.id;
 
   const offered = features.flatMap((feature) => {
     const origin = ORIGIN_OF[feature.origin];
     if (!origin) return [];
-    if (!listings.admits(feature.source)) return [];
+    if (feature.id !== customId && !listings.admits(feature.source)) return [];
     return [{ feature, origin, choices: pickableChoicesOf(feature) }];
   });
 

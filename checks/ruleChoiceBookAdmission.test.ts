@@ -6,6 +6,8 @@ import { describeClassFeature } from "../src/rules/featureOptions.ts";
 import { classChoicesStepView } from "../src/rules/classChoices.ts";
 import { checkActiveBooksIntegrity } from "../src/rules/builderTransitions.ts";
 import { subclassOptions } from "../src/rules/levelUpFlow.ts";
+import { proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts";
+import { ALL_BOOKS } from "../src/constants/books.ts";
 import type { ClassFeatureData } from "../src/types/dnd5e.ts";
 import { integratedTestCompendium, loadTestCatalog, makeChar, srdBaselineCompendium } from "./testUtils.ts";
 
@@ -93,4 +95,13 @@ describe("book admission in Rule Choices and subclass offers", () => {
     const character = makeChar({ race: { name: "Human", source: "SRD" } });
     assert.deepEqual(checkActiveBooksIntegrity(character, ["PHB"], integrated), []);
   });
+});
+
+test("a custom background's skill and language picks are offered whatever books are active", () => {
+  const wanderer = makeChar({ background: { name: "Wanderer", source: "Custom" } });
+  for (const activeBooks of [["PHB", "XGE"], [], ALL_BOOKS]) {
+    const ids = proficiencyChoiceOffers(wanderer, { compendium: integratedTestCompendium(), activeBooks }).map((offer) => offer.id);
+    assert.ok(ids.some((id) => id.includes("Custom Background") && id.includes("skills")), `skills with ${JSON.stringify(activeBooks)}`);
+    assert.ok(ids.some((id) => id.includes("Custom Background") && id.includes("languages")), `languages with ${JSON.stringify(activeBooks)}`);
+  }
 });
