@@ -38,6 +38,12 @@ export interface CompendiumListings {
   conditions(): ConditionData[];
   optionsAndFeatures(): OptionFeatureData[];
   originRules(): OriginRuleRecord[];
+  /**
+   * Whether a record from `source` is listed. A record with no source is admitted, and so is an `SRD` record.
+   * Book codes compare without regard to case. The unscoped listings admit every source; an empty book list
+   * admits no book. This is the one book-admission rule (ADR 0025).
+   */
+  admits(source?: string): boolean;
 }
 
 export interface Compendium {
@@ -61,29 +67,18 @@ export interface Compendium {
 
 type Sourced = { readonly source: string };
 
-interface Resolved<T> {
-  readonly records: T[];
-  /** True when the records came from the SRD Baseline because the integrated collection was missing or empty. */
-  readonly fromBaseline: boolean;
-}
-
 // Integrated mode: the SRD records are stripped from integrated collections, and a missing or
 // empty collection falls back to the SRD Baseline for that collection only.
-function resolve<T extends Sourced>(
-  integrated: boolean,
-  own: readonly T[] | undefined,
-  baselineRecords: readonly T[],
-): Resolved<T> {
-  if (!integrated) return { records: [...(own ?? [])], fromBaseline: false };
-  if (own?.length) return { records: own.filter((r) => r.source !== SRD_SOURCE), fromBaseline: false };
-  return { records: [...baselineRecords], fromBaseline: true };
+function resolve<T extends Sourced>(integrated: boolean, own: readonly T[] | undefined, baselineRecords: readonly T[]): T[] {
+  if (!integrated) return [...(own ?? [])];
+  if (own?.length) return own.filter((r) => r.source !== SRD_SOURCE);
+  return [...baselineRecords];
 }
 
-// Inside a stripped integrated collection no record is "SRD", so the SRD clause only applies to
-// records that came from the baseline fallback.
-function admitter(activeBooks: readonly string[], fromBaseline: boolean): (source: string) => boolean {
-  const books = new Set(activeBooks);
-  return (source) => books.has(source) || (fromBaseline && source === SRD_SOURCE);
+// The book-admission rule (ADR 0025), shared by every scoped listing.
+function bookAdmitter(activeBooks: readonly string[]): (source?: string) => boolean {
+  const books = new Set(activeBooks.map((b) => b.toLowerCase()));
+  return (source) => !source || source === SRD_SOURCE || books.has(source.toLowerCase());
 }
 
 // Computes the list on first call. Later calls return the same array, frozen at runtime, so a
@@ -129,55 +124,49 @@ export function createCompendium(
   const originRules = resolve(integrated, bundle.originRules, baseline.originRules ?? []);
 
   const unscoped: CompendiumListings = {
-    races: () => races.records,
-    classes: () => classes.records,
-    feats: () => feats.records,
-    backgrounds: () => backgrounds.records,
-    items: () => items.records,
-    spells: () => spells.records,
-    beasts: () => beasts.records,
-    conditions: () => conditions.records,
-    optionsAndFeatures: () => optionsAndFeatures.records,
-    originRules: () => originRules.records,
+    races: () => races,
+    classes: () => classes,
+    feats: () => feats,
+    backgrounds: () => backgrounds,
+    items: () => items,
+    spells: () => spells,
+    beasts: () => beasts,
+    conditions: () => conditions,
+    optionsAndFeatures: () => optionsAndFeatures,
+    originRules: () => originRules,
+    admits: () => true,
   };
 
   function scoped(activeBooks: readonly string[]): CompendiumListings {
-    const admitRace = admitter(activeBooks, races.fromBaseline);
-    const admitClass = admitter(activeBooks, classes.fromBaseline);
-    const admitFeat = admitter(activeBooks, feats.fromBaseline);
-    const admitBackground = admitter(activeBooks, backgrounds.fromBaseline);
-    const admitItem = admitter(activeBooks, items.fromBaseline);
-    const admitSpell = admitter(activeBooks, spells.fromBaseline);
-    const admitBeast = admitter(activeBooks, beasts.fromBaseline);
-    const admitOption = admitter(activeBooks, optionsAndFeatures.fromBaseline);
-    const admitOrigin = admitter(activeBooks, originRules.fromBaseline);
+    const admits = bookAdmitter(activeBooks);
     return {
       ...unscoped,
+      admits,
       races: once(() =>
-        races.records
-          .filter((r) => admitRace(r.source))
-          .map((r) => ({ ...r, subraces: (r.subraces || []).filter((sr) => admitRace(sr.source)) })),
+        races
+          .filter((r) => admits(r.source))
+          .map((r) => ({ ...r, subraces: (r.subraces || []).filter((sr) => admits(sr.source)) })),
       ),
       classes: once(() =>
-        classes.records
-          .filter((c) => admitClass(c.source))
-          .map((c) => ({ ...c, subclasses: (c.subclasses || []).filter((sc) => admitClass(sc.source)) })),
+        classes
+          .filter((c) => admits(c.source))
+          .map((c) => ({ ...c, subclasses: (c.subclasses || []).filter((sc) => admits(sc.source)) })),
       ),
-      feats: once(() => feats.records.filter((f) => admitFeat(f.source))),
-      backgrounds: once(() => backgrounds.records.filter((b) => admitBackground(b.source))),
-      items: once(() => items.records.filter((i) => !i.source || admitItem(i.source))),
-      spells: once(() => spells.records.filter((s) => admitSpell(s.source))),
-      beasts: once(() => beasts.records.filter((b) => admitBeast(b.source))),
-      optionsAndFeatures: once(() => optionsAndFeatures.records.filter((o) => admitOption(o.source))),
-      originRules: once(() => originRules.records.filter((o) => admitOrigin(o.source))),
+      feats: once(() => feats.filter((f) => admits(f.source))),
+      backgrounds: once(() => backgrounds.filter((b) => admits(b.source))),
+      items: once(() => items.filter((i) => admits(i.source))),
+      spells: once(() => spells.filter((s) => admits(s.source))),
+      beasts: once(() => beasts.filter((b) => admits(b.source))),
+      optionsAndFeatures: once(() => optionsAndFeatures.filter((o) => admits(o.source))),
+      originRules: once(() => originRules.filter((o) => admits(o.source))),
     };
   }
 
-  // One listings object per book list (books in order), so each scoped array is computed once.
+  // One listings object per book list (books in order, case-insensitive), so each scoped array is computed once.
   // The cache lives in this closure: a new Compendium starts empty.
   const scopedByBooks = new Map<string, CompendiumListings>();
   function scopedFor(activeBooks: readonly string[]): CompendiumListings {
-    const key = activeBooks.join("|");
+    const key = activeBooks.map((b) => b.toLowerCase()).join("|");
     let listings = scopedByBooks.get(key);
     if (!listings) {
       listings = scoped(activeBooks);
@@ -190,12 +179,12 @@ export function createCompendium(
     integrated,
     stale: isCatalogStale(bundle),
     for: (activeBooks) => (!activeBooks || !integrated ? unscoped : scopedFor(activeBooks)),
-    findRace: (held, activeBooks) => findHeldRace(races.records, held, activeBooks).race,
-    findClass: (name, source) => findIn(classes.records, name, source),
-    findSpell: (name, source) => findNamedIn(spells.records, name, source),
-    findItem: (name, source) => findNamedIn(items.records, name, source),
-    findBackground: (name, source) => findIn(backgrounds.records, name, source),
-    findBeast: (name, source) => findIn(beasts.records, name, source),
+    findRace: (held, activeBooks) => findHeldRace(races, held, activeBooks).race,
+    findClass: (name, source) => findIn(classes, name, source),
+    findSpell: (name, source) => findNamedIn(spells, name, source),
+    findItem: (name, source) => findNamedIn(items, name, source),
+    findBackground: (name, source) => findIn(backgrounds, name, source),
+    findBeast: (name, source) => findIn(beasts, name, source),
   };
 }
 
