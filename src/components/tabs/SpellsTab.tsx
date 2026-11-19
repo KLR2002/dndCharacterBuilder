@@ -36,14 +36,15 @@ import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { Modal } from "../ui/Modal";
 import { DetailModal } from "../DetailModal";
-import { SearchBar } from "../ui/SearchBar";
 import { SpellLearnList } from "../spells/SpellLearnList";
 import { SpellLevelGroups } from "../spells/SpellLevelGroups";
 import type { SpellRowActions } from "../spells/SpellRow";
 import { SpellResourceCards, type SpellResourceActions } from "../spells/SpellResourceCards";
+import { MetamagicModal } from "../spells/MetamagicModal";
+import { SubclassSwapModal } from "../spells/SubclassSwapModal";
+import { InscribeRitualModal } from "../spells/InscribeRitualModal";
 import { RitualBookCard } from "../spells/RitualBookCard";
 import { AtWillSpellCard, GrantedSpellCard, LockedSpellCard } from "../spells/GrantedSpellCard";
-import { METAMAGIC_OPTIONS } from "../spells/metamagicOptions";
 import { formatOrdinal, type SpellDetailPayload } from "../spells/spellFormat";
 import {
   addSpellsOffer,
@@ -456,201 +457,39 @@ export const SpellsTab: React.FC = () => {
         />
       </Modal>
 
-      {/* Subclass Spell Swap Modal */}
-      <Modal
+      <SubclassSwapModal
         visible={swapModalVisible}
         onClose={() => setSwapModalVisible(false)}
-        title="Swap Subclass Spell"
         subtitle={swapTargetSpell ? `Replacing: ${swapTargetSpell.originalName} (${formatOrdinal(swapOffer.original?.level || 1)} Level)` : undefined}
-      >
-        <SearchBar
-          value={swapSearchQuery}
-          onChangeText={setSwapSearchQuery}
-          placeholder="Search eligible replacement spells..."
-        />
+        search={swapSearchQuery}
+        onSearchChange={setSwapSearchQuery}
+        allowedSchools={swapAllowedSchools}
+        eligible={filteredEligibleSwaps}
+        onSelect={handleSelectSwap}
+        onShowSpell={showSpellDetail}
+      />
 
-        <View style={{ marginVertical: 6 }}>
-          <Text style={{ color: theme.textMuted, fontSize: 11 }}>
-            Allowed Schools: {swapAllowedSchools.join(", ")} • Sorcerer, Warlock, Wizard
-          </Text>
-        </View>
-
-          {filteredEligibleSwaps.length === 0 ? (
-          <View style={{ padding: 24, alignItems: "center" }}>
-            <Text style={{ color: theme.textMuted, fontSize: 13 }}>
-              No eligible replacement spells found.
-            </Text>
-          </View>
-        ) : (
-          filteredEligibleSwaps.map((s) => (
-            <View
-              key={`${s.name}_${s.source}`}
-              style={[styles.pickerSpellRow, { borderBottomColor: theme.border }]}>
-              <TouchableOpacity
-                onPress={() => setDetailModal({ visible: true, ...spellDetailText(s, currentCharacter) })}
-                style={{ flex: 1 }}>
-                <Text style={{ color: theme.text, fontSize: 14, fontWeight: "600" }}>{s.name}</Text>
-                <Text style={{ color: theme.textMuted, fontSize: 12 }}>
-                  {s.level === 0 ? "Cantrip" : `Lvl ${s.level}`} • {s.school || ""} • {s.source}
-                </Text>
-              </TouchableOpacity>
-
-              <Button
-                title="Select"
-                size="sm"
-                variant="primary"
-                onPress={() => handleSelectSwap(s)}
-              />
-            </View>
-          ))
-        )}
-      </Modal>
-
-      {/* Metamagic Selection Modal */}
-      <Modal
+      <MetamagicModal
         visible={metamagicModalVisible}
         onClose={() => setMetamagicModalVisible(false)}
-        title="Choose Metamagic Options"
-      >
-        <Text style={{ color: theme.textSecondary, fontSize: 12, marginBottom: 12 }}>
-          Select up to {maxMetamagic} options (Level {sorcererLevel} Sorcerer). Selected: {selectedMetamagic.length}/{maxMetamagic}
-        </Text>
+        sorcererLevel={sorcererLevel}
+        allowance={maxMetamagic}
+        chosen={selectedMetamagic}
+        onToggle={toggleMetamagic}
+      />
 
-          {METAMAGIC_OPTIONS.map((opt) => {
-          const isChosen = selectedMetamagic.includes(opt.name);
-          const isMaxReached = selectedMetamagic.length >= maxMetamagic && !isChosen;
-
-          return (
-            <TouchableOpacity
-              key={opt.name}
-              onPress={() => toggleMetamagic(opt.name)}
-              disabled={isMaxReached}
-              style={[
-                styles.metaOptionCard,
-                {
-                  backgroundColor: isChosen ? theme.accentGlow : theme.surfaceHighlight,
-                  borderColor: isChosen ? theme.accentHover : theme.border,
-                  opacity: isMaxReached ? 0.5 : 1,
-                },
-              ]}>
-              <View style={{ flex: 1 }}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                  <Text style={{ color: isChosen ? theme.accentHover : theme.text, fontWeight: "700" }}>
-                    {opt.name}
-                  </Text>
-                  <Badge label={opt.cost} size="sm" variant="secondary" />
-                </View>
-                <Text style={{ color: theme.textMuted, fontSize: 12, marginTop: 4 }}>
-                  {opt.desc}
-                </Text>
-              </View>
-              <Ionicons
-                name={isChosen ? "checkbox" : "square-outline"}
-                size={20}
-                color={isChosen ? theme.accentHover : theme.textMuted}
-              />
-            </TouchableOpacity>
-          );
-        })}
-      </Modal>
-
-      {/* Inscribe Ritual Modal */}
-      <Modal
+      <InscribeRitualModal
         visible={inscribeModalVisible}
         onClose={() => setInscribeModalVisible(false)}
-        title="Inscribe Ritual"
-        subtitle={`Max level ${maxRitualLevel} • Cost: 50 gp & 2 hrs per spell level`}
-      >
-        <SearchBar
-          value={inscribeSearchQuery}
-          onChangeText={setInscribeSearchQuery}
-          placeholder="Search rituals across classes..."
-        />
-
-        {/* Level Filter Pills up to maxRitualLevel */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={{ flexGrow: 0, marginVertical: 8 }}
-          contentContainerStyle={{ alignItems: "center" }}>
-          <TouchableOpacity
-            onPress={() => setInscribeLevelFilter(null)}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            style={[
-              styles.filterPill,
-              {
-                backgroundColor: inscribeLevelFilter === null ? theme.accentGlow : theme.surfaceHighlight,
-                borderColor: inscribeLevelFilter === null ? theme.accentHover : theme.border,
-                borderWidth: 1,
-              },
-            ]}>
-            <Text style={{ color: inscribeLevelFilter === null ? theme.text : theme.textSecondary, fontSize: 12, fontWeight: "600" }}>All Levels (1-{maxRitualLevel})</Text>
-          </TouchableOpacity>
-          {Array.from({ length: maxRitualLevel }).map((_, idx) => {
-            const lvl = idx + 1;
-            return (
-              <TouchableOpacity
-                key={`inscribe_lvl_${lvl}`}
-                onPress={() => setInscribeLevelFilter(lvl)}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                style={[
-                  styles.filterPill,
-                  {
-                    backgroundColor: inscribeLevelFilter === lvl ? theme.accentGlow : theme.surfaceHighlight,
-                    borderColor: inscribeLevelFilter === lvl ? theme.accentHover : theme.border,
-                    borderWidth: 1,
-                  },
-                ]}>
-                <Text style={{ color: inscribeLevelFilter === lvl ? theme.text : theme.textSecondary, fontSize: 12, fontWeight: "600" }}>Level {lvl}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-
-          {eligibleInscribeSpells.length === 0 ? (
-          <View style={{ padding: 16, alignItems: "center" }}>
-            <Text style={{ color: theme.textMuted, fontSize: 13, textAlign: "center" }}>
-              No eligible rituals found matching your filters.
-            </Text>
-          </View>
-        ) : (
-          eligibleInscribeSpells.map((s) => (
-            <View
-              key={`inscribe_row_${s.name}_${s.source}`}
-              style={[styles.pickerSpellRow, { borderBottomColor: theme.border }]}>
-              <TouchableOpacity
-                onPress={() =>
-                  setDetailModal({
-                    visible: true,
-                    title: s.name,
-                    subtitle: `Level ${s.level} Ritual (${s.source})`,
-                    content: `${s.level}th-level ${s.school || ""} (Ritual)\n\n• Casting Time: ${s.castingTime || "1 action"}\n• Range: ${s.range || "Self"}\n• Components: ${s.componentsString || "V, S"}\n• Duration: ${s.duration || "Instantaneous"}\n• Classes: ${s.classes?.join(", ") || "None"}\n\n${s.description || ""}`,
-                  })
-                }
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                style={{ flex: 1, paddingVertical: 4 }}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                  <Text style={{ color: theme.text, fontSize: 14, fontWeight: "600" }}>{s.name}</Text>
-                  <Badge label={`Level ${s.level}`} variant="secondary" size="sm" />
-                  {s.school && <Badge label={s.school} variant="secondary" size="sm" />}
-                  <Badge label={s.source} variant="secondary" size="sm" />
-                </View>
-                <Text style={{ color: theme.textMuted, fontSize: 11, marginTop: 2 }}>
-                  {s.classes?.join(", ") || "General"}
-                </Text>
-              </TouchableOpacity>
-
-              <Button
-                title="Inscribe"
-                size="sm"
-                variant="primary"
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                onPress={() => inscribeRitual(s)}
-              />
-            </View>
-          ))
-        )}
-      </Modal>
+        maxRitualLevel={maxRitualLevel}
+        search={inscribeSearchQuery}
+        onSearchChange={setInscribeSearchQuery}
+        levelFilter={inscribeLevelFilter}
+        onLevelFilterChange={setInscribeLevelFilter}
+        offers={eligibleInscribeSpells}
+        onInscribe={inscribeRitual}
+        onShowDetail={showDetail}
+      />
 
       {/* Detail Modal */}
       <DetailModal
@@ -683,11 +522,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 8,
-    textAlign: "center",
-  },
-  emptyText: {
-    fontSize: 14,
-    lineHeight: 20,
     textAlign: "center",
   },
   profileSelectorScroll: {
@@ -737,138 +571,8 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderWidth: 1,
   },
-  sorceryCard: {
-    padding: 14,
-    marginBottom: 16,
-  },
-  cardHeaderRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-between",
-    alignItems: "center",
-    gap: 8,
-  },
-  cardTitleBlock: {
-    flexShrink: 1,
-    minWidth: 0,
-  },
-  sorceryButtons: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 6,
-    alignItems: "center",
-  },
-  pactCard: {
-    padding: 14,
-    marginBottom: 16,
-  },
   sectionTitle: {
     fontSize: 14,
     fontWeight: "700",
-  },
-  metaChip: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    borderWidth: 1,
-  },
-  slotsTrackerRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 10,
-  },
-  slotRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  slotCheckboxesRow: {
-    flexDirection: "row",
-    gap: 8,
-    flex: 1,
-    paddingHorizontal: 10,
-  },
-  slotCheckbox: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    borderWidth: 1.5,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  levelHeader: {
-    fontSize: 11,
-    fontWeight: "700",
-    letterSpacing: 0.5,
-    marginBottom: 6,
-  },
-  spellRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    gap: 8,
-  },
-  prepToggle: {
-    padding: 4,
-  },
-  spellTitle: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  filterPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginRight: 6,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  pickerSpellRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    gap: 8,
-  },
-  metaOptionCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    marginBottom: 8,
-    gap: 8,
-  },
-  innateCard: {
-    padding: 14,
-    marginBottom: 16,
-  },
-  innateStatsRow: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    marginVertical: 6,
-  },
-  innateStatCol: {
-    alignItems: "center",
-  },
-  innateStatVal: {
-    fontSize: 16,
-    fontWeight: "700",
-    marginTop: 2,
-  },
-  innateSpellRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    gap: 8,
   },
 });
