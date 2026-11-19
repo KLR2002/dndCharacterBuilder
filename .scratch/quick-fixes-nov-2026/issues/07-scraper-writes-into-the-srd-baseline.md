@@ -12,7 +12,14 @@
 
 **Blocked by:** None
 
-**Status:** needs-triage
+**Status:** done
 
-- [ ] After `npx tsx src/index.ts --only items` in `dnd5eToolsScrap/`, `git status src/data` is clean.
-- [ ] `npm run check:all` passes.
+**Landed:** merge 7b0ff7f (0888d89).
+- **Fix:** the three syncs to `src/data` are removed from `dnd5eToolsScrap/src/index.ts`.
+- **Check:** `dnd5eToolsScrap/checks/scraper-stays-out-of-src-data.test.ts` fails if `index.ts` names `src/data`; it was red before the removal.
+- **Scraper run:** a run for items, books and conditions left `src/data` clean. The run also showed upstream drift in the tracked `dnd5eToolsScrap/data/books.json` (author names, dates, groups), which was restored, not committed.
+- check:all passed.
+
+- [x] A scraper check (`dnd5eToolsScrap/checks/`) reads `dnd5eToolsScrap/src/index.ts` and fails if it names `src/data`, with a message pointing at `scripts/prune-to-srd.mjs`. Show it failing before the removal.
+- [x] After `npx tsx src/index.ts --only items,books,conditions` in `dnd5eToolsScrap/` (from the cache), `git status src/data` is clean. Restore any tracked scraper data the run changed if the change is not yours to keep, and say what it was.
+- [x] `npm run check:all` passes.
