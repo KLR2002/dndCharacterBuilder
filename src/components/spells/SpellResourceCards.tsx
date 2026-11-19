@@ -2,7 +2,7 @@ import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useAppTheme } from "../../context/ThemeContext";
-import { formatModifier } from "../../services/dndRules";
+import { formatModifier } from "../../rules/abilities";
 import { SPELL_LEVEL_NAMES } from "../../rules/spellPage";
 import type { SpellPageArcanumTier } from "../../rules/spellPage";
 import type { PactSlotLedger, SorceryPointsLedger, SpellSlotLedgerEntry } from "../../rules/characterSpells";

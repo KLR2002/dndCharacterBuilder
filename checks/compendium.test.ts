@@ -3,7 +3,6 @@ import assert from "node:assert/strict";
 import { REQUIRED_CATALOG_FORMAT, type CompendiumCollections } from "../src/services/compendiumStorage.ts";
 import type { RaceData, SpellData, ItemData, ConditionData, FeatData, OptionFeatureData } from "../src/types/dnd5e.ts";
 import { createCompendium, currentCompendium, integrate, revertToSrd } from "../src/services/compendium.ts";
-import { getSpells, findSpell, isCompendiumIntegrated } from "../src/services/dataService.ts";
 import { ALL_BOOKS } from "../src/constants/books.ts";
 import { fightingStyleRuleChoices } from "../src/rules/choices/fightingStyles.ts";
 import { battleMasterManeuverChoices } from "../src/rules/choices/maneuvers.ts";
@@ -92,22 +91,22 @@ test("per-collection SRD fallback fills collections missing from an integrated c
   assert.deepEqual(names(compendium.for(["XGE"]).spells()), ["Toll the Dead"], "present collection is not replaced");
 });
 
-test("integrate and revertToSrd move the process default that dataService reads", () => {
+test("integrate and revertToSrd move the process default that currentCompendium reads", () => {
   try {
     integrate(bundle({ spells: [spell("Toll the Dead", "XGE")] }));
 
     assert.equal(currentCompendium().integrated, true);
-    assert.equal(isCompendiumIntegrated(), true);
-    assert.deepEqual(names(getSpells(["XGE"])), ["Toll the Dead"]);
-    assert.equal(findSpell("Toll the Dead")?.source, "XGE");
+    assert.equal(currentCompendium().integrated, true);
+    assert.deepEqual(names(currentCompendium().for(["XGE"]).spells()), ["Toll the Dead"]);
+    assert.equal(currentCompendium().findSpell("Toll the Dead")?.source, "XGE");
   } finally {
     revertToSrd();
   }
 
-  assert.equal(isCompendiumIntegrated(), false);
-  assert.ok(getSpells().length > 1, "SRD Baseline spells are back after revertToSrd");
-  assert.ok(getSpells().every((s) => s.source === "SRD"), "only SRD records after revertToSrd");
-  assert.equal(findSpell("Toll the Dead"), undefined);
+  assert.equal(currentCompendium().integrated, false);
+  assert.ok(currentCompendium().for().spells().length > 1, "SRD Baseline spells are back after revertToSrd");
+  assert.ok(currentCompendium().for().spells().every((s) => s.source === "SRD"), "only SRD records after revertToSrd");
+  assert.equal(currentCompendium().findSpell("Toll the Dead"), undefined);
 });
 
 test("the Compendium reports stale only for an integrated catalog below the required format", () => {

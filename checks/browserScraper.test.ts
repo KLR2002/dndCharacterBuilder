@@ -1,4 +1,5 @@
 import test from "node:test";
+import { currentCompendium } from "../src/services/compendium.ts";
 import assert from "node:assert/strict";
 import { BrowserToolsClient } from "../src/services/scraper/browserClient.ts";
 import { runInAppIntegration } from "../src/services/scraper/runner.ts";
@@ -8,7 +9,6 @@ import {
   clearCompendiumData,
   REQUIRED_CATALOG_FORMAT,
 } from "../src/services/compendiumStorage.ts";
-import { isCompendiumIntegrated } from "../src/services/dataService.ts";
 import { resetTestCompendium } from "./testUtils.ts";
 
 test("BrowserToolsClient: constructs endpoints and fetches JSON", async () => {
@@ -274,8 +274,8 @@ test("runInAppIntegration: orchestrates 11 scrapers, reports progress, and hydra
     assert.equal(stored?.classes.length, 1);
     assert.equal(stored?.classes[0].name, "Wizard");
 
-    // Verify dataService activeCompendiumStore cutover
-    assert.equal(isCompendiumIntegrated(), true);
+    // Verify the active Compendium store cutover
+    assert.equal(currentCompendium().integrated, true);
   } finally {
     globalThis.fetch = originalFetch;
     await clearCompendiumData();

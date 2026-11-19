@@ -1,12 +1,12 @@
 import { describe, it } from "node:test";
+import { currentCompendium } from "../src/services/compendium.ts";
 import assert from "node:assert/strict";
-import { getItems } from "../src/services/dataService.ts";
 import type { InventoryItem } from "../src/types/character.ts";
 import { makeChar } from "./testUtils.ts";
 
 describe("Inventory Compendium & Category Filtering", () => {
   it("category filtering returns matching items for all canonical categories without empty screens", () => {
-    const allItems = getItems(["PHB", "DMG", "XGE", "TCE"]);
+    const allItems = currentCompendium().for(["PHB", "DMG", "XGE", "TCE"]).items();
 
     const filterByCategory = (cat: string) => {
       const lower = cat.toLowerCase();
@@ -45,7 +45,7 @@ describe("Inventory Compendium & Category Filtering", () => {
   });
 
   it("search query matches +1, Warning, and specific weapon names", () => {
-    const allItems = getItems(["PHB", "DMG"]);
+    const allItems = currentCompendium().for(["PHB", "DMG"]).items();
 
     const search = (q: string) => {
       const lower = q.toLowerCase().trim();
@@ -69,19 +69,19 @@ describe("Inventory Compendium & Category Filtering", () => {
 
   it("respects activeBooks toggles by filtering out disabled sourcebooks", () => {
     // Only PHB active
-    const phbOnly = getItems(["PHB"]);
+    const phbOnly = currentCompendium().for(["PHB"]).items();
     assert.ok(phbOnly.every((i) => i.source === "PHB" || !i.source));
     assert.ok(phbOnly.some((i) => i.name === "Longsword"));
     // DMG-only items should not be in PHB-only list
     assert.ok(!phbOnly.some((i) => i.name === "Longsword, +1"));
 
     // PHB + DMG active
-    const phbAndDmg = getItems(["PHB", "DMG"]);
+    const phbAndDmg = currentCompendium().for(["PHB", "DMG"]).items();
     assert.ok(phbAndDmg.some((i) => i.name === "Longsword, +1"));
   });
 
   it("adding item from library preserves metadata: rarity, attunement, bonusWeapon, bonusAc, itemCategory", () => {
-    const allItems = getItems(["PHB", "DMG"]);
+    const allItems = currentCompendium().for(["PHB", "DMG"]).items();
     const longswordPlusTwo = allItems.find((i) => i.name === "Longsword, +2");
     assert.ok(longswordPlusTwo);
 
