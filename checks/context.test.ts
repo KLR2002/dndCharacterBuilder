@@ -10,6 +10,7 @@ import type { AdditionalSpells, BackgroundData, ClassData, FeatData, RaceData } 
 import type { Character } from "../src/types/character.ts";
 import type { Compendium } from "../src/services/compendium.ts";
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
+import { renameSrdNames } from "../src/rules/srdNames.ts";
 import * as rules from "../src/constants/rules.ts";
 import { featSpellRuleChoices } from "../src/rules/choices/featSpells.ts";
 import { pickRuleChoice } from "../src/rules/ruleChoices.ts";
@@ -92,6 +93,7 @@ async function providerHarness(initial: unknown = [makeChar()], options: {
     if (name.includes("storage")) return { ...storage, loadAll: options.loadAll ?? storage.loadAll };
     if (name.includes("characterUpdates")) return { applyCharacterUpdate };
     if (name.includes("migrateCharacter")) return { migrateCharacter };
+    if (name.includes("srdNames")) return { renameSrdNames };
     if (name.includes("characterReconciler")) return { reconcileForActiveBooks };
     if (name.includes("dataService")) return {
       getRaces: () => options.races ?? [],
