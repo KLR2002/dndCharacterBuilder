@@ -19,13 +19,15 @@ Add two layout scenarios in `scripts/lib/scenarios.mjs` and the fixtures `checks
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `checks/spellPage.test.ts` adds:
+**Landed:** merge 21fc024 (ef4e379, 35bf472). `spellPage` adds `profile` (the open owner's profile, for the write calls), `slots`, `pactSlots`, `sorceryPoints` (from Sorcerer 2), `metamagic` (from 3), `mysticArcanum` with the Warlock profile's `dc`/`attackBonus`, `ritualBook` with `inscribeOffer`, and the granted/locked/at-will cards; `subclassSwapOffer` is a separate export in `spellPage.ts`. SpellsTab no longer calls `evaluateCharacter` or `getSpellSlotLedger`. Finding: the Warlock profile's DC is 8 + proficiency + Charisma, the same formula as the old fallback, so the arcanum figures do not change today; the source is now the profile. New scenarios `Spells sorcery points level 2` and `Spells mystic arcanum on another class page`. `ONLY=Spells` green at 320 and 393, and integrated at 320; check:all passed.
+
+- [x] `checks/spellPage.test.ts` adds:
   - A Sorcerer 2: `sorceryPoints.max` is 2 and `metamagic` is null. A Sorcerer 10: allowance 3.
   - A Warlock 11 / Cleric 1 with a +1 spell DC item (or another DC bonus the profile counts; say which): the arcanum `dc` equals the Warlock profile's save DC while the Cleric page is open.
   - `usedSpellSlots` above the total is clamped.
   - The inscribe offer excludes inscribed rituals and spells above `maxLevel`.
-- [ ] `grep -n "calculateMulticlassSpellSlots\|proficiencyBonus(\|sorcererLevel >= " src/components/tabs/SpellsTab.tsx` prints nothing (paste it).
-- [ ] `npm run check:all` passes.
-- [ ] Scoped layout: `ONLY=Spells WIDTHS=320,393 npm run layout:check` is green, including the two new scenarios (paste the summary line). Open the two new screenshots and say what they show.
+- [x] `grep -n "calculateMulticlassSpellSlots\|proficiencyBonus(\|sorcererLevel >= " src/components/tabs/SpellsTab.tsx` prints nothing (paste it).
+- [x] `npm run check:all` passes.
+- [x] Scoped layout: `ONLY=Spells WIDTHS=320,393 npm run layout:check` is green, including the two new scenarios (paste the summary line). Open the two new screenshots and say what they show.
