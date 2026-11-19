@@ -1,6 +1,6 @@
 # Spec: How many spells a class learns
 
-**Status:** done
+**Status:** done (full layout suite green: SRD at 320, 393, 768, 1280; integrated at 320)
 
 Split from `.scratch/spell-sources/` (2026-11-18). Decided with the user on 2026-11-19. Builds on `.scratch/spell-page/`. ADR 0024.
 
