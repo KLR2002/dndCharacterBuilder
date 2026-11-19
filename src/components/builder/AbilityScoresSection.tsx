@@ -1,6 +1,6 @@
 import React from "react";
 import { Text, TextInput, TouchableOpacity, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { Character, AbilityKey, RolledAbilityResult } from "../../types/character";
 import { STANDARD_ARRAY, unsetAbilityScores } from "../../constants/rules";
 import { Card } from "../ui/Card";

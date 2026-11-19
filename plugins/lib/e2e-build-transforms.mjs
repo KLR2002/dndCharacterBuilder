@@ -1,24 +1,18 @@
-// Pure string transforms that wire the two E2E build settings (Expo Updates off, release
-// debuggable) to the Gradle project property passed as `-Pe2e`, and declare that property (and
-// EXPO_PUBLIC_E2E) as inputs of the bundle task so a flag change rebuilds the bundle. The `fdroid`
-// property (`-Pfdroid`) turns Expo Updates off too, without the debuggable release build. Every
-// build also opts out of the APK and bundle dependency metadata (`dependenciesInfo`). The config
-// plugin in plugins/e2e-build.mjs applies them to the generated android/ files at prebuild time;
-// the unit test in checks/ drives them with fixture manifest and Gradle strings. The Gradle
-// properties only exist at build time, so the generated files carry Gradle expressions and the
-// settings resolve per build: with `-Pe2e` the APK is debuggable with updates off, without it
-// neither setting differs from a plain release build.
+// Pure string transforms for the generated app/build.gradle. They make the release build type
+// debuggable when the Gradle project property `-Pe2e` is present, declare that property (and
+// EXPO_PUBLIC_E2E) as inputs of the bundle task so a flag change rebuilds the bundle, and opt the
+// APK and bundle out of dependency metadata (`dependenciesInfo`). The config plugin in
+// plugins/e2e-build.mjs applies them at prebuild time; the unit test in checks/ drives them with a
+// fixture Gradle string. The Gradle property only exists at build time, so the generated file
+// carries a Gradle expression that resolves per build: without `-Pe2e` the release build is a plain
+// release build.
 
 export const E2E_PROPERTY = "e2e";
+// Kept exported so a recipe that still passes `-Pfdroid` builds; the generated Gradle does not read it.
 export const FDROID_PROPERTY = "fdroid";
-export const UPDATES_ENABLED_META_NAME = "expo.modules.updates.ENABLED";
-export const UPDATES_ENABLED_PLACEHOLDER = "expoUpdatesEnabled";
 // Groovy truth of a `-P` flag is unreliable (`-Pe2e` may be an empty string), so presence is
-// what the generated expressions test.
+// what the generated expression tests.
 export const E2E_PRESENT_EXPRESSION = `findProperty('${E2E_PROPERTY}') != null`;
-const FDROID_PRESENT_EXPRESSION = `findProperty('${FDROID_PROPERTY}') != null`;
-// Expo Updates is off when either property is present; parenthesized so the ternary reads correctly.
-const UPDATES_OFF_EXPRESSION = `(${E2E_PRESENT_EXPRESSION} || ${FDROID_PRESENT_EXPRESSION})`;
 
 // First line of the appended block that makes the E2E flag an input of Gradle's bundle task, so a
 // build with the other flag value cannot report it UP-TO-DATE and keep the stale bundle.
@@ -32,42 +26,11 @@ tasks.configureEach { task ->
 }
 `;
 
-const placeholderRef = `\${${UPDATES_ENABLED_PLACEHOLDER}}`;
-const placeholderLine = `manifestPlaceholders = [${UPDATES_ENABLED_PLACEHOLDER}: ${UPDATES_OFF_EXPRESSION} ? '${updatesEnabledValue(true)}' : '${updatesEnabledValue(false)}']`;
 const debuggableLine = `debuggable ${E2E_PRESENT_EXPRESSION}`;
-
-/** The meta-data value a build ends up with: Expo Updates off in the E2E and F-Droid builds. */
-export function updatesEnabledValue(e2e, fdroid = false) {
-  return e2e || fdroid ? "false" : "true";
-}
 
 /** Whether the release build type is debuggable: only in the E2E build. */
 export function releaseDebuggable(e2e) {
   return e2e;
-}
-
-/**
- * Prebuild transform: point the Updates flag meta-data at the Gradle placeholder, so the
- * manifest merger substitutes it per build. Throws when the meta-data is missing, so a
- * template change fails the prebuild instead of silently shipping updates on.
- */
-export function withUpdatesEnabledPlaceholder(manifestXml) {
-  let found = false;
-  const out = manifestXml.replace(/<meta-data\b[^>]*>/g, (element) => {
-    if (!element.includes(`android:name="${UPDATES_ENABLED_META_NAME}"`)) return element;
-    found = true;
-    if (!/android:value="[^"]*"/.test(element)) {
-      throw new Error(`meta-data ${UPDATES_ENABLED_META_NAME} has no android:value to replace`);
-    }
-    return element.replace(/android:value="[^"]*"/, `android:value="${placeholderRef}"`);
-  });
-  if (!found) throw new Error(`no meta-data named ${UPDATES_ENABLED_META_NAME} in the manifest`);
-  return out;
-}
-
-/** Build-time model of the manifest merger: substitute the placeholder for one build. */
-export function resolveUpdatesEnabledPlaceholder(manifestXml, e2e, fdroid = false) {
-  return manifestXml.split(placeholderRef).join(updatesEnabledValue(e2e, fdroid));
 }
 
 /** The [start, end) extent of the braced block whose opening line matches `header` within [from, to), or null. */
@@ -121,15 +84,13 @@ export function withDependenciesInfoOptOut(appBuildGradle) {
 }
 
 /**
- * Prebuild transform: wire both settings to the e2e Gradle property — a manifest placeholder
- * in defaultConfig and `debuggable` in the release build type — and append the block that makes
- * the flag an input of the bundle task. The release match is scoped to the buildTypes block, so
- * a signingConfigs.release earlier in the file is never touched. The appended block is keyed on
- * its marker line, so re-prebuild leaves the file unchanged.
+ * Prebuild transform: make the release build type debuggable when the e2e Gradle property is present,
+ * and append the block that makes the flag an input of the bundle task. The release match is scoped
+ * to the buildTypes block, so a signingConfigs.release earlier in the file is never touched. The
+ * appended block is keyed on its marker line, so re-prebuild leaves the file unchanged.
  */
 export function withE2eBuildSettings(appBuildGradle) {
   let out = appBuildGradle;
-  out = insertIntoBlock(out, /^[ \t]*defaultConfig[ \t]*\{/m, placeholderLine, UPDATES_ENABLED_PLACEHOLDER, /^[ \t]*manifestPlaceholders\b/m);
   const buildTypes = blockExtent(out, /^[ \t]*buildTypes[ \t]*\{/m);
   if (!buildTypes) throw new Error("no buildTypes block in app/build.gradle");
   out = insertIntoBlock(out, /^[ \t]*release[ \t]*\{/m, debuggableLine, E2E_PRESENT_EXPRESSION, /^[ \t]*debuggable\b/m, buildTypes[0], buildTypes[1]);

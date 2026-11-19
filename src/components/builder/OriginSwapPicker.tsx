@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { Modal } from "../ui/Modal";
 import { SearchBar } from "../ui/SearchBar";
 

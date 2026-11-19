@@ -5,7 +5,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { useCharacters } from "../context/CharacterContext";
 import { useAppTheme } from "../context/ThemeContext";
 import { getItems } from "../services/dataService";
