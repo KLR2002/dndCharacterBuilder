@@ -1,13 +1,11 @@
 import { ALL_BOOKS, type ActiveBooks } from "../constants/books.ts";
-import type { AdditionalSpells, BackgroundData, ClassData, SpellData } from "../types/dnd5e.ts";
+import type { AdditionalSpells, ClassData, SpellData } from "../types/dnd5e.ts";
 import type { Character, CharacterClass, KnownSpell, LegacyKnownSpell } from "../types/character.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { withNotices } from "./needsReview.ts";
-import { heldFeatsOf, raceGrantsOf, raceTitleOf } from "./choices/featSpells.ts";
 import { isCastingClass, isGiantBarbarian, isSpellAvailableForClass, spellOwnerKey } from "./spellcasting.ts";
 import { normalizeKey, resolveSpellName } from "./subclassSpells.ts";
-import { findHeldRecord } from "./raceLookup.ts";
-import { isCustomBackground } from "./customBackground.ts";
+import { heldSpellGrants, raceTitleOf } from "./spellGrants.ts";
 import { UNKNOWN_OWNER_KEY } from "../constants/rules.ts";
 
 /**
@@ -35,37 +33,19 @@ export interface ExpandedSpellSource {
 }
 
 /**
- * The background the character holds, found by the shared record lookup (see findHeldRecord). A custom background is never a
- * catalog record, even when it takes a catalog background's name.
- */
-export function resolveCharacterBackground(
-  character: Character,
-  backgroundCatalog: BackgroundData[] | undefined,
-  activeBooks: ActiveBooks
-): BackgroundData | undefined {
-  if (!character.background || isCustomBackground(character.background) || !backgroundCatalog) return undefined;
-  return findHeldRecord(backgroundCatalog, character.background, activeBooks);
-}
-
-/**
  * The expanded lists the character's sources give: its background, each feat it holds, and its race or subrace (the grants the
- * reader reads). A source with no expanded list is left out. The background and the race are read from the Compendium scoped to
- * the active books, the feats as heldFeatsOf reads them.
+ * reader reads). A source with no expanded list is left out. Every owner is read by heldSpellGrants, scoped to the active books.
  */
 function heldExpandedSources(
   character: Character,
   compendium: Compendium = currentCompendium(),
   activeBooks: ActiveBooks
 ): ExpandedSpellSource[] {
-  const listings = compendium.for(activeBooks);
-  const sources: ExpandedSpellSource[] = [];
-  const background = resolveCharacterBackground(character, listings.backgrounds(), activeBooks);
-  if (background) sources.push({ title: `${background.name} background`, names: expandedSpellNamesOf(background.additionalSpells) });
-  for (const { feat } of heldFeatsOf(character, listings.feats(), activeBooks)) {
-    sources.push({ title: `${feat.name} feat`, names: expandedSpellNamesOf(feat.additionalSpells) });
-  }
-  const race = raceGrantsOf(character, listings.races(), activeBooks);
-  if (race) sources.push({ title: `${raceTitleOf(character, race.owner.name)} race`, names: expandedSpellNamesOf(race.grants) });
+  const sources = heldSpellGrants(character, { compendium, activeBooks }).map((grant): ExpandedSpellSource => {
+    if (grant.kind === "background") return { title: `${grant.record.name} background`, names: expandedSpellNamesOf(grant.additionalSpells) };
+    if (grant.kind === "feat") return { title: `${grant.record.name} feat`, names: expandedSpellNamesOf(grant.additionalSpells) };
+    return { title: `${raceTitleOf(character, grant.owner.name)} race`, names: expandedSpellNamesOf(grant.additionalSpells) };
+  });
   return sources.filter((source) => source.names.length > 0);
 }
 

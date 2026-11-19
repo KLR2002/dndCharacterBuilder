@@ -28,7 +28,7 @@ import {
   flowSteps,
   levelUpStepComplete,
   levelUpSummary,
-  newSpellsForLevelUp,
+  levelUpLearnableSpells,
   planLevelUp,
   rollPlanHitPoints,
   setPlanAsi,
@@ -241,7 +241,7 @@ export default function LevelUpScreen() {
         return (
           <SpellsStep
             plan={plan}
-            spells={newSpellsForLevelUp(character, plan, flowOpts)}
+            learnable={levelUpLearnableSpells(character, plan, flowOpts)}
             onToggle={(spell) => commitPlan(togglePlanSpell(plan, spell))}
           />
         );

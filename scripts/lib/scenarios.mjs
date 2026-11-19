@@ -1641,6 +1641,7 @@ export function buildScreens({ integrated }) {
           ]
         : []),
       { shot: true, name: "Spells", route: WIZARD_ROUTE, tabs: ["Spells"], ready: /add spells/i },
+      { shot: true, name: "Spells add spells picker", route: WIZARD_ROUTE, tabs: ["Spells"], open: [{ tap: { text: "Add Spells", exact: true } }], modal: "Add Spells (Wizard)" },
       // A character with no spellcasting at all: the empty state is its label only, no class list, no rule restatement.
       { name: "Spells no spellcasting empty", route: `/character/${FIGHTER_ID}`, tabs: ["Spells"], ready: "No Spellcasting Features", expect: { texts: ["No Spellcasting Features"], absentMatching: [/Add levels in a spellcasting class/, /does not currently have/], fitsWidth: true } },
       // A level 11 Warlock's unchosen Mystic Arcanum tier row narrates nothing.

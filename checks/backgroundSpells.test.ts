@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
 import { isSpellAvailableForClass, profileSpellContext, type ClassSpellProfile } from "../src/rules/spellcasting.ts";
 import { clearBackground } from "../src/rules/builderTransitions.ts";
-import { resolveCharacterBackground } from "../src/rules/backgroundSpells.ts";
+import { resolveCharacterBackground } from "../src/rules/spellGrants.ts";
 import { isKnown, learnSpell } from "../src/rules/characterSpells.ts";
 import { findSpell } from "../src/services/dataService.ts";
 import type { CharacterClass } from "../src/types/character.ts";
