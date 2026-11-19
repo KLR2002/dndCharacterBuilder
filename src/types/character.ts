@@ -150,7 +150,6 @@ export interface InventoryItem {
   source: string;
   quantity: number;
   isEquipped: boolean;
-  section: "equipped" | "carried";
   weight?: number | null;
   cost?: string | null;
   damage?: string | null;

@@ -1,5 +1,5 @@
 import type { ActiveBooks } from "../constants/books.ts";
-import type { AsiSelection, Character, CreationStepId, KnownSpell, SkillChoiceEntry } from "../types/character.ts";
+import type { AsiSelection, Character, CreationStepId, InventoryItem, KnownSpell, SkillChoiceEntry } from "../types/character.ts";
 import { CREATION_STEP_ORDER } from "../types/character.ts";
 import type { ClassData, RaceData } from "../types/dnd5e.ts";
 import { spellAbilityOf } from "./classData.ts";
@@ -47,6 +47,15 @@ function oneEntryPerFeat(entries: AsiSelection[]): AsiSelection[] {
     kept[index] = !preferred.featAbility && dropped.featAbility ? { ...preferred, featAbility: dropped.featAbility } : preferred;
   }
   return kept.length === entries.length ? entries : kept;
+}
+
+/**
+ * An item saved before `section` left the record is equipped when either field said so. The field is dropped; the
+ * Equipped list, the AC and the attacks all read `isEquipped` alone.
+ */
+function itemWithoutSection(item: InventoryItem & { section?: unknown }): InventoryItem {
+  const { section, ...rest } = item;
+  return { ...rest, isEquipped: item.isEquipped === true || section === "equipped" };
 }
 
 /**
@@ -175,6 +184,7 @@ export function migrateCharacter(
     preparedSpells: prepared.map(key => key.split("__").length < 4 ? `${key}__${ownerKey}` : key),
     pactSlotsUsed: c.pactSlotsUsed ?? c.usedPactSlots ?? 0,
     ...(Array.isArray(c.originFeats) ? { originFeats: oneEntryPerFeat(c.originFeats) } : {}),
+    ...(Array.isArray(c.items) ? { items: c.items.map(itemWithoutSection) } : {}),
   };
   // The stored list is spread above; when every notice in it was removed, the character holds no list.
   if (needsReview.size === 0 && c.needsReview?.length) delete migrated.needsReview;

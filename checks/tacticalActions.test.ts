@@ -144,8 +144,8 @@ test("getTacticalActionLedger detects dual wielding off-hand attack in bonus act
   const char = makeChar({
     classes: [{ className: "Fighter", source: "PHB", level: 1 }],
     items: [
-      { id: "w1", name: "Shortsword", source: "PHB", isEquipped: true, section: "equipped", quantity: 1 },
-      { id: "w2", name: "Scimitar", source: "PHB", isEquipped: true, section: "equipped", quantity: 1 },
+      { id: "w1", name: "Shortsword", source: "PHB", isEquipped: true, quantity: 1 },
+      { id: "w2", name: "Scimitar", source: "PHB", isEquipped: true, quantity: 1 },
     ],
   });
   const evaluated = evaluateCharacter(char, { activeBooks: ALL_BOOKS });

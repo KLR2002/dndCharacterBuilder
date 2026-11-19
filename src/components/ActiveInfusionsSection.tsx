@@ -95,7 +95,6 @@ export const ActiveInfusionsSection: React.FC = () => {
       source: libItem?.source || "TCE",
       quantity: 1,
       isEquipped: false,
-      section: "carried",
       weight: libItem?.weight ?? 0,
       cost: libItem?.cost,
       damage: libItem?.damage,

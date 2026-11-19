@@ -65,7 +65,6 @@ const PROBE_ITEMS: InventoryItem[] = Object.keys(STANDARD_WEAPONS)
     source: "PHB",
     quantity: 1,
     isEquipped: true,
-    section: "equipped",
   }));
 
 interface Recorded {

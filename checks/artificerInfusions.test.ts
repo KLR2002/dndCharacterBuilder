@@ -231,7 +231,6 @@ test("Enhanced Defense grants +1 AC at levels 2-9 and +2 AC at level 10+", () =>
     source: "PHB",
     quantity: 1,
     isEquipped: true,
-    section: "equipped",
     ac: 16,
     weight: 55,
   };
@@ -275,7 +274,6 @@ test("Enhanced Defense and Repulsion Shield on shield", () => {
     source: "PHB",
     quantity: 1,
     isEquipped: true,
-    section: "equipped",
     ac: 2,
     weight: 6,
   };
@@ -313,7 +311,6 @@ test("Enhanced Defense and Repulsion Shield on shield", () => {
     source: "PHB",
     quantity: 1,
     isEquipped: true,
-    section: "equipped",
     ac: 16,
     weight: 55,
   };
@@ -341,7 +338,6 @@ test("Enhanced Weapon grants +1 to attack/damage at levels 2-9 and +2 at level 1
     source: "PHB",
     quantity: 1,
     isEquipped: true,
-    section: "equipped",
     damage: "1d8",
     damageType: "slashing",
   };
@@ -384,7 +380,6 @@ test("Repeating Shot and Radiant Weapon grant +1 to attack and damage", () => {
     source: "PHB",
     quantity: 1,
     isEquipped: true,
-    section: "equipped",
     damage: "1d10",
     damageType: "piercing",
     range: "100/400",
@@ -407,7 +402,6 @@ test("Repeating Shot and Radiant Weapon grant +1 to attack and damage", () => {
     source: "PHB",
     quantity: 1,
     isEquipped: true,
-    section: "equipped",
     damage: "1d6",
     damageType: "bludgeoning",
   };
@@ -431,7 +425,6 @@ test("Dual wielding with an infused off-hand weapon", () => {
     source: "PHB",
     quantity: 1,
     isEquipped: true,
-    section: "equipped",
     damage: "1d6",
     damageType: "piercing",
   };
@@ -441,7 +434,6 @@ test("Dual wielding with an infused off-hand weapon", () => {
     source: "PHB",
     quantity: 1,
     isEquipped: true,
-    section: "equipped",
     damage: "1d6",
     damageType: "piercing",
   };
@@ -506,11 +498,11 @@ test("Pruning on de-leveling cleans up invalid known and active infusions", () =
       { infusionName: "Placeholder Echo", targetItemId: "armor_2" },
     ],
     items: [
-      { id: "armor_1", name: "Plate Armor", source: "PHB", quantity: 1, isEquipped: true, section: "equipped", infusedWith: "Placeholder Alpha", isInfused: true },
-      { id: "sword_1", name: "Longsword", source: "PHB", quantity: 1, isEquipped: true, section: "equipped", infusedWith: "Placeholder Bravo", isInfused: true },
-      { id: "sword_2", name: "Dagger", source: "PHB", quantity: 1, isEquipped: true, section: "equipped", infusedWith: "Placeholder Charlie", isInfused: true },
-      { id: "helm_1", name: "Helmet", source: "PHB", quantity: 1, isEquipped: true, section: "equipped", infusedWith: "Placeholder Delta", isInfused: true },
-      { id: "rep_bag", name: "Bag of Holding", source: "TCE", quantity: 1, isEquipped: false, section: "carried", infusedWith: "Replicate Magic Item: placeholder bag", isInfused: true },
+      { id: "armor_1", name: "Plate Armor", source: "PHB", quantity: 1, isEquipped: true, infusedWith: "Placeholder Alpha", isInfused: true },
+      { id: "sword_1", name: "Longsword", source: "PHB", quantity: 1, isEquipped: true, infusedWith: "Placeholder Bravo", isInfused: true },
+      { id: "sword_2", name: "Dagger", source: "PHB", quantity: 1, isEquipped: true, infusedWith: "Placeholder Charlie", isInfused: true },
+      { id: "helm_1", name: "Helmet", source: "PHB", quantity: 1, isEquipped: true, infusedWith: "Placeholder Delta", isInfused: true },
+      { id: "rep_bag", name: "Bag of Holding", source: "TCE", quantity: 1, isEquipped: false, infusedWith: "Replicate Magic Item: placeholder bag", isInfused: true },
     ],
   });
 

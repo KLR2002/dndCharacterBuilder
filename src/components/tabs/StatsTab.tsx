@@ -16,8 +16,7 @@ import {
   spendHitDie,
   recoverHitDie,
 } from "../../rules/hitDice";
-import { damage, heal } from "../../rules/hitPoints";
-import { setWildShapeTempHp } from "../../rules/wildShapeHp";
+import { hitPointPatch } from "../../rules/hitPointPool";
 import { formatModifier } from "../../rules/abilities";
 import { evaluateCharacter } from "../../rules/characterEvaluation";
 import { listSuperiorityPools } from "../../rules/combatDice";
@@ -144,6 +143,7 @@ export const StatsTab: React.FC = () => {
     return hdEntries.map(([die, p]) => `${p.total}${die}`).join(" + ");
   }, [hdEntries]);
 
+  const activeForm = currentCharacter?.activeWildShape ?? null;
   const hpQuickEdit = useHpQuickEdit(currentCharacter, evaluated?.hp.max ?? 0);
 
   if (!currentCharacter || !evaluated) return null;
@@ -162,13 +162,11 @@ export const StatsTab: React.FC = () => {
   const profBonus = evaluated.proficiencyBonus;
   const { scores, modifiers } = evaluated.effectiveScores;
   const calculatedMaxHp = evaluated.hp.max;
-  const { ac, breakdown: acBreakdown } = evaluated.armorClass;
-  const hasDefenseAc = acBreakdown.includes("(Defense)");
-  const edMatch = acBreakdown.match(/\+\s*(\d+)\s*\(Enhanced Defense\)/);
-  const repMatch = acBreakdown.match(/\+\s*(\d+)\s*\(Repulsion Shield\)/);
-  const infusionBonusAc =
-    (edMatch ? parseInt(edMatch[1], 10) : 0) +
-    (repMatch ? parseInt(repMatch[1], 10) : 0);
+  const { ac, breakdown: acBreakdown, parts: acParts } = evaluated.armorClass;
+  const defensePart = acParts.find(part => part.kind === "fightingStyle");
+  const infusionBonusAc = acParts
+    .filter(part => part.kind === "infusion")
+    .reduce((total, part) => total + part.value, 0);
   const speeds = evaluated.speeds;
   const initiative = evaluated.initiative;
   const saves = evaluated.saves;
@@ -178,23 +176,15 @@ export const StatsTab: React.FC = () => {
   const passiveInsight = skills.find((s) => s.name === "Insight")?.passiveBonus ?? 10;
   const allConditions = currentCompendium().for().conditions();
 
-  // HP Handlers
-  const hpState = { currentHp: currentCharacter.currentHp, tempHp: currentCharacter.tempHp };
-
-  const applyDamage = (amount: number) => {
-    updateCharacter(currentCharacter.id, damage(hpState, amount));
-  };
-
-  const applyHeal = (amount: number) => {
-    updateCharacter(currentCharacter.id, heal(hpState, amount, calculatedMaxHp));
+  // HP Handlers: with no target the router picks the form while one is active (see hitPointPool.ts).
+  const applyHp = (kind: "damage" | "heal", amount: number) => {
+    updateCharacter(currentCharacter.id, hitPointPatch(currentCharacter, { kind, amount }, calculatedMaxHp));
   };
 
   const setTempHp = () => {
     const val = parseInt(tempHpAmount, 10);
     if (!isNaN(val) && val >= 0) {
-      // While a form is active, temp HP goes on the form (see wildShapeHp.ts), not the character.
-      const patch = currentCharacter.activeWildShape ? setWildShapeTempHp(currentCharacter, val) : { tempHp: val };
-      updateCharacter(currentCharacter.id, patch);
+      updateCharacter(currentCharacter.id, hitPointPatch(currentCharacter, { kind: "temp", amount: val }, calculatedMaxHp));
       setTempHpAmount("");
     }
   };
@@ -329,12 +319,14 @@ export const StatsTab: React.FC = () => {
   const hpCard = (
     <>
       <Card style={styles.hpCard}>
+        {/* While a form is active this card shows the character's HP read-only: the form's HP and its
+            Damage / Heal and temp HP live in the Active Wild Shape card. */}
         <HitPointBlock
           label="HIT POINTS"
           currentHp={currentCharacter.currentHp}
           maxHp={calculatedMaxHp}
           tempHp={currentCharacter.tempHp}
-          numberProps={hpQuickEdit.triggerProps}
+          numberProps={activeForm ? undefined : hpQuickEdit.triggerProps}
           headerRight={
             <TouchableOpacity
               onPress={() => {
@@ -346,27 +338,35 @@ export const StatsTab: React.FC = () => {
               <Text style={{ color: theme.textSecondary, fontSize: 12 }}>HP Settings</Text>
             </TouchableOpacity>
           }
-          amount={hpChangeAmount}
-          onAmountChange={setHpChangeAmount}
-          onDamage={() => applyDamage(parseInt(hpChangeAmount, 10) || 1)}
-          onHeal={() => applyHeal(parseInt(hpChangeAmount, 10) || 1)}
+          actions={
+            activeForm
+              ? undefined
+              : {
+                  amount: hpChangeAmount,
+                  onAmountChange: setHpChangeAmount,
+                  onDamage: () => applyHp("damage", parseInt(hpChangeAmount, 10) || 1),
+                  onHeal: () => applyHp("heal", parseInt(hpChangeAmount, 10) || 1),
+                }
+          }
         />
 
         {/* Temp HP Row */}
-        <View style={styles.tempHpRow}>
-          <Text style={{ color: theme.textSecondary, fontSize: 13, flex: 1, flexBasis: "auto", flexShrink: 1 }}>
-            {currentCharacter.activeWildShape ? "Wild Shape Temp HP:" : "Temp HP:"}
-          </Text>
-          <TextInput
-            style={[styles.tempInput, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
-            value={tempHpAmount}
-            onChangeText={setTempHpAmount}
-            keyboardType="number-pad"
-            placeholder="New Temp"
-            placeholderTextColor={theme.textMuted}
-          />
-          <Button title="Apply" size="sm" variant="secondary" onPress={setTempHp} />
-        </View>
+        {!activeForm && (
+          <View style={styles.tempHpRow}>
+            <Text style={{ color: theme.textSecondary, fontSize: 13, flex: 1, flexBasis: "auto", flexShrink: 1 }}>
+              Temp HP:
+            </Text>
+            <TextInput
+              style={[styles.tempInput, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
+              value={tempHpAmount}
+              onChangeText={setTempHpAmount}
+              keyboardType="number-pad"
+              placeholder="New Temp"
+              placeholderTextColor={theme.textMuted}
+            />
+            <Button title="Apply" size="sm" variant="secondary" onPress={setTempHp} />
+          </View>
+        )}
 
         {/* Death Saves (if HP == 0) */}
         {currentCharacter.currentHp === 0 && (
@@ -444,9 +444,9 @@ export const StatsTab: React.FC = () => {
           <Ionicons name="shield" size={18} color={theme.accentHover} />
           <Text style={[styles.statBoxValue, { color: theme.text }]}>{ac}</Text>
           <Text style={[styles.statBoxLabel, { color: theme.textMuted }]}>ARMOR CLASS</Text>
-          {(hasDefenseAc || infusionBonusAc > 0) && (
+          {(defensePart || infusionBonusAc > 0) && (
             <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 3, marginTop: 4 }}>
-              {hasDefenseAc && <Badge label="Defense +1" variant="outline" size="sm" />}
+              {defensePart && <Badge label={`Defense +${defensePart.value}`} variant="outline" size="sm" />}
               {infusionBonusAc > 0 && <Badge label={`Infused +${infusionBonusAc}`} variant="outline" size="sm" />}
             </View>
           )}
