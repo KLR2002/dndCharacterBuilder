@@ -1,6 +1,6 @@
 # Spec: Inventory and Hit Point transitions in the rules
 
-**Status:** done (full layout gate pending)
+**Status:** done (full layout suite green: SRD at 320, 393, 768, 1280; integrated at 320)
 
 Architecture review candidate #8 (2026-11-18). Decided with the user on 2026-11-19.
 
