@@ -23,10 +23,16 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Tests in `checks/compendium.test.ts` (an integrated `createCompendium` with a small bundle, and the SRD one):
+**Landed:** merge 84f9e9f (6b4d1b1, 29d5225).
+- **`admits`:** `CompendiumListings.admits(source?)`; unscoped listings admit all. Scoped listings filter with one `bookAdmitter` (lower-cased set, SRD and sourceless admitted), and the cache key is lower-cased. `resolve` lost its `fromBaseline` flag, which nothing else read.
+- **Upper-casing removed** before `for()` in maneuvers, fightingStyles (three calls, including the cleric and druid cantrip lookups), spellPage `inscribeOffer`, and six warlockChoices sites. The `upperBooks` that feed `isSpellAvailableForClass` and the Ritual Book set stay for tickets 02 and 03.
+- **Glossary:** **Book Admission**, `_Avoid_: source gate, book whitelist`.
+- **Tests:** 7 new tests (red then green, apart from the `for([])` characterization); no existing outcome changed. check:all and check:live passed.
+
+- [x] Tests in `checks/compendium.test.ts` (an integrated `createCompendium` with a small bundle, and the SRD one):
   - `admits`: `"PHB"` with `["phb"]` true; `"SatO"` with `["SATO"]` true; `"XGE"` with `["PHB"]` false; `"SRD"` with `["PHB"]` and with `[]` true; `undefined` true; anything with `ALL_BOOKS` true; anything on the SRD Baseline true.
   - Scoping: a `SatO` feat is listed with `["SATO"]`; `for([])` lists no book records but keeps baseline-fallback SRD records; two calls with differently cased books return the same array.
-- [ ] A test that the Fighting Style, maneuver and Pact Boon offers list a mixed-case-source option (a test compendium with one such record) when its book is active in any case.
-- [ ] `npm run check:all` and `npm run check:live` pass.
+- [x] A test that the Fighting Style, maneuver and Pact Boon offers list a mixed-case-source option (a test compendium with one such record) when its book is active in any case.
+- [x] `npm run check:all` and `npm run check:live` pass.
