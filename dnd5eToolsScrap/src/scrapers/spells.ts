@@ -1,9 +1,9 @@
-import type { ToolsClient } from "../types/models.ts";
+import type { SpellModel, ToolsClient } from "../types/models.ts";
 import { resolveAllCopies } from "../parser/copy-resolver.ts";
 import { renderEntries } from "../parser/entry-renderer.ts";
 import { cleanTags } from "../parser/tag-cleaner.ts";
-import type { SpellModel } from "../types/models.ts";
 import { SCHOOL_MAP } from "../parser/spell-schools.ts";
+import { srdNameOf } from "../parser/srd-name.ts";
 
 /** The spell records of every source in the 5e.tools index, copies resolved, as the raw file gives them. */
 export async function fetchResolvedSpells(client: ToolsClient): Promise<any[]> {
@@ -117,6 +117,7 @@ export async function scrapeSpells(client: ToolsClient): Promise<SpellModel[]> {
     }
 
     const spellAttack = spellAttackOf(raw);
+    const srdName = srdNameOf(raw);
 
     // Higher Levels description
     let higherLevels: string | null = null;
@@ -144,6 +145,7 @@ export async function scrapeSpells(client: ToolsClient): Promise<SpellModel[]> {
       description: renderEntries(raw.entries, "markdown"),
       higherLevels,
       ...(spellAttack ? { spellAttack } : {}),
+      ...(srdName ? { srdName } : {}),
       rawEntries: raw.entries,
     });
   }
