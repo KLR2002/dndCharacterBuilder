@@ -38,12 +38,15 @@ import { Modal } from "../ui/Modal";
 import { DetailModal } from "../DetailModal";
 import { SearchBar } from "../ui/SearchBar";
 import { SpellLearnList, LEVEL_NAMES } from "../spells/SpellLearnList";
+import { SpellLevelGroups } from "../spells/SpellLevelGroups";
+import type { SpellRowActions } from "../spells/SpellRow";
 import {
   addSpellsOffer,
   spellDetailText,
   spellPage,
   subclassSwapOffer,
   type SpellPageGrantedCard,
+  type SpellPageRow,
 } from "../../rules/spellPage";
 
 const METAMAGIC_OPTIONS = [
@@ -518,16 +521,17 @@ export const SpellsTab: React.FC = () => {
     if (next !== currentCharacter) updateCharacter(currentCharacter.id, next);
   };
 
-  const removeSpellFromCharacter = (name: string, source: string, ownerKey?: string) => {
+  const removeSpellFromCharacter = (row: SpellPageRow) => {
+    const { name, source, ownerKey } = row;
     const next = forgetSpellRule(currentCharacter, currentProfile, { name, source, ownerKey }, currentCompendium(), activeBooks);
     updateCharacter(currentCharacter.id, next);
   };
 
-  const openSwapModal = (item: { name: string; details?: SpellData; originalName?: string }) => {
-    if (!item.details) return;
+  const openSwapModal = (row: SpellPageRow) => {
+    if (!row.details) return;
     setSwapTargetSpell({
-      originalName: item.originalName || item.name,
-      currentName: item.name,
+      originalName: row.swap?.originalName || row.name,
+      currentName: row.name,
     });
     setSwapSearchQuery("");
     setSwapModalVisible(true);
@@ -542,9 +546,17 @@ export const SpellsTab: React.FC = () => {
     setSwapModalVisible(false);
   };
 
-  const handleResetSpellSwap = (originalName: string) => {
+  const handleResetSpellSwap = (row: SpellPageRow) => {
     if (!currentCharacter) return;
-    updateCharacter(currentCharacter.id, resetSubclassSpellSwap(currentCharacter, originalName));
+    updateCharacter(currentCharacter.id, resetSubclassSpellSwap(currentCharacter, row.swap?.originalName ?? row.name));
+  };
+
+  const rowActions: SpellRowActions = {
+    onTogglePrepared: togglePrepared,
+    onShowSpell: showSpellDetail,
+    onSwap: openSwapModal,
+    onReset: handleResetSpellSwap,
+    onForget: removeSpellFromCharacter,
   };
 
   const inscribeRitual = (spell: SpellData) => {
@@ -1002,112 +1014,7 @@ export const SpellsTab: React.FC = () => {
         )}
       </View>
 
-      {/* Spells List by Level */}
-      {currentPage.levels.map((group) => {
-        const spellsAtLevel = group.rows;
-
-        return (
-          <View key={`level_group_${group.level}`} style={{ marginBottom: 14 }}>
-            <Text style={[styles.levelHeader, { color: theme.textSecondary }]}>
-              {group.title} ({spellsAtLevel.length})
-            </Text>
-
-            <Card style={{ padding: 4 }}>
-              {spellsAtLevel.map((item, idx) => {
-                return (
-                  <View
-                    key={`${item.name}__${item.source}__${item.ownerKey || ""}`}
-                    style={[
-                      styles.spellRow,
-                      {
-                        borderBottomColor: theme.border,
-                        borderBottomWidth: idx === spellsAtLevel.length - 1 ? 0 : 1,
-                      },
-                    ]}>
-                    {/* Prepared Checkbox (for non-cantrips) */}
-                    {item.prepare !== "none" ? (
-                      item.prepare === "locked" ? (
-                        <View style={styles.prepToggle}>
-                          <Ionicons
-                            name="lock-closed"
-                            size={16}
-                            color={theme.accentHover}
-                          />
-                        </View>
-                      ) : (
-                        <TouchableOpacity
-                          onPress={() => togglePrepared(item)}
-                          style={styles.prepToggle}>
-                          <Ionicons
-                            name={item.prepared ? "radio-button-on" : "radio-button-off"}
-                            size={18}
-                            color={item.prepared ? theme.accentHover : theme.textMuted}
-                          />
-                        </TouchableOpacity>
-                      )
-                    ) : (
-                      <View style={{ width: 26 }} />
-                    )}
-
-                    {/* Spell Name & Info (opens detail modal) */}
-                    <TouchableOpacity
-                      onPress={() => showSpellDetail(item.details)}
-                      style={{ flex: 1, paddingVertical: 4 }}>
-                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                        <Text style={[styles.spellTitle, { color: theme.text }]}>
-                          {item.name}
-                        </Text>
-                        {item.badges.map((badge) => (
-                          <Badge key={badge.label} label={badge.label} variant={badge.tone} size="sm" />
-                        ))}
-                      </View>
-                      <Text style={{ color: theme.textMuted, fontSize: 11 }}>{item.subtitle}</Text>
-                    </TouchableOpacity>
-
-                    {/* Swap Actions for Subclass-Granted Known Spells */}
-                    {item.swap && (
-                        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                          {item.swap.canReset && (
-                            <Button
-                              title="Reset to Default"
-                              size="sm"
-                              variant="ghost"
-                              onPress={() => handleResetSpellSwap(item.swap?.originalName ?? item.name)}
-                            />
-                          )}
-                          <Button
-                            title="Swap"
-                            icon="swap-horizontal-outline"
-                            size="sm"
-                            variant="outline"
-                            onPress={() =>
-                              openSwapModal({
-                                name: item.name,
-                                details: item.details,
-                                originalName: item.swap?.originalName,
-                              })
-                            }
-                          />
-                        </View>
-                      )}
-
-                    {/* Remove Spell */}
-                    {item.canForget && (
-                      <TouchableOpacity
-                        accessibilityRole="button"
-                        accessibilityLabel={`Remove ${item.name}`}
-                        onPress={() => removeSpellFromCharacter(item.name, item.source, item.ownerKey)}
-                        style={{ padding: 6, minWidth: 48, minHeight: 48, alignItems: "center", justifyContent: "center" }}>
-                        <Ionicons name="trash-outline" size={16} color={theme.textMuted} />
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                );
-              })}
-            </Card>
-          </View>
-        );
-      })}
+      <SpellLevelGroups levels={currentPage.levels} actions={rowActions} />
 
       {/* Spell Picker Modal */}
       <Modal
