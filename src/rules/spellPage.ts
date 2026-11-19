@@ -1,14 +1,33 @@
-import type { Character } from "../types/character.ts";
+import type { Character, RitualBookEntry } from "../types/character.ts";
 import type { SpellData } from "../types/dnd5e.ts";
-import type { ClassSpellProfile } from "./spellcasting.ts";
+import type { ClassSpellProfile, LockedPreparedCard } from "./spellcasting.ts";
 import type { CharacterCatalogs } from "./catalogs.ts";
+import type { ActiveBooks } from "../constants/books.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { effectiveScores } from "./abilities.ts";
-import { evaluateCharacter } from "./characterEvaluation.ts";
-import { countPrepared, isPrepared } from "./characterSpells.ts";
+import { evaluateCharacter, type EvaluatedCharacter } from "./characterEvaluation.ts";
+import {
+  countPrepared,
+  getSpellSlotLedger,
+  isPrepared,
+  type PactSlotLedger,
+  type SorceryPointsLedger,
+  type SpellSlotLedgerEntry,
+} from "./characterSpells.ts";
 import { learnableSpells } from "./learnableSpells.ts";
-import { getAtWillInvocationSpells, hasInvocation } from "./ruleChoices.ts";
-import { isSubclassSpellReplaceable } from "./subclassSpells.ts";
+import {
+  getAtWillInvocationSpells,
+  getMaxRitualBookLevel,
+  hasInvocation,
+  isSpellEligibleForRitualBook,
+  type MysticArcanumTierInfo,
+} from "./ruleChoices.ts";
+import type { InnateSpellProfile } from "./innateMagic.ts";
+import {
+  getEligibleSubclassSpellSwaps,
+  getSubclassAllowedSwapSchools,
+  isSubclassSpellReplaceable,
+} from "./subclassSpells.ts";
 
 export const SPELL_LEVEL_NAMES = [
   "Cantrips",
@@ -72,6 +91,39 @@ export interface SpellPage {
   listSubtitle: string;
   canAddSpells: boolean;
   levels: SpellPageLevel[];
+  /** The open Spell Owner's class profile, for the write calls. Null when the character has none. */
+  profile: ClassSpellProfile | null;
+  /** The standard slot levels the character has, clamped. Null when there are none. */
+  slots: SpellSlotLedgerEntry[] | null;
+  pactSlots: PactSlotLedger | null;
+  sorceryPoints: SorceryPointsLedger | null;
+  /** From Sorcerer 3. */
+  metamagic: { allowance: number; chosen: string[] } | null;
+  mysticArcanum: SpellPageArcanumTier[];
+  ritualBook: SpellPageRitualBook | null;
+  grantedCards: InnateSpellProfile[];
+  lockedCards: LockedPreparedCard[];
+  atWillCards: SpellPageAtWillCard[];
+}
+
+/** A Mystic Arcanum tier with the Warlock owner's spell save DC and attack bonus. */
+export interface SpellPageArcanumTier extends MysticArcanumTierInfo {
+  /** Null when the character has no Warlock profile. */
+  dc: number | null;
+  attackBonus: number | null;
+}
+
+export interface SpellPageRitualBook {
+  maxLevel: number;
+  entries: RitualBookEntry[];
+  /** The rituals the book can still take: eligible, not inscribed, sorted by level then name. */
+  inscribeOffer: SpellData[];
+}
+
+export interface SpellPageAtWillCard {
+  invocationName: string;
+  spellName: string;
+  details?: SpellData;
 }
 
 /** A spell entry while the rows are merged, before its badges and controls are decided. */
@@ -95,19 +147,23 @@ interface SpellEntry {
  */
 export function spellPage(character: Character, catalogs: CharacterCatalogs, ownerKey?: string): SpellPage {
   const compendium = catalogs.compendium ?? currentCompendium();
-  const profiles = evaluateCharacter(character, catalogs).spellProfiles;
+  const evaluated = evaluateCharacter(character, catalogs);
+  const profiles = evaluated.spellProfiles;
   const open = profiles.find((p) => p.ownerKey === ownerKey) ?? profiles[0] ?? null;
+  const resources = spellPageResources(character, evaluated, catalogs, compendium);
 
   if (!open) {
     return {
       owners: [],
       owner: null,
+      profile: null,
       header: null,
       prepared: null,
       listTitle: "",
       listSubtitle: "",
       canAddSpells: false,
       levels: [],
+      ...resources,
     };
   }
 
@@ -131,6 +187,114 @@ export function spellPage(character: Character, catalogs: CharacterCatalogs, own
     listSubtitle: listSubtitle(character, open, compendium, alwaysPrepared, knownCount, subclassKnownCount),
     canAddSpells: !isMonk,
     levels: buildLevels(character, open, profiles, catalogs, compendium),
+    profile: open,
+    ...resources,
+  };
+}
+
+/**
+ * The resource cards and the granted, locked and at-will cards. They do not depend on the open owner,
+ * and a character without a class spell profile still reads them.
+ */
+function spellPageResources(
+  character: Character,
+  evaluated: EvaluatedCharacter,
+  catalogs: CharacterCatalogs,
+  compendium: Compendium,
+): SpellPageResources {
+  const ledger = getSpellSlotLedger(character, evaluated);
+  const warlock = evaluated.spellProfiles.find((p) => p.className === "Warlock");
+  const warlockLevel = classLevel(character, "warlock");
+  const sorcererLevel = classLevel(character, "sorcerer");
+
+  return {
+    slots: ledger.hasStandardSlots ? ledger.standardSlots : null,
+    pactSlots: ledger.pactSlots,
+    sorceryPoints: ledger.sorceryPoints,
+    metamagic:
+      sorcererLevel >= 3
+        ? { allowance: metamagicAllowance(sorcererLevel), chosen: chosenMetamagic(character) }
+        : null,
+    mysticArcanum: ledger.mysticArcanum.map((tier) => ({
+      ...tier,
+      dc: warlock?.spellSaveDc ?? null,
+      attackBonus: warlock?.spellAttackBonus ?? null,
+    })),
+    ritualBook: hasInvocation(character, "Book of Ancient Secrets")
+      ? {
+          maxLevel: getMaxRitualBookLevel(warlockLevel),
+          entries: character.ritualBook ?? [],
+          inscribeOffer: inscribeOffer(character, warlockLevel, catalogs.activeBooks, compendium),
+        }
+      : null,
+    grantedCards: evaluated.grantedSpellSources ?? [],
+    lockedCards: evaluated.lockedPreparedCards ?? [],
+    atWillCards: getAtWillInvocationSpells(character).map(({ invocationName, spellName }) => ({
+      invocationName,
+      spellName,
+      details: compendium.findSpell(spellName),
+    })),
+  };
+}
+
+type SpellPageResources = Pick<
+  SpellPage,
+  | "slots"
+  | "pactSlots"
+  | "sorceryPoints"
+  | "metamagic"
+  | "mysticArcanum"
+  | "ritualBook"
+  | "grantedCards"
+  | "lockedCards"
+  | "atWillCards"
+>;
+
+function classLevel(character: Character, className: string): number {
+  return (character.classes || []).find((c) => c.className.toLowerCase() === className)?.level ?? 0;
+}
+
+/** Sorcerer 3 allows 2 Metamagic options, 10 allows 3 and 17 allows 4. */
+function metamagicAllowance(sorcererLevel: number): number {
+  return sorcererLevel >= 17 ? 4 : sorcererLevel >= 10 ? 3 : 2;
+}
+
+function chosenMetamagic(character: Character): string[] {
+  return character.chosenMetamagic?.length ? character.chosenMetamagic : (character.metamagicOptions ?? []);
+}
+
+/** The rituals a Book of Ancient Secrets can still take, from Warlock 2. */
+function inscribeOffer(
+  character: Character,
+  warlockLevel: number,
+  activeBooks: ActiveBooks,
+  compendium: Compendium,
+): SpellData[] {
+  if (warlockLevel < 2) return [];
+  const inscribed = new Set((character.ritualBook ?? []).map((r) => r.name.toLowerCase().trim()));
+  const upperBooks = activeBooks?.map((b) => b.toUpperCase());
+  return compendium
+    .for(upperBooks)
+    .spells()
+    .filter((s) => isSpellEligibleForRitualBook(s, warlockLevel, activeBooks))
+    .filter((s) => !inscribed.has(s.name.toLowerCase().trim()))
+    .sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
+}
+
+/** The subclass spell replacements the open owner's subclass allows for one granted spell, and the schools it may take. */
+export function subclassSwapOffer(
+  character: Character,
+  ownerKey: string,
+  originalSpellName: string,
+  catalogs: CharacterCatalogs,
+): { allowedSchools: string[]; eligible: SpellData[] } {
+  const compendium = catalogs.compendium ?? currentCompendium();
+  const subclass = evaluateCharacter(character, catalogs).spellProfiles.find((p) => p.ownerKey === ownerKey)?.subclass;
+  const original = compendium.findSpell(originalSpellName);
+  if (!subclass || !original) return { allowedSchools: [], eligible: [] };
+  return {
+    allowedSchools: getSubclassAllowedSwapSchools(subclass),
+    eligible: getEligibleSubclassSpellSwaps(subclass, original, catalogs.activeBooks, compendium),
   };
 }
 
