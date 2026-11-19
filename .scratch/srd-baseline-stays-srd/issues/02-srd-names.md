@@ -22,18 +22,27 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Scraper test (`dnd5eToolsScrap/checks/`): a raw spell with `srd: "Acid Arrow"` gives `srdName`; `srd: true` gives none; the same for an item.
-- [ ] `checks/srdBaseline.test.ts` adds:
+**Landed:** merge 7d23458 (ed65408, 169a19a, eb25ddd); review fix bb6fe1a.
+- **Scraper:** `srdNameOf` emits `srdName`. Regenerated spells and items: 17 spells and 14 items gain it; 32 spell descriptions changed only in list spacing; "Wand of Viscid Globs" also drifted.
+- **Prune:** `applySrdNames` in `scripts/srdBaseline.ts` renames records and rewrites old names in every string of the baseline files. The Land list now reads `acid arrow`, and Bag of Holding and Portable Hole name Handy Haversack.
+- **Migration:** `renameSrdNames` in `src/rules/srdNames.ts`, called on load. It renames `knownSpells`, `preparedSpells` keys, `ritualBook` and inventory `items`. Names saved without a source are left alone: `subclassSpellSwaps`, `ruleChoices` picks, `startingEquipmentPicks`, infusion targets.
+- **Review fix:** a renamed spell did not resolve with an Integrated Catalog, whose record keeps the PHB name. `findSpell` and `findItem` now also match `srdName` for an SRD-sourced or unsourced name, and a test shows a renamed spell's details on the Spell Page (red without the fix).
+- **Accepted re-record:** `checks/fixtures/subclassChoiceBaseline.json`; two option digests moved with the regenerated spell text.
+- **Filed:** quick fix 07 (a scraper run writes into `src/data`).
+- check:all and check:live passed; `ONLY=Spells` green at 393 SRD.
+
+- [x] Scraper test (`dnd5eToolsScrap/checks/`): a raw spell with `srd: "Acid Arrow"` gives `srdName`; `srd: true` gives none; the same for an item.
+- [x] `checks/srdBaseline.test.ts` adds:
   - The rename step on a small input: a renamed spell, a lower-case reference in a class spell list, and a `{@spell ...}` tag in text.
   - On the tracked data: for every record in `dnd5eToolsScrap/data/spells.json` and `items.json` with `srdName`, its old name appears nowhere in `src/data` (case-insensitive), and `src/data` has a record named by its `srdName`.
   - No file under `src/` contains any of those old names.
-- [ ] Migration tests, with `integratedTestCompendium()` and the SRD compendium:
+- [x] Migration tests, with `integratedTestCompendium()` and the SRD compendium:
   - An SRD-sourced known and prepared "Melf's Acid Arrow" and an SRD-sourced "Heward's Handy Haversack" item become "Acid Arrow" and "Handy Haversack" with the integrated compendium.
   - With the SRD compendium, nothing changes.
   - A PHB-sourced "Melf's Acid Arrow" stays.
   - An SRD-sourced "Leomund's Tiny Hut" in the Ritual Book becomes "Tiny Hut".
-- [ ] Update any test that uses an old name with an SRD source.
-- [ ] `npm run check:all` and `npm run check:live` pass.
-- [ ] Scoped layout: `ONLY=Spells WIDTHS=393 npm run layout:check`, SRD, green.
+- [x] Update any test that uses an old name with an SRD source.
+- [x] `npm run check:all` and `npm run check:live` pass.
+- [x] Scoped layout: `ONLY=Spells WIDTHS=393 npm run layout:check`, SRD, green.
