@@ -11,13 +11,20 @@ Keep each function's signature unless it needs the Compendium or listings to ask
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Before changing the code, write characterization tests for each family with `integratedTestCompendium()` and books `["PHB", "XGE", "TCE"]`: the names offered for Pact Boons, Eldritch Invocations, Fighting Styles, maneuvers and infusions. They must pass before and after.
-- [ ] New tests for the agreed rule:
+**Landed:** merge 150998e (8db934a characterization, 9357dd7).
+- **Ritual Book:** `isSpellEligibleForRitualBook` takes an optional Compendium and asks `admits`; `inscribeOffer` passes its own.
+- **Infusions:** the gate is `admits("TCE") || admits("ERLW")`, so an empty list now offers none (red before).
+- **Mystic Arcanum** passes `activeBooks` unchanged. Fighting Styles and maneuvers needed nothing beyond ticket 01.
+- **Tests:** 10 in `checks/classOptionFamilies.test.ts`. The characterization (Pact Boons, Invocations, Fighting Styles, maneuvers, infusions with PHB/XGE/TCE) stayed green across the change; no pre-existing outcome changed. Remaining grep hits: `fightingStyles.ts` `heldSourceOf` fallback (not admission).
+- check:all, check:live, and `ONLY="Class Choices"` at 393 passed, SRD and integrated.
+
+- [x] Before changing the code, write characterization tests for each family with `integratedTestCompendium()` and books `["PHB", "XGE", "TCE"]`: the names offered for Pact Boons, Eldritch Invocations, Fighting Styles, maneuvers and infusions. They must pass before and after.
+- [x] New tests for the agreed rule:
   - Books `[]`: no infusion offered, and no Fighting Style from a book.
   - Mixed-case books `["phb", "tce"]` give the same offers as `["PHB", "TCE"]`.
   - The Ritual Book offers an SRD-sourced spell with books `["PHB"]`.
-- [ ] `grep -nE "toUpperCase|SRD_SOURCE|activeBooks\??\.(includes|some)" src/rules/choices/{warlockChoices,fightingStyles,maneuvers,artificerInfusions}.ts`: paste the output. What remains must not be admission.
-- [ ] `npm run check:all` and `npm run check:live` pass.
-- [ ] Scoped layout: `ONLY="Class Choices" WIDTHS=393 npm run layout:check` green, SRD and `-- --integrated`.
+- [x] `grep -nE "toUpperCase|SRD_SOURCE|activeBooks\??\.(includes|some)" src/rules/choices/{warlockChoices,fightingStyles,maneuvers,artificerInfusions}.ts`: paste the output. What remains must not be admission.
+- [x] `npm run check:all` and `npm run check:live` pass.
+- [x] Scoped layout: `ONLY="Class Choices" WIDTHS=393 npm run layout:check` green, SRD and `-- --integrated`.
