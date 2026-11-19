@@ -2,7 +2,7 @@ import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useAppTheme } from "../context/ThemeContext";
 import type { InitiativePart } from "../rules/initiative";
-import { formatModifier } from "../services/dndRules";
+import { formatModifier } from "../rules/abilities";
 import { Modal } from "./ui/Modal";
 
 export interface InitiativeBreakdownModalProps {

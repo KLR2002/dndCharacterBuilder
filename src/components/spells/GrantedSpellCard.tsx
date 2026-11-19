@@ -2,7 +2,7 @@ import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useAppTheme } from "../../context/ThemeContext";
-import { formatModifier } from "../../services/dndRules";
+import { formatModifier } from "../../rules/abilities";
 import type { LockedPreparedCard } from "../../rules/spellcasting";
 import type { SpellPageAtWillCard, SpellPageGrantedCard, SpellPageGrantedSpell } from "../../rules/spellPage";
 import type { SpellData } from "../../types/dnd5e";

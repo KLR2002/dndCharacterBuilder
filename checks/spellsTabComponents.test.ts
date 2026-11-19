@@ -33,12 +33,14 @@ function importViolations(source: string): string[] {
   const violations: string[] = [];
   for (const match of source.matchAll(IMPORT)) {
     const [, typeOnly, clause, path] = match;
-    if (path.includes("services/dataService")) violations.push(`imports ${path}`);
+    if (/services\/(?!compendium(\.ts)?$)/.test(path)) violations.push(`imports ${path}`);
     if (!path.includes("/rules/") || typeOnly) continue;
     const module = path.split("/").pop();
     const braces = clause.match(/\{([\s\S]*)\}/);
     const specifiers = braces ? braces[1].split(",").map((s) => s.trim()).filter(Boolean) : [];
     if (module === "spellPage") continue;
+    // formatModifier is a display formatter for a signed modifier, not a rule read.
+    if (module === "abilities" && specifiers.every((spec) => spec === "formatModifier")) continue;
     if (module === "characterSpells") {
       for (const spec of specifiers) {
         if (spec.startsWith("type ")) continue;

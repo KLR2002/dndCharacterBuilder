@@ -3,11 +3,11 @@ import assert from "node:assert/strict";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 
-// The rules layer takes a Compendium as a parameter. It must never reach the process-wide
-// singleton helpers in services/dataService.ts (get*/find*/set/init/clear store functions).
+// The rules layer takes a Compendium as a parameter. Its only import from services/ is the Compendium module
+// (ADR 0025 removed the read facades that once wrapped it): any other services module is a read facade.
 
 const RULES_DIR = new URL("../src/rules/", import.meta.url).pathname;
-const SINGLETON_MODULE = /services\/dataService(\.ts)?$/;
+const SINGLETON_MODULE = /services\/(?!compendium(\.ts)?$)/;
 
 function ruleFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((entry) => {
@@ -28,7 +28,7 @@ function importsOf(source: string): string[] {
   return specifiers;
 }
 
-test("guard: no file under src/rules imports the singleton helpers from services/dataService", () => {
+test("guard: no file under src/rules imports a services module other than the Compendium", () => {
   const files = ruleFiles(RULES_DIR);
   assert.ok(files.length > 0, "the guard must find rules modules to check");
 
@@ -42,6 +42,6 @@ test("guard: no file under src/rules imports the singleton helpers from services
   assert.deepEqual(
     offenders,
     [],
-    "rules modules must take a Compendium parameter instead of importing the singleton helpers",
+    "rules modules may import from services/ only the Compendium module (services/compendium.ts)",
   );
 });

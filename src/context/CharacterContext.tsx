@@ -14,7 +14,6 @@ import { migrateCharacter } from "../rules/migrateCharacter";
 import { renameSrdNames } from "../rules/srdNames";
 import { reconcileForActiveBooks } from "../rules/characterReconciler";
 import { checkActiveBooksIntegrity } from "../rules/builderTransitions";
-import { getClasses, getRaces } from "../services/dataService";
 import { currentCompendium, integrate as integrateCompendium, revertToSrd as revertCompendiumToSrd } from "../services/compendium";
 import {
   clearCompendiumData,
@@ -165,8 +164,8 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
           setIntegratedAt(null);
         }
         setCatalogStale(currentCompendium().stale);
-        const raceCatalog = getRaces();
-        const classCatalog = getClasses();
+        const raceCatalog = currentCompendium().for().races();
+        const classCatalog = currentCompendium().for().classes();
         const loadedActiveBooks = loadedSettings.activeResourceBooks || DEFAULT_ACTIVE_BOOK_CODES;
         const migratedCharacters = loadedChars.map((c) =>
           renameSrdNames(migrateCharacter(c, raceCatalog, classCatalog, loadedActiveBooks), currentCompendium()),

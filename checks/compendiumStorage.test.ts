@@ -9,13 +9,7 @@ import {
   REQUIRED_CATALOG_FORMAT,
   type CompendiumCollections,
 } from "../src/services/compendiumStorage.ts";
-import {
-  isCompendiumIntegrated,
-  getRaces,
-  getClasses,
-  findClass,
-} from "../src/services/dataService.ts";
-import { revertToSrd } from "../src/services/compendium.ts";
+import { currentCompendium, revertToSrd } from "../src/services/compendium.ts";
 import { hydrateCompendiumFromStorage } from "./testUtils.ts";
 
 test("compendiumStorage: default state has no integrated catalog and falls back to SRD", async () => {
@@ -28,11 +22,11 @@ test("compendiumStorage: default state has no integrated catalog and falls back 
   assert.equal(loaded, null);
 
   // DataService returns SRD baseline
-  const races = getRaces();
+  const races = currentCompendium().for().races();
   assert.ok(races.length > 0);
   assert.ok(races.every((r) => r.source === "SRD"), "All default races must have source: SRD");
 
-  const classes = getClasses();
+  const classes = currentCompendium().for().classes();
   assert.equal(classes.length, 12);
   assert.ok(classes.every((c) => c.source === "SRD"), "All default classes must have source: SRD");
   // Only 1 archetype per class
@@ -86,26 +80,26 @@ test("compendiumStorage: saving data persists and hydrates compendiumStore with 
   await saveCompendiumData(mockCollections);
   assert.equal(await hasIntegratedCatalog(), true);
 
-  // Hydrate dataService
+  // Hydrate the process-wide Compendium
   await hydrateCompendiumFromStorage();
-  assert.equal(isCompendiumIntegrated(), true);
+  assert.equal(currentCompendium().integrated, true);
 
   // Verification of Dataset Swapping:
   // 1. SRD sources must be completely filtered out
-  const activeRaces = getRaces();
+  const activeRaces = currentCompendium().for().races();
   assert.equal(activeRaces.length, 2);
   assert.equal(activeRaces.some((r) => r.source === "SRD"), false, "SRD races must be disabled in memory");
   assert.ok(activeRaces.some((r) => r.name === "Tabaxi"));
 
   // 2. Active classes reflect integrated catalog
-  const activeClasses = getClasses();
+  const activeClasses = currentCompendium().for().classes();
   assert.equal(activeClasses.length, 1);
   assert.equal(activeClasses[0].name, "Fighter");
   assert.equal(activeClasses[0].source, "PHB");
   assert.equal(activeClasses[0].subclasses.length, 3);
 
   // 3. Finding class returns integrated version
-  const fighter = findClass("Fighter");
+  const fighter = currentCompendium().findClass("Fighter");
   assert.ok(fighter);
   assert.equal(fighter.subclasses.length, 3);
   assert.ok(fighter.subclasses.some((sc: any) => sc.name === "Echo Knight"));
@@ -114,9 +108,9 @@ test("compendiumStorage: saving data persists and hydrates compendiumStore with 
   await clearCompendiumData();
   assert.equal(await hasIntegratedCatalog(), false);
   await hydrateCompendiumFromStorage();
-  assert.equal(isCompendiumIntegrated(), false);
+  assert.equal(currentCompendium().integrated, false);
 
-  const revertedClasses = getClasses();
+  const revertedClasses = currentCompendium().for().classes();
   assert.equal(revertedClasses.length, 12);
   assert.ok(revertedClasses.every((c) => c.source === "SRD"));
 

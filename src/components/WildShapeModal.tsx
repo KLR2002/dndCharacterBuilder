@@ -10,7 +10,8 @@ import {
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useAppTheme } from "../context/ThemeContext";
 import { useResponsiveLayout } from "../hooks/useResponsiveLayout";
-import { getBeasts, isCompendiumIntegrated } from "../services/dataService";
+import { currentCompendium } from "../services/compendium";
+import { catalogListings } from "../rules/catalogs";
 import {
   getWildShapeLimits,
   isBeastEligible,
@@ -61,19 +62,16 @@ export const WildShapeModal: React.FC<WildShapeModalProps> = ({
   const [inspectedBeast, setInspectedBeast] = useState<BeastData | null>(null);
 
   const limits = useMemo(() => getWildShapeLimits(character), [character]);
-  const allBeasts = useMemo(() => getBeasts(activeBooks), [activeBooks]);
+  const allBeasts = useMemo(() => currentCompendium().for(activeBooks).beasts(), [activeBooks]);
 
   const favoritesSet = useMemo(() => {
     return new Set(character.favoriteWildShapes || []);
   }, [character.favoriteWildShapes]);
 
   const currentWildShapeCharges = getWildShapeCharges(character);
-  const isMmActive = useMemo(
-    () => (activeBooks || []).some((b) => b.toUpperCase() === "MM"),
-    [activeBooks]
-  );
+  const isMmActive = useMemo(() => catalogListings({ activeBooks }).admits("MM"), [activeBooks]);
   // The SRD Baseline carries its own beasts, so the Monster Manual warning only applies to an Integrated Catalog.
-  const isIntegrated = isCompendiumIntegrated();
+  const isIntegrated = currentCompendium().integrated;
 
   // Filter beasts list
   const filteredBeasts = useMemo(() => {
