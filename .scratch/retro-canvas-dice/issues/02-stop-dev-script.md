@@ -14,7 +14,7 @@ The script finds processes with `pgrep` and excludes its own pid and its parent;
 
 **Status:** done
 
-**Landed:** chore/retro-canvas-dice @ 5adf72f, fix 42fdf93 (an emulator with no adb server is stopped too; the doc says it stops every Gradle and Kotlin daemon). Shown by hand: nothing running gives exit 0, an adb server is stopped, a shell whose command line contains `GradleDaemon` survives. shellcheck is not installed.
+**Landed:** chore/retro-canvas-dice @ 4f3359c, fix 862d301 (an emulator with no adb server is stopped too; the doc says it stops every Gradle and Kotlin daemon). Shown by hand: nothing running gives exit 0, an adb server is stopped, a shell whose command line contains `GradleDaemon` survives. shellcheck is not installed.
 
 - [x] With an adb server running (`adb start-server`) and nothing else, the script stops it and exits 0; a second run also exits 0 and says nothing was running.
 - [x] With a process listening on a port (for example `python3 -m http.server <port>` started in the background), `--port <port>` stops it; without `--port` the script reports it only if the port is 5037.

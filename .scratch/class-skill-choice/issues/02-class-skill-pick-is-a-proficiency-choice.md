@@ -28,12 +28,12 @@
 
 **Status:** done
 
-**Landed:** merge e9bce38 (5f431ba, d8f236b); review fix 711ff5f.
+**Landed:** merge c88e3d0 (0d1a87f, f13cdf9); review fix 028ac12.
 - **The grant:** `startingSkillGrantOf` in `classBase.ts` reads the record's `skillProficiencies` (the Catalog's name for the starting skills) and goes on the Starting Proficiencies feature. The pick is titled "<Class> starting skills".
 - **The old path is removed:** `toggleSkill`, `getPickedSkillsForSource`, `skillChoiceOffers`, `startingSkills`, `SkillPicker`, and the starting-skill props in ClassSteps, ClassChoiceCards and the level-up step. ReviewStep lists the sheet's skills.
 - **The move:** `moveLegacyClassSkillPicks` runs in `reconcile`. The sheet reads a legacy entry until it moves.
 - **Class removal:** the pruner releases the pick when the class is removed, with a review notice (that removal used to be silent). `removeClassLevel` keeps its prune of class entries not yet moved, including the `class__…` shape.
-- **Review fix (711ff5f):** the code-built grant ids named the record's source, so a Fighter made on the SRD Baseline lost its skills after a sync (probe: SRD `[Athletics, Perception]`, integrated `[]`). The multiclass skill grant had the same flaw since its move. Both now name `PHB` for an SRD or PHB class, with the SRD-named id as an alias that moves saved picks. Two tests were red without the fix; two book-admission allow-list entries were added.
+- **Review fix (028ac12):** the code-built grant ids named the record's source, so a Fighter made on the SRD Baseline lost its skills after a sync (probe: SRD `[Athletics, Perception]`, integrated `[]`). The multiclass skill grant had the same flaw since its move. Both now name `PHB` for an SRD or PHB class, with the SRD-named id as an alias that moves saved picks. Two tests were red without the fix; two book-admission allow-list entries were added.
 - **Deviations accepted:**
   - A third pick replaces the oldest, the shared Proficiency Choice behaviour.
   - The Fighter has no multiclass skill.

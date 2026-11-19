@@ -315,7 +315,7 @@ The one rule for whether a record's source is admitted: a record with no source,
 _Avoid_: source gate, book whitelist
 
 **Dataset Swapping**:
-The runtime cutover mechanism that unloads the SRD Baseline from memory and exclusively queries the Integrated Catalog once integration is active, preventing duplicate entities or overlapping source confusion.
+The runtime cutover to the Integrated Catalog once integration is active. Listings and lookups read the Integrated Catalog, with its SRD-sourced records dropped so no entity appears twice. The SRD Baseline stays loaded as the fallback for a collection the catalog lacks, for a held class the catalog lacks, and as the reference for which races offer a plain form.
 _Avoid_: Source merging, database overriding, data overwrite
 
 ## Building and rolling

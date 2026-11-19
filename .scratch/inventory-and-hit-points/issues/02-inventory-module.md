@@ -17,7 +17,7 @@ The tab keeps its modal and form state and calls these. Behaviour is unchanged. 
 
 **Status:** done
 
-**Landed:** merge 413d584 (13d370e, 4c9a06e).
+**Landed:** merge 2393793 (f40c63a, 346b5e0).
 - **Module:** `src/rules/inventory.ts` holds the item, quantity, attunement (limit 3, swap) and coin transitions, plus `itemFromCatalog`, `customItem`, and an `addItem` beyond the list. `makeItemId` moved here.
 - **The tab:** InventoryTab only calls it, and went from 1084 to 1007 lines. Behaviour is unchanged.
 - **Tests:** 12 in `checks/inventory.test.ts`, and a 4-rule guard in `checks/inventoryTabGuard.test.ts` that was red on the old tab.

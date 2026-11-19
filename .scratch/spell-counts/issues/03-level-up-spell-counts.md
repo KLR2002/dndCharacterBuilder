@@ -12,7 +12,7 @@
 
 **Status:** done
 
-**Landed:** merge d60b4f5 (484bcc5, a20cac0). `spellsDueAt(entry, catalogs)` and `spellsGainedAt(entry, fromLevel, toLevel, catalogs)` in `spellCounts.ts` (a new class counts from zero); `LevelUpPlan.spellsDue`, set in `planLevelUp` and `setPlanSubclass`; the step appears when something is due (stale: old rule; `spellReplacementOffered()` stub for 04); completion needs exact picks. `SpellsStep` shows `Cantrips n/m` / `Spells n/m`; `SpellLearnList.isSpellDisabled` (unset in the builder) disables unpicked rows of a full count. Review already listed learned spells. Layout walks now learn the due spells (`learnDueSpells`); the Spells-after-level-up check searches Charm Person. Level-Up layout green at 393 SRD and integrated; check:all passed.
+**Landed:** merge 4637c35 (db5c7e1, 64f8a4c). `spellsDueAt(entry, catalogs)` and `spellsGainedAt(entry, fromLevel, toLevel, catalogs)` in `spellCounts.ts` (a new class counts from zero); `LevelUpPlan.spellsDue`, set in `planLevelUp` and `setPlanSubclass`; the step appears when something is due (stale: old rule; `spellReplacementOffered()` stub for 04); completion needs exact picks. `SpellsStep` shows `Cantrips n/m` / `Spells n/m`; `SpellLearnList.isSpellDisabled` (unset in the builder) disables unpicked rows of a full count. Review already listed learned spells. Layout walks now learn the due spells (`learnDueSpells`); the Spells-after-level-up check searches Charm Person. Level-Up layout green at 393 SRD and integrated; check:all passed.
 
 - [x] Tests:
   - A Sorcerer 3 → 4: cantrips due 1, spells due 1. The step is incomplete with 1 spell, and complete with 1 cantrip and 1 spell.

@@ -25,7 +25,7 @@
 
 **Status:** done
 
-**Landed:** merge d6c4fcf (6471cb7, 3777441).
+**Landed:** merge 3a90e68 (df83210, 33a8c31).
 - **One predicate:** `src/rules/bookAdmission.ts` (no imports) has `admitsBook` and `isActiveBookRecord`. The Compendium and `raceLookup` use it, so a held race matches a mixed-case active book (red before).
 - **Read facades gone:** `dataService.ts` and `dndRules.ts` are deleted; their importers read `currentCompendium()` / `catalogListings` or the rules modules.
 - **Components ask `admits`:** AncestrySection (VRGR, TCE), FeaturesTab and WildShapeModal (MM). SubclassSection's hand filter too, which was beyond the list.

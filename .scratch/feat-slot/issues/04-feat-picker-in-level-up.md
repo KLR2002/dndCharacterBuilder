@@ -6,7 +6,7 @@
 
 **Status:** done
 
-**Landed:** 6b194a6 (with af2eb78 dropping a source-text guard test). `FeatPicker` takes granular callbacks (`onSelectFeat`, `onSelectAbility`, `onToggleSubChoice`) because the Level-Up Flow keeps sub-choice picks in its plan; its sub-choices keep the step's existing chip groups, not `RuleChoicePicker`. `AsiFeatStep.tsx` 324 → 216 lines, `FeatPicker.tsx` 166. `allFeats` and `featSlotView(...).offered` are the same list. `ONLY="Level-Up"` passed at 320, 393 and 1280; check:all passed.
+**Landed:** 1110436 (with 0875a9f dropping a source-text guard test). `FeatPicker` takes granular callbacks (`onSelectFeat`, `onSelectAbility`, `onToggleSubChoice`) because the Level-Up Flow keeps sub-choice picks in its plan; its sub-choices keep the step's existing chip groups, not `RuleChoicePicker`. `AsiFeatStep.tsx` 324 → 216 lines, `FeatPicker.tsx` 166. `allFeats` and `featSlotView(...).offered` are the same list. `ONLY="Level-Up"` passed at 320, 393 and 1280; check:all passed.
 
 - [x] The Level-Up Flow behaves as before: existing `checks/levelUpFlow*.test.ts` and level-up layout scenarios pass unchanged (`ONLY="Level-Up" WIDTHS=320`, then `393`, then `1280 npm run layout:check`).
 - [x] `AsiFeatStep.tsx` has no feat list, feat search or Increase Choice markup of its own (paste its line count before and after).
