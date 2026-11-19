@@ -201,6 +201,8 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
     folderId?: string | null;
     creationProgress?: CreationProgress;
   }): Promise<Character> => {
+    // A load still in flight settles first; a failed load leaves ready false, so requireReady throws as before.
+    if (initialization.current) await initialization.current;
     requireReady();
     const newChar: Character = migrateCharacter({
       id: `char_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
