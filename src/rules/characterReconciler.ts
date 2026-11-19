@@ -5,12 +5,11 @@ import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { GIANT_BARBARIAN_OWNER_KEY, GIANT_POWER_CANTRIPS } from "../constants/rules.ts";
 import { getMaxSpellLevel, metamagicAllowance } from "./spellcasting.ts";
 import { pruneInvalidExpertise } from "./expertise.ts";
-import { fightingStyleOwnerOf, moveLegacyFightingStyleIds, pruneInvalidFightingStyles } from "./choices/fightingStyles.ts";
+import { fightingStyleOwnerOf, pruneInvalidFightingStyles } from "./choices/fightingStyles.ts";
 import { maneuverOwnerOf, pruneInvalidManeuvers } from "./choices/maneuvers.ts";
 import { infusionOwnerOf, pruneInvalidInfusions } from "./choices/artificerInfusions.ts";
 import { type ChoiceOwner, GIANT_POWER_CHOICE_ID } from "./choices/types.ts";
 import { pruneInvalidFeatSpellPicks, pruneReleasedFeatCounters } from "./choices/featSpells.ts";
-import { moveLegacyInnateCounters } from "./grantedSpells.ts";
 import { releaseStrandedExpandedSpells } from "./backgroundSpells.ts";
 import { withNotices } from "./needsReview.ts";
 import {
@@ -21,17 +20,8 @@ import {
   warlockOwnerOf,
 } from "./choices/warlockChoices.ts";
 import { tableOwnerOf } from "./subclassChoiceTable.ts";
-import {
-  dropLegacyMulticlassSkillEntries,
-  moveAliasedProficiencyPicks,
-  moveLegacyClassSkillPicks,
-  moveLegacyClassToolPicks,
-  moveExpertisePicksToGrants,
-  moveLegacySkillPicks,
-  moveLegacySourcePicks,
-  pruneInvalidProficiencyPicks,
-} from "./proficiencyPicks.ts";
-import { dropLegacyBackgroundSkills } from "./legacyBackgroundSkills.ts";
+import { moveExpertisePicksToGrants, pruneInvalidProficiencyPicks } from "./proficiencyPicks.ts";
+import { migrateSavedPicks } from "./savedPicksMigration.ts";
 import { pruneStartingEquipmentPicks } from "./startingEquipmentPicks.ts";
 import { releaseSizeChoice } from "./sizeChoice.ts";
 import { reconcileOriginAbilities } from "./originCustomization.ts";
@@ -49,20 +39,15 @@ import { releaseFeatIncreasesOutsidePool } from "./featIncrease.ts";
  *   - Mystic Arcanum runs after those two sync passes. It reads only Warlock level and its own
  *     choices, so it is independent of them, but it keeps the order the former invocation-prune
  *     chain used.
- * Fighting styles run before maneuvers because Superior Technique is gated on a fighting style. A fighting style pick saved under
- * an id with another source moves to the id its class now gives first, so the style passes read the current ids.
+ * Fighting styles are pruned before maneuvers because Superior Technique is gated on a fighting style.
  * The Giant Power cantrip sync reads only its own choice and the Barbarian's known spells, so
  * its position is free; it sits with the other known-spell syncs. A held class's spells above its
  * maximum spell level (0 included, so a class that can no longer cast loses its leveled spells)
  * are released with them.
- * Picks saved under a grant's former id move to the grant's id first, so every later pass reads the current ids.
- * The class tool bucket is moved into its Proficiency Choice's pick next, and the first class's saved starting skill
- * picks into its starting skill choice, so the pick check sees them. The race and background tool and language buckets follow it. The race and background skill picks saved in the
- * old skill choices move into their own Proficiency Choices after those buckets. Empty multiclass skill entries
- * from older saves are dropped with them. Expertise picks saved on a skill choice that now carries Expertise move
- * into it next, so the pick release sees them.
- * Proficiency picks are released before Expertise, so Expertise is pruned against the released state. A
- * background skill copy that only a turned-off background granted is dropped first, for the same reason.
+ * Saved picks under a former id are moved by migrateSavedPicks before this pass chain runs, so the
+ * Proficiency Choice passes below read the current ids. Expertise picks saved on a skill choice that now carries
+ * Expertise move into it next, so the pick release sees them.
+ * Proficiency picks are released before Expertise, so Expertise is pruned against the released state.
  *
  * Starting equipment picks are dropped first when the first class is no longer the one they were made for.
  *
@@ -80,7 +65,6 @@ export function reconcile(
   updated = reconcileOriginAbilities(updated, compendium, options.activeBooks);
   updated = releaseFeatIncreasesOutsidePool(updated, compendium, options.activeBooks);
 
-  updated = moveLegacyFightingStyleIds(updated, classes);
   updated = pruneInvalidFightingStyles(updated, classes);
   updated = pruneInvalidManeuvers(updated);
   updated = pruneInvalidInvocations(updated, compendium);
@@ -91,18 +75,10 @@ export function reconcile(
   updated = releaseMetamagicOverAllowance(updated);
   updated = releaseOverLevelClassSpells(updated, compendium, options.activeBooks);
   updated = pruneInvalidInfusions(updated, compendium);
-  updated = moveAliasedProficiencyPicks(updated, compendium, options.activeBooks);
-  updated = moveLegacyClassToolPicks(updated, compendium);
-  updated = moveLegacyClassSkillPicks(updated, compendium);
-  updated = moveLegacySourcePicks(updated, compendium, options.activeBooks);
-  updated = moveLegacySkillPicks(updated, compendium, options.activeBooks);
   updated = moveExpertisePicksToGrants(updated, compendium, options.activeBooks);
-  updated = dropLegacyMulticlassSkillEntries(updated);
-  updated = dropLegacyBackgroundSkills(updated, compendium, options.activeBooks);
   updated = pruneInvalidProficiencyPicks(updated, compendium, options.activeBooks);
   updated = pruneInvalidFeatSpellPicks(updated, compendium, options.activeBooks);
   updated = pruneReleasedFeatCounters(updated, compendium, options.activeBooks);
-  updated = moveLegacyInnateCounters(updated, compendium, options.activeBooks);
   updated = pruneInvalidExpertise(updated, { compendium, activeBooks: options.activeBooks });
 
   return updated;
@@ -110,7 +86,8 @@ export function reconcile(
 
 /**
  * Reconciles a character against the books now active, for the moments the active books change or a
- * character is opened. Expertise is released where no active book grants the skill or tool, and a
+ * character is opened. The saved-pick migration runs first, so a Catalog change moves picks before the rules
+ * passes read them. Expertise is released where no active book grants the skill or tool, and a
  * released mark is not restored when the book is re-enabled (the player marks it again).
  *
  * Returns the input itself when nothing changes, so a caller can skip the save. Some passes rebuild
@@ -121,7 +98,8 @@ export function reconcileForActiveBooks(
   compendium: Compendium,
   activeBooks: string[],
 ): Character {
-  const reconciled = releaseStrandedExpandedSpells(reconcile(character, compendium, { activeBooks }), compendium, activeBooks);
+  const migrated = migrateSavedPicks(character, compendium, activeBooks);
+  const reconciled = releaseStrandedExpandedSpells(reconcile(migrated, compendium, { activeBooks }), compendium, activeBooks);
   return JSON.stringify(reconciled) === JSON.stringify(character) ? character : reconciled;
 }
 

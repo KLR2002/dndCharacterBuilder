@@ -11,7 +11,7 @@ import type { Character, CreationProgress, Folder } from "../types/character";
 import { applyCharacterUpdate } from "./characterUpdates";
 import type { DiceAnimation } from "../rules/diceAnimation";
 import { migrateCharacter } from "../rules/migrateCharacter";
-import { renameSrdNames } from "../rules/srdNames";
+import { migrateSavedPicks } from "../rules/savedPicksMigration";
 import { reconcileForActiveBooks } from "../rules/characterReconciler";
 import { checkActiveBooksIntegrity } from "../rules/builderTransitions";
 import { currentCompendium, integrate as integrateCompendium, revertToSrd as revertCompendiumToSrd } from "../services/compendium";
@@ -168,7 +168,7 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
         const classCatalog = currentCompendium().for().classes();
         const loadedActiveBooks = loadedSettings.activeResourceBooks || DEFAULT_ACTIVE_BOOK_CODES;
         const migratedCharacters = loadedChars.map((c) =>
-          renameSrdNames(migrateCharacter(c, raceCatalog, classCatalog, loadedActiveBooks), currentCompendium()),
+          migrateSavedPicks(migrateCharacter(c, raceCatalog, classCatalog, loadedActiveBooks), currentCompendium(), loadedActiveBooks),
         );
         setActiveBooksState(loadedActiveBooks);
         setFullHealOnLevelUpState(loadedSettings.fullHealOnLevelUp);

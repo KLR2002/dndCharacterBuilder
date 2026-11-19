@@ -10,7 +10,7 @@ import type { AdditionalSpells, BackgroundData, ClassData, FeatData, RaceData } 
 import type { Character } from "../src/types/character.ts";
 import type { Compendium } from "../src/services/compendium.ts";
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
-import { renameSrdNames } from "../src/rules/srdNames.ts";
+import { migrateSavedPicks } from "../src/rules/savedPicksMigration.ts";
 import * as rules from "../src/constants/rules.ts";
 import { POINT_BUY_BUDGET, pointBuySpent } from "../src/rules/pointBuy.ts";
 import { featSpellRuleChoices } from "../src/rules/choices/featSpells.ts";
@@ -94,14 +94,14 @@ async function providerHarness(initial: unknown = [makeChar()], options: {
     if (name.includes("storage")) return { ...storage, loadAll: options.loadAll ?? storage.loadAll };
     if (name.includes("characterUpdates")) return { applyCharacterUpdate };
     if (name.includes("migrateCharacter")) return { migrateCharacter };
-    if (name.includes("srdNames")) return { renameSrdNames };
+    if (name.includes("savedPicksMigration")) return { migrateSavedPicks };
     if (name.includes("characterReconciler")) return { reconcileForActiveBooks };
     if (name.endsWith("services/compendium")) return {
       integrate: (bundle: any) => { integrated = bundle; },
       revertToSrd: () => { integrated = null; },
       currentCompendium: () => options.catalog ?? {
         stale: integrated ? compendiumStorage.isCatalogStale(integrated) : false,
-        for: () => ({ races: () => options.races ?? [], classes: () => options.classes ?? [] }),
+        for: () => ({ races: () => options.races ?? [], classes: () => options.classes ?? [], backgrounds: () => [] }),
       },
     };
     if (name.includes("constants/rules")) return rules;
