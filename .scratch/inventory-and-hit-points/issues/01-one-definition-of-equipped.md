@@ -18,13 +18,22 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Tests, `checks/equippedItems.test.ts`:
+**Landed:** merge 4d7c9af (a11fc70).
+- **On load:** `migrateCharacter` marks an item equipped when either field said so, then drops `section`.
+- **Writers:** `section` is removed from `InventoryItem` and from every writer: starting equipment, the unarmed strike, background equipment, infusions, the Inventory tab, seeds and about 22 test fixtures.
+- **Readers:** armor needs only `isEquipped`.
+- **Typecheck baseline:** re-recorded with 66 deletions and no additions, because previously invalid fixtures now type-check.
+- **Guard:** none added. A generic `section:` key can't be told apart, so the type does the work.
+- **Tests:** 4 in `checks/equippedItems.test.ts`, 3 of them red before.
+- check:all, check:live, and `ONLY` Inventory and Actions at 393 passed, SRD and integrated. The screenshot shows the Shield equipped.
+
+- [x] Tests, `checks/equippedItems.test.ts`:
   - An old save's armor with `section: "equipped"` and `isEquipped: false` loads equipped, and `armorClass` counts it. Before this change it did not; show it red.
   - An item with `isEquipped: true` and `section: "carried"` loads equipped.
   - A loaded item has no `section`.
   - An old save's weapon with only `section: "equipped"` is listed by the attacks.
-- [ ] `grep -rn "section: \"\(equipped\|carried\)\"\|\.section ===" src scripts checks` shows no item `section` left; paste it.
-- [ ] `npm run check:all` and `npm run check:live` pass.
-- [ ] Scoped layout: `ONLY=Inventory WIDTHS=393` and `ONLY=Actions WIDTHS=393`, SRD and `-- --integrated`, green. Open an Inventory screenshot and describe the Equipped and Carried lists.
+- [x] `grep -rn "section: \"\(equipped\|carried\)\"\|\.section ===" src scripts checks` shows no item `section` left; paste it.
+- [x] `npm run check:all` and `npm run check:live` pass.
+- [x] Scoped layout: `ONLY=Inventory WIDTHS=393` and `ONLY=Actions WIDTHS=393`, SRD and `-- --integrated`, green. Open an Inventory screenshot and describe the Equipped and Carried lists.
