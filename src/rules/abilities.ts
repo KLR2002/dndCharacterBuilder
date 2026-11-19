@@ -1,7 +1,7 @@
 import type { AbilityKey, AbilityScores, Character } from "../types/character.ts";
 import type { ResolvedAncestry } from "./types.ts";
 import { heldFixedBonuses } from "./ancestryIncreases.ts";
-export { POINT_BUY_COST, STANDARD_ARRAY } from "../constants/rules.ts";
+export { STANDARD_ARRAY } from "../constants/rules.ts";
 
 export const ABILITIES: AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
 /** Each ability's full name, as the Catalog writes it in proficiency grants and requirements. */

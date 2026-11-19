@@ -2,7 +2,7 @@ import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { ARTISAN_TOOLS, GAMING_SETS, MUSICAL_INSTRUMENTS } from "../src/rules/proficienciesAndLanguages.ts";
-import { POINT_BUY_COST } from "../src/constants/rules.ts";
+import { POINT_BUY_COST } from "../src/rules/pointBuy.ts";
 import { proficiencySheet, type SheetEntry } from "../src/rules/proficiencySheet.ts";
 import { proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts";
 import type { AvailableRuleChoice } from "../src/rules/choices/types.ts";

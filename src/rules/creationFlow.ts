@@ -2,7 +2,7 @@ import type { ActiveBooks } from "../constants/books.ts";
 import type { AsiSelection, Character, CharacterClass, CreationProgress, CreationStepId } from "../types/character.ts";
 import { CREATION_STEP_ORDER } from "../types/character.ts";
 import type { ClassData, RaceData, SubraceData } from "../types/dnd5e.ts";
-import { POINT_BUY_COST } from "../constants/rules.ts";
+import { pointBuyValid } from "./pointBuy.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { allCatalogClasses, allCatalogRaces, type CharacterCatalogs } from "./catalogs.ts";
 import { heldClass } from "./classData.ts";
@@ -134,9 +134,6 @@ export function creationStepNeedsAttention(character: Character, step: CreationS
   return character.creationProgress?.needsAttention?.includes(step) ?? false;
 }
 
-/** The point-buy budget a creation's base scores may spend (2014 rules). */
-const POINT_BUY_BUDGET = 27;
-
 /**
  * Whether the Abilities step's method is fully picked: the whole standard array, scores within point buy,
  * or — for rolled — six rolled results with every one placed on exactly one ability. Manual asks for nothing.
@@ -146,15 +143,7 @@ function abilitiesValid(character: Character): boolean {
     const picks = character.standardArrayPicks ?? {};
     return ABILITIES.every((ability) => typeof picks[ability] === "number");
   }
-  if (character.abilityMethod === "pointBuy") {
-    let spent = 0;
-    for (const ability of ABILITIES) {
-      const score = character.baseAbilityScores?.[ability] ?? 8;
-      if (score < 8 || score > 15) return false;
-      spent += POINT_BUY_COST[score] ?? 0;
-    }
-    return spent <= POINT_BUY_BUDGET;
-  }
+  if (character.abilityMethod === "pointBuy") return pointBuyValid(character.baseAbilityScores ?? {});
   if (character.abilityMethod === "rolled") {
     const results = character.rolledAbilities ?? [];
     const picks = character.rolledAbilityPicks ?? {};
