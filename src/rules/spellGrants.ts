@@ -1,7 +1,8 @@
-import type { ActiveBooks } from "../constants/books.ts";
+import { SRD_SOURCE, type ActiveBooks } from "../constants/books.ts";
 import { BACKGROUND_FEAT_SOURCE } from "../constants/rules.ts";
 import type { AsiSelection, Character } from "../types/character.ts";
 import type { AdditionalSpells, BackgroundData, FeatData, RaceData, SubraceData } from "../types/dnd5e.ts";
+import { currentCompendium, type Compendium, type CompendiumListings } from "../services/compendium.ts";
 import { catalogListings, type CharacterCatalogs } from "./catalogs.ts";
 import { isCustomBackground } from "./customBackground.ts";
 import { grantGateOpen } from "./grantGate.ts";
@@ -61,6 +62,8 @@ export interface HeldSpellGrantOptions {
 /** The feat record a selection names. A feat a background grants carries the Background source marker, which is no sourcebook. */
 interface FeatResolution {
   activeBooks: ActiveBooks;
+  /** The listings scoped to `activeBooks`, which say whether a feat's book is one of the active books. */
+  listings: CompendiumListings;
   backgroundSource?: string;
 }
 
@@ -76,20 +79,26 @@ export function heldSpellGrants(character: Character, catalogs?: CharacterCatalo
     { races: listings.races(), feats: listings.feats(), backgrounds: listings.backgrounds() },
     catalogs?.activeBooks,
     options,
+    catalogs?.compendium,
   );
 }
 
-/** heldSpellGrants over records the caller has already chosen. A caller that reads only the races passes no feats or backgrounds. */
+/**
+ * heldSpellGrants over records the caller has already chosen. A caller that reads only the races passes no feats or backgrounds.
+ * `compendium` says which books are admitted under `activeBooks`; it defaults to the process-wide current Compendium.
+ */
 export function heldSpellGrantsIn(
   character: Character,
   records: SpellGrantRecords,
   activeBooks: ActiveBooks,
   options: HeldSpellGrantOptions = {},
+  compendium: Compendium = currentCompendium(),
 ): HeldSpellGrant[] {
   const held: HeldSpellGrant[] = [];
   const background = resolveCharacterBackground(character, records.backgrounds, activeBooks);
   if (background) held.push({ kind: "background", record: background, additionalSpells: background.additionalSpells });
-  for (const { feat, selection } of heldFeatEntries(character, records.feats, activeBooks, options.everyFeatRecord === true)) {
+  const listings = compendium.for(activeBooks);
+  for (const { feat, selection } of heldFeatEntries(character, records.feats, activeBooks, listings, options.everyFeatRecord === true)) {
     held.push({ kind: "feat", record: feat, owner: featOwner(feat), additionalSpells: feat.additionalSpells, selection });
   }
   const race = raceGrantsOf(character, records.races, activeBooks);
@@ -164,8 +173,10 @@ export function featOfSelection(selection: AsiSelection, feats: readonly FeatDat
   if (selection.featSource && selection.featSource !== BACKGROUND_FEAT_SOURCE) {
     return named.find((f) => f.source === selection.featSource);
   }
-  const rank = (feat: FeatData): number =>
-    resolution.activeBooks?.includes(feat.source) ? 0 : feat.source === resolution.backgroundSource ? 1 : 2;
+  // An active book's feat is one the listings admit other than the SRD's; with no books given, nothing ranks first.
+  const isActive = (feat: FeatData): boolean =>
+    resolution.activeBooks !== undefined && feat.source !== SRD_SOURCE && resolution.listings.admits(feat.source);
+  const rank = (feat: FeatData): number => (isActive(feat) ? 0 : feat.source === resolution.backgroundSource ? 1 : 2);
   let best: FeatData | undefined;
   for (const feat of named) if (!best || rank(feat) < rank(best)) best = feat;
   return best;
@@ -185,9 +196,10 @@ function heldFeatEntries(
   character: Character,
   feats: readonly FeatData[],
   activeBooks: ActiveBooks,
+  listings: CompendiumListings,
   everyRecord: boolean,
 ): { feat: FeatData; selection: AsiSelection }[] {
-  const resolution: FeatResolution = { activeBooks, backgroundSource: character.background?.source };
+  const resolution: FeatResolution = { activeBooks, listings, backgroundSource: character.background?.source };
   const held: { feat: FeatData; selection: AsiSelection }[] = [];
   for (const selection of featSelectionsOf(character)) {
     const found = everyRecord ? candidateFeatsOf(selection, feats) : [featOfSelection(selection, feats, resolution)];

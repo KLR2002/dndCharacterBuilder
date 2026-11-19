@@ -3,7 +3,6 @@ import type { AbilityKey, AbilityScores, Character, CharacterClass, KnownSpell, 
 import type { ClassData, SpellData } from "../types/dnd5e.ts";
 import type { ResolvedAncestry } from "./types.ts";
 import { ARTIFICER_SLOTS, casterKindOf, isThirdCaster, PHB_HALF_CASTER_SLOTS, PHB_THIRD_CASTER_SLOTS, spellAbilityOf } from "./classData.ts";
-import { SRD_SOURCE } from "../constants/books.ts";
 import { allCatalogClasses } from "./catalogs.ts";
 import {
   GIANT_BARBARIAN_OWNER_KEY,
@@ -17,7 +16,7 @@ import { effectiveScores } from "./abilities.ts";
 import { multiclassSlots } from "./slots.ts";
 import { proficiencyBonus, totalLevel } from "./proficiencies.ts";
 import { getSubclassSpells, normalizeKey } from "./subclassSpells.ts";
-import type { Compendium } from "../services/compendium.ts";
+import { currentCompendium, type Compendium } from "../services/compendium.ts";
 
 /** A prepared spell a held feat or race gives, badged with the feat or race it comes from (ADR 0017 amendment). */
 export interface GrantedPreparedSpell {
@@ -377,7 +376,8 @@ export function isSpellAvailableForClass(
   spell: SpellData,
   className: string,
   activeBooks: ActiveBooks,
-  context?: SpellAvailabilityContext | string
+  context?: SpellAvailabilityContext | string,
+  compendium: Compendium = currentCompendium(),
 ): boolean {
   if (!spell || !className) return false;
 
@@ -400,6 +400,7 @@ export function isSpellAvailableForClass(
   }
 
   const targetLower = targetClass.toLowerCase();
+  const listings = compendium.for(activeBooks);
 
   // Warlock Otherworldly Patron expanded spell lists (Subclass Feature Supremacy applies):
   // If the spell is granted by the subclass expanded list and that subclass is active in activeBooks, allow it.
@@ -408,6 +409,7 @@ export function isSpellAvailableForClass(
       activeBooks,
       kind: parsedContext.kind,
       ruleChoices: parsedContext.ruleChoices,
+      compendium,
     });
     if (subSpells.expanded.some((e) => normalizeKey(e) === normalizeKey(spell.name))) {
       return true;
@@ -421,13 +423,8 @@ export function isSpellAvailableForClass(
     }
   }
 
-  // Active book gating: spell's own sourcebook must be active if activeBooks is provided
-  if (activeBooks !== undefined) {
-    const isSpellSourceActive =
-      (spell.source || "").toUpperCase() === SRD_SOURCE ||
-      activeBooks.some((b) => b.toUpperCase() === (spell.source || "").toUpperCase());
-    if (!isSpellSourceActive) return false;
-  }
+  // Active book gating: the spell's own sourcebook must be admitted (ADR 0025).
+  if (!listings.admits(spell.source)) return false;
 
   // The character's expanded lists (background, feats, race) add their spell names to every spellcasting class's list, cantrips included (ADR 0017).
   if (parsedContext.expandedSpells?.some((name) => normalizeKey(name) === normalizeKey(spell.name))) {
@@ -448,12 +445,9 @@ export function isSpellAvailableForClass(
 
   // 2. Cross-book alternative spell list variant grant (e.g. TCE alternative spell lists)
   if (spell.classVariants && spell.classVariants.length > 0) {
-    const hasVariantGrant = spell.classVariants.some((v) => {
-      if (v.name.toLowerCase() !== targetLower) return false;
-      if (activeBooks === undefined) return true;
-      const book = (v.definedInSource || "").toUpperCase();
-      return book === SRD_SOURCE || activeBooks.some((b) => b.toUpperCase() === book);
-    });
+    const hasVariantGrant = spell.classVariants.some(
+      (v) => v.name.toLowerCase() === targetLower && listings.admits(v.definedInSource),
+    );
     if (hasVariantGrant) return true;
   }
 

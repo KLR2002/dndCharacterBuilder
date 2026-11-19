@@ -206,10 +206,15 @@ test("a granted SRD Baseline spell stays on whatever books are switched on, as i
 });
 
 test("a granted spell from a book that is switched off resolves to nothing", () => {
+  // Book gating needs an Integrated Catalog; the shared SRD-style Compendium above is unscoped (ADR 0025).
+  const compendium = inMemoryCompendium(
+    { classes: grantedSpellClasses(), feats: grantedSpellFeats(), spells: grantedSpellSpells() },
+    { integrated: true },
+  );
   const sparkle = (activeBooks?: string[]) =>
     evaluateCharacter(
       makeChar({ classes: [mage(4)], asiSelections: [takenFeat("Sample Sparkle", "int")] }),
-      { compendium: catalogs.compendium, activeBooks },
+      { compendium, activeBooks },
     );
   assert.equal(sourceTitled(sparkle(["TST"]).grantedSpellSources, "Sample Sparkle"), undefined, "its only spell is in TST2, which is off");
   const onBook = sourceTitled(sparkle(["TST", "TST2"]).grantedSpellSources, "Sample Sparkle");

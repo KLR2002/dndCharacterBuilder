@@ -435,11 +435,17 @@ export function warlockMysticArcanumChoices(
       const eligible = allSpells
         .filter((s) => s.level === m.spellLevel)
         .filter((s) =>
-          isSpellAvailableForClass(s, "Warlock", activeBooks, {
-            subclassName,
-            classLevel: warlock.level,
-            ruleChoices: character.ruleChoices,
-          })
+          isSpellAvailableForClass(
+            s,
+            "Warlock",
+            activeBooks,
+            {
+              subclassName,
+              classLevel: warlock.level,
+              ruleChoices: character.ruleChoices,
+            },
+            compendium,
+          )
         )
         .map((s) => ({
           name: s.name,
