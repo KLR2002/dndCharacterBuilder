@@ -60,6 +60,16 @@ test("a Wizard 3 with 8 spellbook spells is due 10 and not met", () => {
   assert.deepEqual(counts.spells, { known: 8, due: 10, kind: "spellbook" });
 });
 
+test("a single caster's legacy spells saved without an owner key are counted", () => {
+  const legacy = srdSpells("cantrip", 3).map((s) => ({ name: s.name, source: s.source }));
+  const wizard = makeChar({
+    classes: [{ className: "Wizard", source: "PHB", level: 1 }],
+    knownSpells: [...legacy, ...owned(srdSpells("leveled", 6), "Wizard__PHB")],
+  });
+  const counts = spellCounts(wizard, profileOf(wizard, "Wizard"), srdCatalogs);
+  assert.deepEqual(counts.cantrips, { known: 3, due: 3 });
+});
+
 test("a Sorcerer 1 with 4 cantrips and 2 spells is met, and a feat's spell does not count", () => {
   const sorcerer = makeChar({
     classes: [{ className: "Sorcerer", source: "PHB", level: 1 }],

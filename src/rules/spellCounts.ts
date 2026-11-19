@@ -6,6 +6,8 @@ import { heldClass, isThirdCaster } from "./classData.ts";
 import { currentCompendium } from "../services/compendium.ts";
 import type { ClassSpellProfile } from "./spellcasting.ts";
 
+const PACT_OF_THE_TOME_OWNER = "Warlock__Tome";
+
 /** The per-level progressions a class's spellcasting or a subclass record carries. */
 type CountedProgressions = Partial<Pick<SubclassData, "cantripsKnown" | "spellsKnown">> & { spellbookSpellsGained?: number[] };
 
@@ -50,9 +52,12 @@ export function spellCounts(character: Character, profile: ClassSpellProfile, ca
     ...(profile.alwaysPreparedSpells ?? []).map((s) => s.name.toLowerCase()),
     ...(profile.subclassKnownSpells ?? []).map((s) => s.name.toLowerCase()),
   ]);
-  const owned = profile.knownSpells.filter(
-    (k) => k.ownerKey === profile.ownerKey && !excluded.has(k.name.toLowerCase()),
-  );
+  // The owner's own spells: saved under its key, under its class with another book's key, or (legacy) with no key.
+  // A single caster's profile also lists feat spells, and a Warlock's the Pact of the Tome cantrips; neither counts.
+  const classPrefix = `${profile.className}__`;
+  const isOwn = (key: string | undefined) =>
+    key === undefined || key === profile.ownerKey || (key.startsWith(classPrefix) && key !== PACT_OF_THE_TOME_OWNER);
+  const owned = profile.knownSpells.filter((k) => isOwn(k.ownerKey) && !excluded.has(k.name.toLowerCase()));
   // A spell the Compendium does not hold is listed as a cantrip, as the Spell Page lists it.
   const cantripsKnown = owned.filter((k) => (compendium.findSpell(k.name, k.source)?.level ?? 0) === 0).length;
   const spellsKnown = owned.length - cantripsKnown;
