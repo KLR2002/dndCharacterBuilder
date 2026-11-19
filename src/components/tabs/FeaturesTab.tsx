@@ -236,7 +236,8 @@ export const FeaturesTab: React.FC = () => {
               cf,
               classData.source,
               activeBooks,
-              `A ${c.className} feature gained at level ${cf.level}.`
+              `A ${c.className} feature gained at level ${cf.level}.`,
+              currentCompendium()
             );
             list.push({
               id: `class_${c.className}_${cf.name}_${cf.level}`,
@@ -322,7 +323,8 @@ export const FeaturesTab: React.FC = () => {
                   sf,
                   sc.source,
                   activeBooks,
-                  `A ${c.subclassName} archetype feature gained at level ${sf.level}.`
+                  `A ${c.subclassName} archetype feature gained at level ${sf.level}.`,
+                  currentCompendium()
                 ),
               });
             }

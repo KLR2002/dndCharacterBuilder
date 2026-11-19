@@ -64,17 +64,16 @@ export function availableRuleChoices(
   character: Character,
   raceCatalog: RaceData[],
   level: number | undefined,
-  activeBooks: ActiveBooks
+  activeBooks: ActiveBooks,
+  compendium: Compendium = currentCompendium()
 ): AvailableRuleChoice[] {
   const currentLevel = level ?? totalLevel(character);
-  const books = activeBooks ? new Set(activeBooks.map((b) => b.toUpperCase())) : null;
+  const listings = compendium.for(activeBooks);
 
   return ancestryRuleChoices(character, raceCatalog, activeBooks).filter((choice) => {
     if (choice.level > currentLevel) return false;
-    if (books) {
-      const source = (choice.source ?? choice.id.split("__")[0])?.toUpperCase();
-      if (source && !books.has(source)) return false;
-    }
+    const source = choice.source ?? choice.id.split("__")[0];
+    if (source && !listings.admits(source)) return false;
     return true;
   });
 }
@@ -189,15 +188,14 @@ export function availableSubclassRuleChoices(
   compendium: Compendium = currentCompendium()
 ): AvailableRuleChoice[] {
   const choices = subclassRuleChoices(character, activeBooks, compendium);
-  if (!activeBooks || activeBooks.length === 0) return choices;
-
-  const books = new Set(activeBooks.map((b) => b.toUpperCase()));
+  const listings = compendium.for(activeBooks);
+  // An id prefix that is not a known book names no book, so it is offered whatever the books.
   const allKnownBooks = new Set(ALL_RESOURCE_BOOKS.map((b) => b.code.toUpperCase()));
 
   return choices.filter((choice) => {
     const source = (choice.source ?? choice.id.split("__")[0])?.toUpperCase();
     if (!source || !allKnownBooks.has(source)) return true;
-    return books.has(source);
+    return listings.admits(source);
   });
 }
 
@@ -222,7 +220,7 @@ export function offeredRuleChoices(
   query: RuleChoiceQuery
 ): AvailableRuleChoice[] {
   const race = query.raceCatalog
-    ? availableRuleChoices(character, query.raceCatalog, query.level, query.activeBooks)
+    ? availableRuleChoices(character, query.raceCatalog, query.level, query.activeBooks, query.compendium)
     : [];
   const classAndSubclass = availableSubclassRuleChoices(character, query.activeBooks, query.compendium);
   return [...race, ...classAndSubclass].filter(

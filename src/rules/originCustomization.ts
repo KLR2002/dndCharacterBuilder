@@ -54,11 +54,6 @@ interface AbilityState {
 const RELEASED_NOTICE = (ability: AbilityKey) => `Ability swap to ${ABILITY_NAMES[ability]} removed: ancestry no longer grants it`;
 const COLLIDING_NOTICE = (ability: AbilityKey) => `Ability swap to ${ABILITY_NAMES[ability]} removed: another increase already uses it`;
 
-/** TCE is active when the books are unscoped (every book counts) or TCE is one of them. */
-function ruleBookActive(activeBooks: ActiveBooks): boolean {
-  return activeBooks === undefined || activeBooks.includes(ORIGIN_CUSTOMIZATION_BOOK);
-}
-
 /** The id prefix of an increase's owner: the held race, or the held race with its subrace. Saved swaps are keyed by these ids. */
 function ownerPrefix(held: NonNullable<Character["race"]>, owner: FixedIncrease["owner"]): string[] {
   return owner === "race"
@@ -91,7 +86,7 @@ function stateIn(
   const found = findHeldRace(races, held, activeBooks);
   if (!found.race || (held.subraceName && !found.subrace)) return undefined;
   const slots = slotsOf(held, found.race, found.subrace);
-  const available = ruleBookActive(activeBooks) && listings.originRules().length > 0;
+  const available = listings.admits(ORIGIN_CUSTOMIZATION_BOOK) && listings.originRules().length > 0;
   return {
     slots,
     available,

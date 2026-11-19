@@ -1,5 +1,5 @@
 import type { ActiveBooks } from "../constants/books.ts";
-import { DEFAULT_ACTIVE_BOOK_CODES, SRD_SOURCE } from "../constants/books.ts";
+import { DEFAULT_ACTIVE_BOOK_CODES } from "../constants/books.ts";
 import type { AbilityKey, AsiSelection, Character, CharacterClass } from "../types/character.ts";
 import type { FeatData, SpellData } from "../types/dnd5e.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
@@ -940,10 +940,9 @@ export function subclassOptions(
   const activeBooks = opts.activeBooks ?? DEFAULT_ACTIVE_BOOK_CODES;
   const classes = allCatalogClasses({ compendium, activeBooks });
   const cd = findClassData(classes, { className, source });
-  const upper = activeBooks.map((b) => b.toUpperCase());
+  const listings = compendium.for(activeBooks);
   return (cd?.subclasses ?? [])
-    // The SRD Baseline's records count as active whatever books are switched on.
-    .filter((sub) => !sub.source || sub.source.toUpperCase() === SRD_SOURCE || upper.includes(sub.source.toUpperCase()))
+    .filter((sub) => listings.admits(sub.source))
     .map((sub) => ({ name: sub.name, source: sub.source }));
 }
 
