@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { pruneClasses } from "./srdBaseline.ts";
+import { applySrdNames, pruneClasses } from "./srdBaseline.ts";
 
 const scrapDataDir = path.resolve("dnd5eToolsScrap/data");
 const cacheDir = path.resolve("dnd5eToolsScrap/.cache");
@@ -8,11 +8,14 @@ const srcDataDir = path.resolve("src/data");
 
 console.log("Pruning data to strictly 2014 SRD 5.1 baseline...");
 
+// The baseline's records by file. They are written together at the end, once the SRD names are applied.
+const baseline = {};
+
 // 1. Classes
 const classesRaw = JSON.parse(fs.readFileSync(path.join(scrapDataDir, "classes.json"), "utf8"));
 const srdClasses = pruneClasses(classesRaw);
 
-fs.writeFileSync(path.join(srcDataDir, "classes.json"), JSON.stringify(srdClasses, null, 2), "utf8");
+baseline["classes.json"] = srdClasses;
 console.log(`✓ Saved ${srdClasses.length} SRD classes with 1 archetype each`);
 
 // 2. Races
@@ -50,7 +53,7 @@ const srdRaces = racesRaw
     };
   });
 
-fs.writeFileSync(path.join(srcDataDir, "races.json"), JSON.stringify(srdRaces, null, 2), "utf8");
+baseline["races.json"] = srdRaces;
 console.log(`✓ Saved ${srdRaces.length} SRD races`);
 
 // 3. Backgrounds
@@ -59,7 +62,7 @@ const srdBackgrounds = backgroundsRaw
   .filter((b) => b.name === "Acolyte" && b.source === "PHB")
   .map((b) => ({ ...b, source: "SRD" }));
 
-fs.writeFileSync(path.join(srcDataDir, "backgrounds.json"), JSON.stringify(srdBackgrounds, null, 2), "utf8");
+baseline["backgrounds.json"] = srdBackgrounds;
 console.log(`✓ Saved ${srdBackgrounds.length} SRD backgrounds (Acolyte)`);
 
 // 4. Feats
@@ -68,7 +71,7 @@ const srdFeats = featsRaw
   .filter((f) => f.name === "Grappler" && f.source === "PHB")
   .map((f) => ({ ...f, source: "SRD" }));
 
-fs.writeFileSync(path.join(srcDataDir, "feats.json"), JSON.stringify(srdFeats, null, 2), "utf8");
+baseline["feats.json"] = srdFeats;
 console.log(`✓ Saved ${srdFeats.length} SRD feats (Grappler)`);
 
 // 5. Spells
@@ -87,7 +90,7 @@ const srdSpells = spellsRaw
     classVariants: undefined, // No non-SRD class variants
   }));
 
-fs.writeFileSync(path.join(srcDataDir, "spells.json"), JSON.stringify(srdSpells, null, 2), "utf8");
+baseline["spells.json"] = srdSpells;
 console.log(`✓ Saved ${srdSpells.length} SRD spells`);
 
 // 6. Items
@@ -104,7 +107,7 @@ const srdItems = itemsRaw
   .filter((i) => srdItemNameSet.has(i.name.toLowerCase()))
   .map((i) => ({ ...i, source: "SRD" }));
 
-fs.writeFileSync(path.join(srcDataDir, "items.json"), JSON.stringify(srdItems, null, 2), "utf8");
+baseline["items.json"] = srdItems;
 console.log(`✓ Saved ${srdItems.length} SRD items`);
 
 // 7. Beasts
@@ -114,7 +117,7 @@ const srdBeasts = beastsRaw
   .filter((b) => b.source === "MM")
   .map((b) => ({ ...b, source: "SRD" }));
 
-fs.writeFileSync(path.join(srcDataDir, "beasts.json"), JSON.stringify(srdBeasts, null, 2), "utf8");
+baseline["beasts.json"] = srdBeasts;
 console.log(`✓ Saved ${srdBeasts.length} SRD beasts`);
 
 // 8. Conditions
@@ -124,7 +127,7 @@ const conditionsRaw = JSON.parse(
     : fs.readFileSync(path.join(srcDataDir, "conditions.json"), "utf8")
 );
 const srdConditions = conditionsRaw.map((c) => ({ ...c, source: "SRD" }));
-fs.writeFileSync(path.join(srcDataDir, "conditions.json"), JSON.stringify(srdConditions, null, 2), "utf8");
+baseline["conditions.json"] = srdConditions;
 console.log(`✓ Saved ${srdConditions.length} SRD conditions`);
 
 // 9. Options and features
@@ -132,7 +135,7 @@ const optionsRaw = JSON.parse(fs.readFileSync(path.join(scrapDataDir, "options_a
 const srdOptions = optionsRaw
   .filter((o) => o.source === "PHB")
   .map((o) => ({ ...o, source: "SRD" }));
-fs.writeFileSync(path.join(srcDataDir, "options_and_features.json"), JSON.stringify(srdOptions, null, 2), "utf8");
+baseline["options_and_features.json"] = srdOptions;
 console.log(`✓ Saved ${srdOptions.length} SRD options and features`);
 
 // 10. Books
@@ -144,8 +147,13 @@ const srdBooks = [
     group: "core",
   },
 ];
-fs.writeFileSync(path.join(srcDataDir, "books.json"), JSON.stringify(srdBooks, null, 2), "utf8");
-console.log(`✓ Saved SRD books.json`);
+baseline["books.json"] = srdBooks;
+
+// The SRD names apply to every file at once, so a reference in one file follows a record renamed in another.
+for (const [file, records] of Object.entries(applySrdNames(baseline))) {
+  fs.writeFileSync(path.join(srcDataDir, file), JSON.stringify(records, null, 2), "utf8");
+}
+console.log(`✓ Saved ${Object.keys(baseline).length} baseline files with SRD names applied`);
 
 // 11. Summary
 const summary = {
