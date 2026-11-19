@@ -314,8 +314,8 @@ export const SUBCLASS_CHOICE_ROWS: readonly SubclassChoiceRow[] = [
     locator: { feature: { name: "Totemic Attunement", level: 14 } },
   },
   {
-    id: "SRD__Ranger__Hunter__Hunter's Prey 3",
-    source: "SRD",
+    id: "PHB__Ranger__Hunter__Hunter's Prey 3",
+    source: "PHB",
     owner: HUNTER,
     traitName: "Hunter's Prey",
     level: 3,
@@ -323,8 +323,8 @@ export const SUBCLASS_CHOICE_ROWS: readonly SubclassChoiceRow[] = [
     locator: { feature: { name: "Hunter's Prey", level: 3 } },
   },
   {
-    id: "SRD__Ranger__Hunter__Defensive Tactics 7",
-    source: "SRD",
+    id: "PHB__Ranger__Hunter__Defensive Tactics 7",
+    source: "PHB",
     owner: HUNTER,
     traitName: "Defensive Tactics",
     level: 7,
@@ -332,8 +332,8 @@ export const SUBCLASS_CHOICE_ROWS: readonly SubclassChoiceRow[] = [
     locator: { feature: { name: "Defensive Tactics", level: 7 } },
   },
   {
-    id: "SRD__Ranger__Hunter__Multiattack 11",
-    source: "SRD",
+    id: "PHB__Ranger__Hunter__Multiattack 11",
+    source: "PHB",
     owner: HUNTER,
     traitName: "Multiattack",
     level: 11,
@@ -341,8 +341,8 @@ export const SUBCLASS_CHOICE_ROWS: readonly SubclassChoiceRow[] = [
     locator: { feature: { name: "Multiattack", level: 11 } },
   },
   {
-    id: "SRD__Ranger__Hunter__Superior Hunter's Defense 15",
-    source: "SRD",
+    id: "PHB__Ranger__Hunter__Superior Hunter's Defense 15",
+    source: "PHB",
     owner: HUNTER,
     traitName: "Superior Hunter's Defense",
     level: 15,

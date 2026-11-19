@@ -7,7 +7,7 @@ import { classChoicesStepView } from "../src/rules/classChoices.ts";
 import { describeClassFeature } from "../src/rules/featureOptions.ts";
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
 import { reconcile } from "../src/rules/characterReconciler.ts";
-import { loadSrdCatalog, makeChar, srdBaselineCompendium } from "./testUtils.ts";
+import { integratedTestCompendium, loadSrdCatalog, makeChar, srdBaselineCompendium } from "./testUtils.ts";
 
 function rawClass(overrides: Partial<ClassData>): ClassData {
   return {
@@ -107,9 +107,9 @@ test("a folded feature option and a spellChoice option become source SRD", () =>
   );
 });
 
-/** The SRD Baseline's Compendium, with the PHB switched off: only the SRD's own options are offered. */
+/** The SRD Baseline's Compendium, read with DEFAULT_ACTIVE_BOOK_CODES. */
 const srd = srdBaselineCompendium();
-const phbOff = DEFAULT_ACTIVE_BOOK_CODES.filter((code) => code !== "PHB");
+const books = DEFAULT_ACTIVE_BOOK_CODES;
 
 function srdRanger(level: number) {
   return makeChar({ classes: [{ className: "Ranger", source: "SRD", level, subclassName: "Hunter" }] });
@@ -117,7 +117,7 @@ function srdRanger(level: number) {
 
 describe("The regenerated SRD Baseline offers the SRD Hunter's choices", () => {
   test("an SRD Ranger 3 Hunter is offered one Hunter's Prey pick of the three SRD options", () => {
-    const view = classChoicesStepView(srdRanger(3), { compendium: srd, activeBooks: phbOff });
+    const view = classChoicesStepView(srdRanger(3), { compendium: srd, activeBooks: books });
     const prey = view.cards.other.filter((choice) => choice.traitName === "Hunter's Prey");
     assert.equal(prey.length, 1);
     assert.equal(prey[0].choose, 1);
@@ -128,14 +128,14 @@ describe("The regenerated SRD Baseline offers the SRD Hunter's choices", () => {
   });
 
   test("an SRD Ranger 7 Hunter also gets Defensive Tactics", () => {
-    const view = classChoicesStepView(srdRanger(7), { compendium: srd, activeBooks: phbOff });
+    const view = classChoicesStepView(srdRanger(7), { compendium: srd, activeBooks: books });
     const traits = view.cards.other.map((choice) => choice.traitName);
     assert.ok(traits.includes("Hunter's Prey"));
     assert.ok(traits.includes("Defensive Tactics"));
   });
 
   test("an SRD Ranger 15 Hunter is offered one pick at each of the four Hunter tiers", () => {
-    const view = classChoicesStepView(srdRanger(15), { compendium: srd, activeBooks: phbOff });
+    const view = classChoicesStepView(srdRanger(15), { compendium: srd, activeBooks: books });
     const traits = view.cards.other.map((choice) => choice.traitName);
     assert.deepEqual(
       ["Hunter's Prey", "Defensive Tactics", "Multiattack", "Superior Hunter's Defense"].map((trait) => traits.includes(trait)),
@@ -181,5 +181,16 @@ describe("The regenerated SRD Baseline offers the SRD Hunter's choices", () => {
     const biome = view.cards.other.find((choice) => choice.traitName === "Circle of the Land: Biome");
     assert.ok(biome, "the Biome pick is offered");
     assert.ok(biome.options.some((option) => option.name === "Arctic"));
+  });
+
+  test("an integrated PHB Ranger 3 Hunter is offered the same Hunter's Prey pick, with its PHB options", () => {
+    const ranger = makeChar({ classes: [{ className: "Ranger", source: "PHB", level: 3, subclassName: "Hunter" }] });
+    const view = classChoicesStepView(ranger, { compendium: integratedTestCompendium(), activeBooks: ["PHB"] });
+    const prey = view.cards.other.filter((choice) => choice.traitName === "Hunter's Prey");
+    assert.equal(prey.length, 1);
+    assert.deepEqual(
+      prey[0].options.map((option) => option.name),
+      ["Colossus Slayer", "Giant Killer", "Horde Breaker"],
+    );
   });
 });
