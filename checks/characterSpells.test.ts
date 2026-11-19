@@ -294,17 +294,6 @@ for (const [mode, compendium] of MODES) {
     assert.strictEqual(next, cleric);
   });
 
-  test(`togglePrepared rejects a spell from an inactive book (${mode})`, () => {
-    const cleric = makeChar({ classes: [cls("Cleric", 3)] });
-    const profile = profileFor(cleric, "Cleric");
-    const target = { name: "Sanctuary Ward", source: "XGE" };
-
-    assert.strictEqual(togglePrepared(cleric, profile, target, compendium, PHB), cleric);
-
-    const withXge = togglePrepared(cleric, profile, target, compendium, ["PHB", "XGE"]);
-    assert.deepEqual(withXge.preparedSpells, ["Sanctuary Ward__XGE__Cleric__PHB"]);
-  });
-
   test(`togglePrepared rejects a spell above the owner's maximum spell level (${mode})`, () => {
     const wizard = makeChar({ classes: [cls("Wizard", 1)] });
     const profile = profileFor(wizard, "Wizard");
@@ -453,17 +442,6 @@ for (const [mode, compendium] of MODES) {
     assert.strictEqual(learnSpell(cleric, profile, { name: "Magic Missile", source: "PHB" }, compendium, PHB), cleric);
   });
 
-  test(`learnSpell rejects a spell from an inactive book and accepts it once the book is active (${mode})`, () => {
-    const cleric = makeChar({ classes: [cls("Cleric", 3)] });
-    const profile = profileFor(cleric, "Cleric");
-    const target = { name: "Sanctuary Ward", source: "XGE" };
-
-    assert.strictEqual(learnSpell(cleric, profile, target, compendium, PHB), cleric);
-
-    const withXge = learnSpell(cleric, profile, target, compendium, ["PHB", "XGE"]);
-    assert.equal(isKnown(withXge, profile, target), true);
-  });
-
   test(`Fighter Eldritch Knight and Rogue Arcane Trickster learn from the Wizard list (${mode})`, () => {
     const ek = makeChar({ classes: [cls("Fighter", 3, "Eldritch Knight")] });
     const ekProfile = profileFor(ek, "Fighter");
@@ -563,3 +541,28 @@ for (const [mode, compendium] of MODES) {
     assert.deepEqual(forgotten.preparedSpells, []);
   });
 }
+
+// Book gating needs an Integrated Catalog: the SRD-style Compendium above is unscoped (ADR 0025), so it cannot switch a book off.
+const GATED_BOOKS = inMemoryCompendium({ spells: SPELLS }, { integrated: true });
+
+test("togglePrepared rejects a spell from an inactive book (integrated)", () => {
+  const cleric = makeChar({ classes: [cls("Cleric", 3)] });
+  const profile = profileFor(cleric, "Cleric");
+  const target = { name: "Sanctuary Ward", source: "XGE" };
+
+  assert.strictEqual(togglePrepared(cleric, profile, target, GATED_BOOKS, PHB), cleric);
+
+  const withXge = togglePrepared(cleric, profile, target, GATED_BOOKS, ["PHB", "XGE"]);
+  assert.deepEqual(withXge.preparedSpells, ["Sanctuary Ward__XGE__Cleric__PHB"]);
+});
+
+test("learnSpell rejects a spell from an inactive book and accepts it once the book is active (integrated)", () => {
+  const cleric = makeChar({ classes: [cls("Cleric", 3)] });
+  const profile = profileFor(cleric, "Cleric");
+  const target = { name: "Sanctuary Ward", source: "XGE" };
+
+  assert.strictEqual(learnSpell(cleric, profile, target, GATED_BOOKS, PHB), cleric);
+
+  const withXge = learnSpell(cleric, profile, target, GATED_BOOKS, ["PHB", "XGE"]);
+  assert.equal(isKnown(withXge, profile, target), true);
+});

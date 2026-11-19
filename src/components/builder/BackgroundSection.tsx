@@ -274,7 +274,7 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                     const offeredFeats = bgFeatGrant.isChoice ? bgFeatGrant.choiceOptions ?? [bgFeatGrant.featName] : [bgFeatGrant.featName];
                     const bgOriginFeat = (character.originFeats || []).find((f) => f.featSource === BACKGROUND_FEAT_SOURCE);
                     const bgFeatRecord = bgOriginFeat
-                      ? featOfSelection(bgOriginFeat, catalogListings(catalogs).feats(), { activeBooks: catalogs.activeBooks, backgroundSource: character.background?.source })
+                      ? featOfSelection(bgOriginFeat, catalogListings(catalogs).feats(), { activeBooks: catalogs.activeBooks, listings: catalogListings(catalogs), backgroundSource: character.background?.source })
                       : undefined;
 
                     return (
