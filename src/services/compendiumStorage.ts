@@ -33,8 +33,10 @@ import type {
  * Format 14 drops the Elf (Sea) subrace's language choice, which a catalog saved at format 13 still carries.
  * Format 15 adds class descriptions read from the class fluff files, which a catalog saved at format 14 does not carry.
  * Format 16 adds the feats' Increase Choices (`abilityScoreChoices`), which a catalog saved at format 15 does not carry.
+ * Format 17 adds the class and Eldritch Knight or Arcane Trickster spell counts (`cantripsKnown`, `spellsKnown` and
+ * `spellbookSpellsGained`), which a catalog saved at format 16 does not carry.
  */
-export const REQUIRED_CATALOG_FORMAT = 16;
+export const REQUIRED_CATALOG_FORMAT = 17;
 
 /** True for an Integrated Catalog saved below the required format (or with none). The SRD Baseline is never stale. */
 export function isCatalogStale(collections: Pick<CompendiumCollections, "hasIntegratedCatalog" | "catalogFormat">): boolean {

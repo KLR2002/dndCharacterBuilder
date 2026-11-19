@@ -164,6 +164,10 @@ export interface SubclassData {
   className: string;
   classSource: string;
   spellcastingAbility?: string;
+  /** Cantrips the subclass adds at each class level (index 0 is level 1). Present for the Eldritch Knight and Arcane Trickster. */
+  cantripsKnown?: number[];
+  /** Spells the subclass adds to its known spells at each class level (index 0 is level 1). */
+  spellsKnown?: number[];
   features: ClassFeatureData[];
   additionalSpells?: AdditionalSpells[];
   /** Present when the additional spells grant a pick between named options, lifted from them. */
@@ -190,6 +194,12 @@ export interface ClassData {
     ability: string;
     progression: string;
     preparedSpells?: string;
+    /** Cantrips known at each class level (index 0 is level 1). Absent when the class states no cantrip progression. */
+    cantripsKnown?: number[];
+    /** Spells known at each class level. Absent for a class that learns a fixed spellbook instead (the Wizard). */
+    spellsKnown?: number[];
+    /** Spells the class adds to its spellbook at each class level, the Wizard's rule. Absent for other classes. */
+    spellbookSpellsGained?: number[];
   } | null;
   /** The starting equipment slots, in printed order. Absent for a class whose record carries none. */
   startingEquipment?: StartingEquipmentSlot[];
