@@ -23,9 +23,17 @@
 
 **Blocked by:** 02, 03, 04
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `ls src/services/dataService.ts src/services/dndRules.ts` fails, and `grep -rn "dataService\|dndRules" src checks` finds nothing.
-- [ ] Paste the guard's allow-list.
-- [ ] `npm run check:all` and `npm run check:live` pass.
-- [ ] Scoped layout, `WIDTHS=393`, SRD and `-- --integrated`, green: `ONLY=Builder`, `ONLY=Features`, `ONLY="Wild Shape"`, `ONLY=Inventory`, `ONLY="Level-Up"`. Name any touched screen without a scenario.
+**Landed:** merge d6c4fcf (6471cb7, 3777441).
+- **One predicate:** `src/rules/bookAdmission.ts` (no imports) has `admitsBook` and `isActiveBookRecord`. The Compendium and `raceLookup` use it, so a held race matches a mixed-case active book (red before).
+- **Read facades gone:** `dataService.ts` and `dndRules.ts` are deleted; their importers read `currentCompendium()` / `catalogListings` or the rules modules.
+- **Components ask `admits`:** AncestrySection (VRGR, TCE), FeaturesTab and WildShapeModal (MM). SubclassSection's hand filter too, which was beyond the list.
+- **Guard:** `checks/bookAdmissionGuard.test.ts`, with a 5-entry allow-list, each with a reason (fightingStyles held-source fallback, srdNames, pickSpell order ×2, feat ordering). It failed on a planted violation.
+- **Guards updated:** `beastListGuard`, `rulesSingletonGuard`, `spellsTabComponents`.
+- check:all and check:live passed; `ONLY` Builder, Features, Wild Shape, Inventory and Level-Up at 393 passed, SRD and integrated.
+
+- [x] `ls src/services/dataService.ts src/services/dndRules.ts` fails, and `grep -rn "dataService\|dndRules" src checks` finds nothing.
+- [x] Paste the guard's allow-list.
+- [x] `npm run check:all` and `npm run check:live` pass.
+- [x] Scoped layout, `WIDTHS=393`, SRD and `-- --integrated`, green: `ONLY=Builder`, `ONLY=Features`, `ONLY="Wild Shape"`, `ONLY=Inventory`, `ONLY="Level-Up"`. Name any touched screen without a scenario.
