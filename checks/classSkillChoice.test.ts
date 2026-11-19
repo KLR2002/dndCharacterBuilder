@@ -10,7 +10,8 @@ import {
 } from "../src/rules/proficiencySheet.ts";
 import { proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts";
 import { pickRuleChoice } from "../src/rules/ruleChoices.ts";
-import { reconcile, reconcileForActiveBooks } from "../src/rules/characterReconciler.ts";
+import { reconcileForActiveBooks } from "../src/rules/characterReconciler.ts";
+import { migrateSavedPicks } from "../src/rules/savedPicksMigration.ts";
 import { classChoicesStepView } from "../src/rules/classChoices.ts";
 import { removeClassLevel } from "../src/rules/builderTransitions.ts";
 import { catalogListings } from "../src/rules/catalogs.ts";
@@ -96,7 +97,7 @@ test("picking two starting skills puts both on the sheet, and a third replaces t
   assert.deepEqual(character.proficiencyPicks?.[fighterId], ["Perception", "Survival"]);
 });
 
-test("a legacy first-class skill entry shows on the sheet before reconciling, and is the grant's pick after", () => {
+test("a legacy first-class skill entry shows on the sheet before migrating, and is the grant's pick after", () => {
   const legacy = makeChar({
     classes: [fighter],
     chosenSkills: ["Athletics", "Perception"],
@@ -105,7 +106,7 @@ test("a legacy first-class skill entry shows on the sheet before reconciling, an
   assert.ok(skillNames(legacy).includes("Athletics"));
   assert.ok(skillNames(legacy).includes("Perception"));
 
-  const moved = reconcile(legacy, compendium(), { activeBooks: ALL_BOOKS });
+  const moved = migrateSavedPicks(legacy, compendium(), ALL_BOOKS);
   assert.deepEqual(moved.proficiencyPicks?.[fighterId], ["Athletics", "Perception"]);
   assert.equal(moved.skillChoices, undefined, "the legacy entry is gone once all its names moved");
   assert.deepEqual(moved.chosenSkills, [], "the moved names leave the skill bucket");
@@ -119,7 +120,7 @@ test("a legacy name outside the grant's pool stays in its entry and the skill bu
     chosenSkills: ["Athletics", "Arcana"],
     skillChoices: [{ id: "Class: Fighter", origin: "class", choose: 2, from: FIGHTER_SKILLS, picked: ["Athletics", "Arcana"] }],
   });
-  const moved = reconcile(legacy, compendium(), { activeBooks: ALL_BOOKS });
+  const moved = migrateSavedPicks(legacy, compendium(), ALL_BOOKS);
   assert.deepEqual(moved.proficiencyPicks?.[fighterId], ["Athletics"]);
   assert.deepEqual(moved.skillChoices, [{ id: "Class: Fighter", origin: "class", choose: 2, from: FIGHTER_SKILLS, picked: ["Arcana"] }]);
   assert.deepEqual(moved.chosenSkills, ["Arcana"]);
@@ -132,7 +133,7 @@ test("a migrateCharacter-shaped first-class skill entry moves the same way", () 
     chosenSkills: ["Athletics", "Perception"],
     skillChoices: [{ id: "class__Fighter__SRD__skills", origin: "class", choose: 2, from: [], picked: ["Athletics", "Perception"] }],
   });
-  const moved = reconcile(legacy, compendium(), { activeBooks: ALL_BOOKS });
+  const moved = migrateSavedPicks(legacy, compendium(), ALL_BOOKS);
   assert.deepEqual(moved.proficiencyPicks?.[fighterId], ["Athletics", "Perception"]);
   assert.equal(moved.skillChoices, undefined);
   assert.deepEqual(moved.chosenSkills, []);
@@ -170,7 +171,7 @@ test("a starting or multiclass skill pick saved under its SRD-named id moves to 
       "SRD/Rogue/Multiclass Proficiencies@1#skills:choice:from": ["Stealth"],
     },
   });
-  const moved = reconcile(saved, srdBaselineCompendium(), { activeBooks: DEFAULT_ACTIVE_BOOK_CODES });
+  const moved = migrateSavedPicks(saved, srdBaselineCompendium(), DEFAULT_ACTIVE_BOOK_CODES);
   assert.deepEqual(moved.proficiencyPicks, {
     [fighterId]: ["Athletics", "Perception"],
     "PHB/Rogue/Multiclass Proficiencies@1#skills:choice:from": ["Stealth"],

@@ -2,6 +2,7 @@ import { ALL_BOOKS } from "../src/constants/books.ts";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { reconcile } from "../src/rules/characterReconciler.ts";
+import { migrateSavedPicks } from "../src/rules/savedPicksMigration.ts";
 import { currentCompendium } from "../src/services/compendium.ts";
 import { inMemoryCompendium, makeChar } from "./testUtils.ts";
 import {
@@ -586,7 +587,7 @@ test("a Fighting Style pick saved under the old fixed id is kept under the class
       { id: "PHB__Fighter__Fighting Style", trait: "Fighting Style", origin: "class", choose: 1, from: ["Sample Guard"], picked: ["Sample Guard"] },
     ],
   });
-  const loaded = reconcile(saved, compendium, { activeBooks: ["ALT"] });
+  const loaded = migrateSavedPicks(saved, compendium, ["ALT"]);
   assert.deepEqual(loaded.ruleChoices?.map((entry) => [entry.id, entry.picked]), [["ALT__Fighter__Fighting Style", ["Sample Guard"]]]);
   assert.equal(hasFightingStyle(loaded, "Sample Guard"), true, "the saved pick still counts");
 });
@@ -600,7 +601,7 @@ test("a Fighting Style pick saved under the old id fills the empty entry already
       { id: "ALT__Fighter__Fighting Style", trait: "Fighting Style", origin: "class", choose: 1, from: ["Sample Guard"], picked: [] },
     ],
   });
-  const loaded = reconcile(saved, compendium, { activeBooks: ["ALT"] });
+  const loaded = migrateSavedPicks(saved, compendium, ["ALT"]);
   assert.deepEqual(loaded.ruleChoices?.map((entry) => [entry.id, entry.picked]), [["ALT__Fighter__Fighting Style", ["Sample Guard"]]]);
   assert.equal(loaded.needsReview, undefined, "the pick is kept, so no notice is made");
 });

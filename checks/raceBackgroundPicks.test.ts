@@ -2,6 +2,7 @@ import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { reconcile } from "../src/rules/characterReconciler.ts";
+import { migrateSavedPicks } from "../src/rules/savedPicksMigration.ts";
 import { proficiencySheet, type SheetEntry } from "../src/rules/proficiencySheet.ts";
 import { inMemoryCompendium, makeChar } from "./testUtils.ts";
 import { anyLanguageChoice, fixedGrant, lamplighterBackground, vellariRace } from "./proficiencySheetFixture.ts";
@@ -36,7 +37,7 @@ const sheetOf = (character: Character) => {
 
 test("a race language saved in the race bucket moves into the race's choice, and the sheet does not change", () => {
   const before = makeChar({ race: { name: "Vellari", source: "PHB" }, chosenLanguages: { race: ["Elvish"] } });
-  const after = reconcile(before, compendium, { activeBooks: ALL_BOOKS });
+  const after = migrateSavedPicks(before, compendium, ALL_BOOKS);
   assert.deepEqual(after.proficiencyPicks?.[RACE_CHOICE], ["Elvish"]);
   assert.equal(after.chosenLanguages?.race, undefined, "the bucket is cleared once its name is recorded as a pick");
   assert.deepEqual(sheetOf(after), sheetOf(before));
@@ -44,7 +45,7 @@ test("a race language saved in the race bucket moves into the race's choice, and
 
 test("a background tool saved in the background bucket moves into the background's choice, and the sheet does not change", () => {
   const before = makeChar({ background: { name: "Lamplighter", source: "PHB" }, chosenTools: { background: ["Cook's Utensils"] } });
-  const after = reconcile(before, compendium, { activeBooks: ALL_BOOKS });
+  const after = migrateSavedPicks(before, compendium, ALL_BOOKS);
   assert.deepEqual(after.proficiencyPicks?.[TOOL_CHOICE], ["Cook's Utensils"]);
   assert.equal(after.chosenTools?.background, undefined);
   assert.deepEqual(sheetOf(after), sheetOf(before));
@@ -52,7 +53,7 @@ test("a background tool saved in the background bucket moves into the background
 
 test("a saved name that no choice offers stays in its bucket, and the sheet still shows it", () => {
   const before = makeChar({ race: { name: "Vellari", source: "PHB" }, chosenLanguages: { race: ["Dragonish"] } });
-  const after = reconcile(before, compendium, { activeBooks: ALL_BOOKS });
+  const after = migrateSavedPicks(before, compendium, ALL_BOOKS);
   assert.deepEqual(after.chosenLanguages?.race, ["Dragonish"]);
   assert.equal(after.proficiencyPicks?.[RACE_CHOICE], undefined);
   assert.ok(sheetOf(after).languages.includes("Dragonish"));
@@ -60,7 +61,7 @@ test("a saved name that no choice offers stays in its bucket, and the sheet stil
 
 test("a choice takes no more names than its count, and the rest stay in the bucket", () => {
   const before = makeChar({ race: { name: "Vellari", source: "PHB" }, chosenLanguages: { race: ["Elvish", "Gnomish"] } });
-  const after = reconcile(before, compendium, { activeBooks: ALL_BOOKS });
+  const after = migrateSavedPicks(before, compendium, ALL_BOOKS);
   assert.deepEqual(after.proficiencyPicks?.[RACE_CHOICE], ["Elvish"]);
   assert.deepEqual(after.chosenLanguages?.race, ["Gnomish"]);
   assert.deepEqual(sheetOf(after), sheetOf(before));
@@ -68,8 +69,8 @@ test("a choice takes no more names than its count, and the rest stay in the buck
 
 test("reconciling a migrated character again changes nothing", () => {
   const before = makeChar({ race: { name: "Vellari", source: "PHB" }, chosenLanguages: { race: ["Elvish"] } });
-  const once = reconcile(before, compendium, { activeBooks: ALL_BOOKS });
-  assert.deepEqual(reconcile(once, compendium, { activeBooks: ALL_BOOKS }), once);
+  const once = migrateSavedPicks(before, compendium, ALL_BOOKS);
+  assert.deepEqual(migrateSavedPicks(once, compendium, ALL_BOOKS), once);
 });
 
 test("changing race releases the pick stored on the old race's choice, with a review notice", () => {
