@@ -4,22 +4,12 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { useAppTheme } from "../../context/ThemeContext";
 import type { SpellData } from "../../types/dnd5e";
 import { SearchBar } from "../ui/SearchBar";
+import { SPELL_LEVEL_NAMES } from "../../rules/spellPage";
 
 /** Rows drawn in the first frame; the rest follow once the opening animation has finished, so no spell is out of reach. */
 const FIRST_ROWS = 100;
 
-export const LEVEL_NAMES = [
-  "Cantrips",
-  "1st Level",
-  "2nd Level",
-  "3rd Level",
-  "4th Level",
-  "5th Level",
-  "6th Level",
-  "7th Level",
-  "8th Level",
-  "9th Level",
-];
+export const LEVEL_NAMES = SPELL_LEVEL_NAMES;
 
 export interface SpellLearnListProps {
   spells: SpellData[];
