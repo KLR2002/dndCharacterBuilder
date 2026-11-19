@@ -5,7 +5,7 @@
 - **`src/rules/ruleChoices.ts`:**
   - ~70: ancestry choices.
   - ~194: subclass choices. Keep the local guard that lets through an id prefix which is not a known book (`ALL_RESOURCE_BOOKS`); it handles ids, not admission.
-- **`src/rules/subclassChoiceTable.ts`** ~440
+- **`src/rules/subclassChoiceTable.ts`** ~440, including `readPointerRow`'s option filter (~499), which admits `SRD` options by hand since SRD-baseline ticket 01.
 - **`src/rules/featureOptions.ts`** ~21 (`describeClassFeature`): the owner's book stays listed; other options are listed when admitted.
 - **`src/rules/proficiencyChoiceOffers.ts`** ~120
 - **`src/rules/levelUpFlow.ts`** ~943: subclass offers. Drop the "SRD counts as active" comment once the rule says so.

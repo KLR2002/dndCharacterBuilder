@@ -18,7 +18,7 @@
   - call `.includes(`, `.some(` or `.has(` on `activeBooks`
   - compare a source with `SRD_SOURCE` or `"SRD"`
 
-  Keep an allow-list with a reason per entry, for example `fightingStyles.ts`'s `heldSourceOf` fallback and `CharacterContext.tsx`'s `setActiveBooks([SRD_SOURCE])`. Make the guard fail on a planted violation once, then remove the plant.
+  Keep an allow-list with a reason per entry. Examples: `fightingStyles.ts`'s `heldSourceOf` fallback; `CharacterContext.tsx`'s `setActiveBooks([SRD_SOURCE])`; `srdNames.ts`, whose migration renames only SRD-sourced saves. Make the guard fail on a planted violation once, then remove the plant.
 
 **Blocked by:** 02, 03, 04
 
