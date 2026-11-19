@@ -33,7 +33,7 @@ export function learnableSpells(
     .for(activeBooks)
     .spells()
     .filter((spell) => spell.level <= profile.maxSpellLevel)
-    .filter((spell) => isSpellAvailableForClass(spell, listClass, activeBooks, context))
+    .filter((spell) => isSpellAvailableForClass(spell, listClass, activeBooks, context, compendium))
     .filter((spell) => !isKnown(character, profile, spell))
     .sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
   return {
