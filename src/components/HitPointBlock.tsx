@@ -10,20 +10,23 @@ export interface HitPointBlockProps {
   maxHp: number;
   /** Shows "(+N Temp)" beside the number when above 0. Omit for a target without temp HP. */
   tempHp?: number;
-  /** Props for the touchable number (from useHpQuickEdit().triggerProps). Tapping it opens the HP box. */
-  numberProps: TouchableOpacityProps;
+  /** Props for the touchable number (from useHpQuickEdit().triggerProps). Tapping it opens the HP box. Omit for a read-only number. */
+  numberProps?: TouchableOpacityProps;
   /** Right side of the label row, such as the HP Settings button. */
   headerRight?: React.ReactNode;
-  /** Typed amount for the inline Damage / Heal buttons. The caller reads it. */
-  amount: string;
-  onAmountChange: (value: string) => void;
-  onDamage: () => void;
-  onHeal: () => void;
+  /** The Damage / Heal row. Omit for a read-only block. */
+  actions?: {
+    /** Typed amount for the buttons. The caller reads it. */
+    amount: string;
+    onAmountChange: (value: string) => void;
+    onDamage: () => void;
+    onHeal: () => void;
+  };
 }
 
 /**
  * The HP read-out used by the Hit Points card and the Active Wild Shape box: label, big current
- * number with max, progress bar, and the Damage / Heal row. Presentational only.
+ * number with max, progress bar, and the Damage / Heal row when `actions` is given. Presentational only.
  */
 export const HitPointBlock: React.FC<HitPointBlockProps> = ({
   label,
@@ -32,13 +35,16 @@ export const HitPointBlock: React.FC<HitPointBlockProps> = ({
   tempHp,
   numberProps,
   headerRight,
-  amount,
-  onAmountChange,
-  onDamage,
-  onHeal,
+  actions,
 }) => {
   const { theme } = useAppTheme();
   const fillPercent = maxHp > 0 ? Math.min(100, Math.max(0, (currentHp / maxHp) * 100)) : 0;
+  const numberContent = (
+    <>
+      <Text style={[styles.current, { color: currentHp > 0 ? theme.hpGreen : theme.danger }]}>{currentHp}</Text>
+      <Text style={[styles.max, { color: theme.textSecondary }]}>/ {maxHp}</Text>
+    </>
+  );
 
   return (
     <>
@@ -46,10 +52,13 @@ export const HitPointBlock: React.FC<HitPointBlockProps> = ({
         <View style={styles.headerMain}>
           <Text style={[styles.label, { color: theme.textMuted }]}>{label}</Text>
           <View style={styles.numberRow}>
-            <TouchableOpacity {...numberProps} style={styles.numberRow}>
-              <Text style={[styles.current, { color: currentHp > 0 ? theme.hpGreen : theme.danger }]}>{currentHp}</Text>
-              <Text style={[styles.max, { color: theme.textSecondary }]}>/ {maxHp}</Text>
-            </TouchableOpacity>
+            {numberProps ? (
+              <TouchableOpacity {...numberProps} style={styles.numberRow}>
+                {numberContent}
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.numberRow}>{numberContent}</View>
+            )}
             {tempHp !== undefined && tempHp > 0 && (
               <Text style={{ color: theme.tempHpYellow, fontWeight: "700", fontSize: 16 }}>(+{tempHp} Temp)</Text>
             )}
@@ -70,20 +79,22 @@ export const HitPointBlock: React.FC<HitPointBlockProps> = ({
         />
       </View>
 
-      <View style={styles.actionsRow}>
-        <View style={[styles.inputContainer, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
-          <TextInput
-            style={[styles.input, { color: theme.text }]}
-            value={amount}
-            onChangeText={onAmountChange}
-            keyboardType="number-pad"
-            placeholder="Amt"
-            placeholderTextColor={theme.textMuted}
-          />
+      {actions && (
+        <View style={styles.actionsRow}>
+          <View style={[styles.inputContainer, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
+            <TextInput
+              style={[styles.input, { color: theme.text }]}
+              value={actions.amount}
+              onChangeText={actions.onAmountChange}
+              keyboardType="number-pad"
+              placeholder="Amt"
+              placeholderTextColor={theme.textMuted}
+            />
+          </View>
+          <Button title="Damage" variant="danger" size="sm" onPress={actions.onDamage} style={{ flex: 1 }} />
+          <Button title="Heal" variant="success" size="sm" onPress={actions.onHeal} style={{ flex: 1 }} />
         </View>
-        <Button title="Damage" variant="danger" size="sm" onPress={onDamage} style={{ flex: 1 }} />
-        <Button title="Heal" variant="success" size="sm" onPress={onHeal} style={{ flex: 1 }} />
-      </View>
+      )}
     </>
   );
 };

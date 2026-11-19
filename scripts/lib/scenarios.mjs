@@ -1713,7 +1713,8 @@ export function buildScreens({ integrated }) {
       { name: "Builder Background picks card collapsed", route: buildRoute(CHARACTER_ID, "background"), ready: "Languages", open: [{ tap: { text: "Languages", exact: true } }], scrollTo: "Languages", expect: { texts: ["Languages"], absent: ["Dwarvish"], fitsWidth: true } },
       { shot: true, name: "Stats", route: RENDAR_ROUTE, tabs: ["Stats"], ready: /hit points/i },
       { name: "Stats long header name", route: LONG_NAME_ROUTE, tabs: ["Stats"], ready: /hit points/i, headerName: LONG_NAME },
-      { shot: true, name: "Stats Wild Shape HP", route: DRUID_ROUTE, tabs: ["Stats"], ready: /wild shape hp/i },
+      // While the form is active the Hit Points card shows normal HP (14 in the seed) read-only, and the Wild Shape card has the temp HP field.
+      { shot: true, name: "Stats Wild Shape HP", route: DRUID_ROUTE, tabs: ["Stats"], ready: /wild shape hp/i, expect: { texts: ["HIT POINTS", "WILD SHAPE HP", "14", "Temp HP:", "Apply"], placeholders: ["New Temp"], absent: ["Wild Shape Temp HP:"], fitsWidth: true } },
       { name: "Stats add tool modal", route: RENDAR_ROUTE, tabs: ["Stats"], open: [{ tap: { label: "Add tool proficiency" } }], modal: "Add Tool Proficiency" },
       { name: "Stats add language modal", route: RENDAR_ROUTE, tabs: ["Stats"], open: [{ tap: { label: "Add language" } }], modal: "Add Language" },
       // The Initiative box opens its breakdown (integrated mode only, where the Rogue's and the Wizard's Initiative Bonuses exist).

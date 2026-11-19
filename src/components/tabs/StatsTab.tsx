@@ -144,11 +144,7 @@ export const StatsTab: React.FC = () => {
   }, [hdEntries]);
 
   const activeForm = currentCharacter?.activeWildShape ?? null;
-  const hpQuickEdit = useHpQuickEdit(
-    currentCharacter,
-    evaluated?.hp.max ?? 0,
-    activeForm ? "wildShape" : "character"
-  );
+  const hpQuickEdit = useHpQuickEdit(currentCharacter, evaluated?.hp.max ?? 0);
 
   if (!currentCharacter || !evaluated) return null;
 
@@ -182,7 +178,7 @@ export const StatsTab: React.FC = () => {
   const passiveInsight = skills.find((s) => s.name === "Insight")?.passiveBonus ?? 10;
   const allConditions = currentCompendium().for().conditions();
 
-  // HP Handlers: while a form is active they change the form's HP (see hitPointPool.ts).
+  // HP Handlers: with no target the router picks the form while one is active (see hitPointPool.ts).
   const applyHp = (kind: "damage" | "heal", amount: number) => {
     updateCharacter(currentCharacter.id, hitPointPatch(currentCharacter, { kind, amount }, calculatedMaxHp));
   };
@@ -325,12 +321,14 @@ export const StatsTab: React.FC = () => {
   const hpCard = (
     <>
       <Card style={styles.hpCard}>
+        {/* While a form is active this card shows the character's HP read-only: the form's HP and its
+            Damage / Heal and temp HP live in the Active Wild Shape card. */}
         <HitPointBlock
-          label={activeForm ? "WILD SHAPE HP" : "HIT POINTS"}
-          currentHp={activeForm ? activeForm.currentHp : currentCharacter.currentHp}
-          maxHp={activeForm ? activeForm.maxHp : calculatedMaxHp}
-          tempHp={activeForm ? (activeForm.tempHp ?? 0) : currentCharacter.tempHp}
-          numberProps={hpQuickEdit.triggerProps}
+          label="HIT POINTS"
+          currentHp={currentCharacter.currentHp}
+          maxHp={calculatedMaxHp}
+          tempHp={currentCharacter.tempHp}
+          numberProps={activeForm ? undefined : hpQuickEdit.triggerProps}
           headerRight={
             <TouchableOpacity
               onPress={() => {
@@ -342,27 +340,35 @@ export const StatsTab: React.FC = () => {
               <Text style={{ color: theme.textSecondary, fontSize: 12 }}>HP Settings</Text>
             </TouchableOpacity>
           }
-          amount={hpChangeAmount}
-          onAmountChange={setHpChangeAmount}
-          onDamage={() => applyHp("damage", parseInt(hpChangeAmount, 10) || 1)}
-          onHeal={() => applyHp("heal", parseInt(hpChangeAmount, 10) || 1)}
+          actions={
+            activeForm
+              ? undefined
+              : {
+                  amount: hpChangeAmount,
+                  onAmountChange: setHpChangeAmount,
+                  onDamage: () => applyHp("damage", parseInt(hpChangeAmount, 10) || 1),
+                  onHeal: () => applyHp("heal", parseInt(hpChangeAmount, 10) || 1),
+                }
+          }
         />
 
         {/* Temp HP Row */}
-        <View style={styles.tempHpRow}>
-          <Text style={{ color: theme.textSecondary, fontSize: 13, flex: 1, flexBasis: "auto", flexShrink: 1 }}>
-            {currentCharacter.activeWildShape ? "Wild Shape Temp HP:" : "Temp HP:"}
-          </Text>
-          <TextInput
-            style={[styles.tempInput, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
-            value={tempHpAmount}
-            onChangeText={setTempHpAmount}
-            keyboardType="number-pad"
-            placeholder="New Temp"
-            placeholderTextColor={theme.textMuted}
-          />
-          <Button title="Apply" size="sm" variant="secondary" onPress={setTempHp} />
-        </View>
+        {!activeForm && (
+          <View style={styles.tempHpRow}>
+            <Text style={{ color: theme.textSecondary, fontSize: 13, flex: 1, flexBasis: "auto", flexShrink: 1 }}>
+              Temp HP:
+            </Text>
+            <TextInput
+              style={[styles.tempInput, { color: theme.text, backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}
+              value={tempHpAmount}
+              onChangeText={setTempHpAmount}
+              keyboardType="number-pad"
+              placeholder="New Temp"
+              placeholderTextColor={theme.textMuted}
+            />
+            <Button title="Apply" size="sm" variant="secondary" onPress={setTempHp} />
+          </View>
+        )}
 
         {/* Death Saves (if HP == 0) */}
         {currentCharacter.currentHp === 0 && (
