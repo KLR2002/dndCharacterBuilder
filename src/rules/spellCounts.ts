@@ -2,7 +2,7 @@ import type { Character } from "../types/character.ts";
 import type { SubclassData } from "../types/dnd5e.ts";
 import type { CharacterCatalogs } from "./catalogs.ts";
 import { allCatalogClasses } from "./catalogs.ts";
-import { heldClass, isThirdCaster } from "./classData.ts";
+import { heldClass, THIRD_CASTERS } from "./classData.ts";
 import { currentCompendium } from "../services/compendium.ts";
 import type { ClassSpellProfile } from "./spellcasting.ts";
 
@@ -22,6 +22,57 @@ export interface SpellCounts {
   spells: (SpellCountPart & { kind: "known" | "spellbook" }) | null;
 }
 
+/** What a class level is due in cantrips and spells, as the Catalog gives it. A part is null when the Catalog has no number for it. */
+export interface SpellsDue {
+  cantrips: number | null;
+  spells: { due: number; kind: "known" | "spellbook" } | null;
+}
+
+/** The class entry a due count is read on: its class, its subclass when it has one, and the class level. */
+export interface SpellsDueEntry {
+  className: string;
+  source: string;
+  subclassName?: string;
+  level: number;
+}
+
+/**
+ * What a class level is due, from the Catalog class or, for an Eldritch Knight or Arcane Trickster, from its subclass.
+ * Both parts are null while the Catalog is stale, and at level 0 (no class yet).
+ */
+export function spellsDueAt(entry: SpellsDueEntry, catalogs?: CharacterCatalogs): SpellsDue {
+  const compendium = catalogs?.compendium ?? currentCompendium();
+  if (compendium.stale || entry.level < 1) return { cantrips: null, spells: null };
+
+  const classRecord = heldClass({ className: entry.className, source: entry.source }, allCatalogClasses(catalogs));
+  // An Eldritch Knight or Arcane Trickster counts by its subclass; every other caster by its class's spellcasting.
+  const thirdCaster = entry.subclassName !== undefined && THIRD_CASTERS[entry.className] === entry.subclassName;
+  const counted: CountedProgressions | undefined = thirdCaster
+    ? classRecord?.subclasses.find((sc: SubclassData) => sc.name === entry.subclassName)
+    : (classRecord?.spellcasting ?? undefined);
+
+  const cantrips = dueAt(counted?.cantripsKnown, entry.level);
+  const knownDue = dueAt(counted?.spellsKnown, entry.level);
+  const spells = counted?.spellbookSpellsGained
+    ? { due: runningTotal(counted.spellbookSpellsGained, entry.level), kind: "spellbook" as const }
+    : knownDue === null ? null : { due: knownDue, kind: "known" as const };
+  return { cantrips, spells };
+}
+
+/**
+ * The cantrips and spells a class level gains: the due numbers at `toLevel` less those at `fromLevel`. A class with no
+ * level yet (`fromLevel` 0) was due nothing. Null when the Catalog has no number for either part.
+ */
+export function spellsGainedAt(entry: Omit<SpellsDueEntry, "level">, fromLevel: number, toLevel: number, catalogs?: CharacterCatalogs): { cantrips: number; spells: number } | null {
+  const to = spellsDueAt({ ...entry, level: toLevel }, catalogs);
+  if (to.cantrips === null && to.spells === null) return null;
+  const from = fromLevel === 0 ? { cantrips: null, spells: null } : spellsDueAt({ ...entry, level: fromLevel }, catalogs);
+  return {
+    cantrips: (to.cantrips ?? 0) - (from.cantrips ?? 0),
+    spells: (to.spells?.due ?? 0) - (from.spells?.due ?? 0),
+  };
+}
+
 /**
  * The cantrips and spells one class Spell Owner knows against what its class level is due. The due numbers come from
  * the Catalog class, or from its Eldritch Knight or Arcane Trickster subclass at the class's level. The known spells are
@@ -34,19 +85,7 @@ export function spellCounts(character: Character, profile: ClassSpellProfile, ca
 
   const entry = (character.classes ?? []).find((c) => c.className === profile.className && (c.source || "PHB") === profile.source);
   const level = entry?.level ?? profile.level;
-  const classRecord = heldClass({ className: profile.className, source: profile.source }, allCatalogClasses(catalogs));
-
-  // An Eldritch Knight or Arcane Trickster counts by its subclass; every other caster by its class's spellcasting.
-  const thirdCaster = isThirdCaster({ className: profile.className, source: profile.source, level, subclassName: profile.subclass });
-  const counted: CountedProgressions | undefined = thirdCaster
-    ? classRecord?.subclasses.find((sc: SubclassData) => sc.name === profile.subclass)
-    : (classRecord?.spellcasting ?? undefined);
-
-  const cantripsDue = dueAt(counted?.cantripsKnown, level);
-  const knownDue = dueAt(counted?.spellsKnown, level);
-  const spellsDue = counted?.spellbookSpellsGained
-    ? { due: runningTotal(counted.spellbookSpellsGained, level), kind: "spellbook" as const }
-    : knownDue === null ? null : { due: knownDue, kind: "known" as const };
+  const due = spellsDueAt({ className: profile.className, source: profile.source, subclassName: profile.subclass, level }, catalogs);
 
   const excluded = new Set([
     ...(profile.alwaysPreparedSpells ?? []).map((s) => s.name.toLowerCase()),
@@ -63,8 +102,8 @@ export function spellCounts(character: Character, profile: ClassSpellProfile, ca
   const spellsKnown = owned.length - cantripsKnown;
 
   return {
-    cantrips: cantripsDue === null ? null : { known: cantripsKnown, due: cantripsDue },
-    spells: spellsDue === null ? null : { known: spellsKnown, due: spellsDue.due, kind: spellsDue.kind },
+    cantrips: due.cantrips === null ? null : { known: cantripsKnown, due: due.cantrips },
+    spells: due.spells === null ? null : { known: spellsKnown, due: due.spells.due, kind: due.spells.kind },
   };
 }
 

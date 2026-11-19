@@ -18,6 +18,7 @@ import {
 } from "./builderTransitions.ts";
 import { learnSpell } from "./characterSpells.ts";
 import { getClassSpellProfiles } from "./spellcasting.ts";
+import { spellsGainedAt } from "./spellCounts.ts";
 import { learnableSpells, type LearnableSpells } from "./learnableSpells.ts";
 import { maxHp, recordRolledHitPoints } from "./hp.ts";
 import {
@@ -82,6 +83,12 @@ export interface LevelUpPicks {
   optionalFeatures?: Record<string, boolean>;
 }
 
+/** The new cantrips and spells the planned level is due: the Spells step must learn exactly these. */
+export interface LevelUpSpellsDue {
+  cantrips: number;
+  spells: number;
+}
+
 export interface LevelUpPlan {
   characterId: string;
   className: string;
@@ -91,6 +98,8 @@ export interface LevelUpPlan {
   steps: LevelUpStep[];
   hitPoints: HitPointsPlan;
   picks: LevelUpPicks;
+  /** Null when the Catalog has no spell counts for the planned class: the Spells step then takes any picks. */
+  spellsDue?: LevelUpSpellsDue | null;
   /** The class choices the new level brings (proficiency and rule choices), read from the shared classChoices module. */
   classChoices?: AvailableRuleChoice[];
   /** The Expertise milestones the new level brings, with the options each may take. */
@@ -171,7 +180,11 @@ export function planLevelUp(character: Character, options: PlanLevelUpOptions): 
     activeBooks,
   });
   if (bringsClassChoices(choices)) wanted.add("classChoices");
-  if (wantsSpellsStep(plannedClassEntry(character, { className, source, toLevel, subclassName: picks.subclass?.name }))) {
+  const spellsDue = plannedSpellsDue(character, { className, source, fromLevel, toLevel, subclassName: picks.subclass?.name }, {
+    compendium,
+    activeBooks,
+  });
+  if (wantsSpellsStep(plannedClassEntry(character, { className, source, toLevel, subclassName: picks.subclass?.name }), spellsDue)) {
     wanted.add("spells");
   }
   const steps = STEP_ORDER.filter((id) => wanted.has(id)).map((id) => ({ id, className, classLevel: toLevel }));
@@ -201,6 +214,7 @@ export function planLevelUp(character: Character, options: PlanLevelUpOptions): 
       picks,
       classChoices: [...choices.choices.proficiencyChoices, ...choices.choices.ruleChoices],
       expertiseMilestones: choices.expertise,
+      spellsDue,
     },
   };
 }
@@ -426,9 +440,36 @@ function plannedClassEntry(
   return { className: plan.className, source: plan.source, level: plan.toLevel, ...(subclass ? { subclassName: subclass } : {}) };
 }
 
-/** Whether a class entry brings the Spells step: a spellcasting class, or a third caster subclass. */
-function wantsSpellsStep(entry: CharacterClass): boolean {
-  return casterKindOf(entry) !== undefined || isThirdCaster(entry);
+/**
+ * The cantrips and spells the planned level is due, on the planned class entry (its subclass is the plan's pick, or
+ * the one the Character holds). Null when the Catalog has no counts for the class.
+ */
+function plannedSpellsDue(
+  character: Character,
+  plan: { className: string; source: string; fromLevel: number; toLevel: number; subclassName?: string },
+  opts: { compendium: Compendium; activeBooks: ActiveBooks }
+): LevelUpSpellsDue | null {
+  const entry = plannedClassEntry(character, plan);
+  return spellsGainedAt(
+    { className: entry.className, source: entry.source, subclassName: entry.subclassName },
+    plan.fromLevel,
+    plan.toLevel,
+    opts
+  );
+}
+
+/**
+ * Whether a class entry brings the Spells step. With spell counts due, the step is there when a cantrip or spell is due
+ * or a level may replace a spell. With no counts, a spellcasting class or a third caster subclass brings it.
+ */
+function wantsSpellsStep(entry: CharacterClass, due: LevelUpSpellsDue | null): boolean {
+  if (due === null) return casterKindOf(entry) !== undefined || isThirdCaster(entry);
+  return due.cantrips > 0 || due.spells > 0 || spellReplacementOffered();
+}
+
+/** Whether a level may replace a known spell, which brings the Spells step on its own. No level offers one yet. */
+function spellReplacementOffered(): boolean {
+  return false;
 }
 
 /** What the planned level brings on its class: the skill and rule choices, the Expertise milestones and the optional features. */
@@ -496,7 +537,12 @@ export function setPlanSubclass(
   const stepIds = new Set<LevelUpStepId>(plan.steps.map((step) => step.id));
   if (bringsClassChoices(levelChoices)) stepIds.add("classChoices");
   else stepIds.delete("classChoices");
-  const spells = wantsSpellsStep(plannedClassEntry(character, { className: plan.className, source: plan.source, toLevel: plan.toLevel, subclassName: name }));
+  const spellsDue = plannedSpellsDue(
+    character,
+    { className: plan.className, source: plan.source, fromLevel: plan.fromLevel, toLevel: plan.toLevel, subclassName: name },
+    { compendium, activeBooks }
+  );
+  const spells = wantsSpellsStep(plannedClassEntry(character, { className: plan.className, source: plan.source, toLevel: plan.toLevel, subclassName: name }), spellsDue);
   if (spells) stepIds.add("spells");
   else stepIds.delete("spells");
   const steps = STEP_ORDER.filter((id) => stepIds.has(id)).map((id) => ({ id, className: plan.className, classLevel: plan.toLevel }));
@@ -506,6 +552,7 @@ export function setPlanSubclass(
     steps,
     classChoices,
     expertiseMilestones: levelChoices.expertise,
+    spellsDue,
     picks: { ...plan.picks, subclass: { name, source }, classChoicePicks, expertisePicks, optionalFeatures },
   };
   // Without a Spells step the learned spells go with it; with one, only the spells it still offers stay picked.
@@ -756,7 +803,8 @@ export function subclassOptionsForPlan(
  * class (a plan), Subclass a pick (a single offered subclass is pre-selected as the pick by `planLevelUp`),
  * ASI/Feat a pick with its sub-choices made (the feat's ability increase when it offers a choice, and
  * every rule choice the feat grants fully picked), Class Choices every choice fully picked, Review every
- * step before it. Hit Points and Spells are always complete. The ASI/Feat sub-choices are read on
+ * step before it. Hit Points is always complete, and Spells when its picks hold exactly the plan's due cantrips and
+ * spells (any picks when the plan has no counts). The ASI/Feat sub-choices are read on
  * `opts.character` with the pick added.
  */
 export function levelUpStepComplete(
@@ -794,8 +842,14 @@ export function levelUpStepComplete(
         (plan.classChoices ?? []).every((choice) => (plan.picks.classChoicePicks?.[choice.id] ?? []).length >= choice.choose) &&
         expertiseFilled(getMilestonePicks(plan.expertiseMilestones ?? [], plan.picks.expertisePicks ?? []))
       );
-    case "spells":
-      return true;
+    case "spells": {
+      const due = plan.spellsDue;
+      if (!due) return true;
+      const compendium = opts.compendium ?? currentCompendium();
+      const picked = plan.picks.learnedSpells ?? [];
+      const cantrips = picked.filter((spell) => (compendium.findSpell(spell.name, spell.source)?.level ?? 0) === 0).length;
+      return cantrips === due.cantrips && picked.length - cantrips === due.spells;
+    }
     case "review":
       return plan.steps.filter((s) => s.id !== "review").every((s) => levelUpStepComplete(plan, s.id, opts));
   }
