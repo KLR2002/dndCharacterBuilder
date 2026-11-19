@@ -16,14 +16,16 @@
 
 **Blocked by:** 03
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Tests:
+**Landed:** merge 44f0313 (5630469, a8951cf). `metamagicAllowance(character)` lives in `src/rules/spellcasting.ts` (the Ledger imports the Reconciler, so placing it in `characterSpells.ts` would be a cycle); `toggleMetamagic` in `characterSpells.ts`; `releaseMetamagicOverAllowance` in `characterReconciler.ts` after `pruneInvalidMysticArcanum`, notice `"<Option> removed: Metamagic allows <n>"`; `migrateCharacter` folds `metamagicOptions` into `chosenMetamagic` and the field is gone from `Character` (typecheck baseline re-recorded: only property counts in five messages changed). Tests in `checks/metamagicLedger.test.ts`; `ONLY="Spells sorcery"` green at 393; check:all passed.
+
+- [x] Tests:
   - The allowance at Sorcerer 2, 3, 10 and 17.
   - A toggle at the allowance does nothing; a drop then an add works.
   - A Sorcerer 10 with 3 picks loses a level to 9: one pick is released with one notice.
   - A Sorcerer 10 with 3 picks reconciled again keeps them with no notice.
   - Migration of `{ chosenMetamagic: ["Quickened Spell"], metamagicOptions: ["Quickened Spell", "Twinned Spell"] }` gives `["Quickened Spell", "Twinned Spell"]` and no `metamagicOptions`.
-- [ ] `grep -rn "metamagicOptions" src` prints only the migration (paste it).
-- [ ] `npm run check:all` passes.
-- [ ] Scoped layout: `ONLY="Spells sorcery" WIDTHS=393 npm run layout:check` is green (paste the summary line).
+- [x] `grep -rn "metamagicOptions" src` prints only the migration (paste it).
+- [x] `npm run check:all` passes.
+- [x] Scoped layout: `ONLY="Spells sorcery" WIDTHS=393 npm run layout:check` is green (paste the summary line).
