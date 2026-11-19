@@ -5,7 +5,7 @@ import { normalizeArmorProficiency, normalizeWeaponProficiency } from "../profic
 import { normalizeSkillName } from "../skills.ts";
 import { findClassData } from "../catalogs.ts";
 import { heldClass } from "../classData.ts";
-import type { ChoiceProficiencyGrant } from "../proficiencyPools.ts";
+import { STARTING_PROFICIENCIES, type ChoiceProficiencyGrant } from "../proficiencyPools.ts";
 
 /** The feature a later class's multiclass skill choice is printed on. The Class card titles its pick after the class. */
 export const MULTICLASS_FEATURE = "Multiclass Proficiencies";
@@ -76,6 +76,36 @@ export function multiclassSkillGrantOf(cls: ClassData): ChoiceProficiencyGrant |
     count: choice.choose.count ?? 1,
     pool,
   };
+}
+
+/**
+ * The starting skill choice the first class grants, as a Proficiency Choice on its Starting Proficiencies feature. The
+ * pool is the record's list, or every skill when the record names none. The id names the class and the kind of pool,
+ * never the pool or the count (ADR 0015). Undefined when the record gives no skill choice.
+ */
+export function startingSkillGrantOf(cls: ClassData): ChoiceProficiencyGrant | undefined {
+  const choice = cls.skillProficiencies;
+  if (!choice || !(choice.choose > 0)) return undefined;
+  const names = (choice.from ?? []).map((skill: string) => normalizeSkillName(plainText(skill)));
+  const pool = names.length > 0 ? ({ kind: "names", names } as const) : ({ kind: "any" } as const);
+  return {
+    id: `${cls.source}/${cls.name}/${STARTING_PROFICIENCIES}@1#skills:choice:${pool.kind === "names" ? "from" : "any"}`,
+    kind: "choice",
+    category: "skills",
+    count: choice.choose,
+    pool,
+  };
+}
+
+/**
+ * Whether a saved skill entry is the first class's starting skill picks from before the starting skill was a Proficiency
+ * Choice. Such an entry is keyed by the class name (`Class: <name>`) or by a migrated save's `class__<name>__<source>__skills`.
+ */
+export function isLegacyFirstClassSkillEntry(entry: { id: string; origin: string }, first: CharacterClass): boolean {
+  return (
+    entry.origin === "class" &&
+    (entry.id === `Class: ${first.className}` || entry.id === `class__${first.className}__${first.source}__skills`)
+  );
 }
 
 /**

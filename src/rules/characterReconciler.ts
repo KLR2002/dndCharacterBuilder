@@ -24,6 +24,7 @@ import { tableOwnerOf } from "./subclassChoiceTable.ts";
 import {
   dropLegacyMulticlassSkillEntries,
   moveAliasedProficiencyPicks,
+  moveLegacyClassSkillPicks,
   moveLegacyClassToolPicks,
   moveExpertisePicksToGrants,
   moveLegacySkillPicks,
@@ -55,8 +56,8 @@ import { releaseFeatIncreasesOutsidePool } from "./featIncrease.ts";
  * maximum spell level (0 included, so a class that can no longer cast loses its leveled spells)
  * are released with them.
  * Picks saved under a grant's former id move to the grant's id first, so every later pass reads the current ids.
- * The class tool bucket is moved into its Proficiency Choice's pick next, so the pick check sees it, and the
- * race and background tool and language buckets follow it. The race and background skill picks saved in the
+ * The class tool bucket is moved into its Proficiency Choice's pick next, and the first class's saved starting skill
+ * picks into its starting skill choice, so the pick check sees them. The race and background tool and language buckets follow it. The race and background skill picks saved in the
  * old skill choices move into their own Proficiency Choices after those buckets. Empty multiclass skill entries
  * from older saves are dropped with them. Expertise picks saved on a skill choice that now carries Expertise move
  * into it next, so the pick release sees them.
@@ -92,6 +93,7 @@ export function reconcile(
   updated = pruneInvalidInfusions(updated, compendium);
   updated = moveAliasedProficiencyPicks(updated, compendium, options.activeBooks);
   updated = moveLegacyClassToolPicks(updated, compendium);
+  updated = moveLegacyClassSkillPicks(updated, compendium);
   updated = moveLegacySourcePicks(updated, compendium, options.activeBooks);
   updated = moveLegacySkillPicks(updated, compendium, options.activeBooks);
   updated = moveExpertisePicksToGrants(updated, compendium, options.activeBooks);

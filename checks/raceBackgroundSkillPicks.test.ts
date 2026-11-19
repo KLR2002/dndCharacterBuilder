@@ -3,14 +3,14 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import type { Character } from "../src/types/character.ts";
 import type { SubraceData } from "../src/types/dnd5e.ts";
-import { proficiencySheet, skillChoiceOffers, type SheetEntry } from "../src/rules/proficiencySheet.ts";
+import { proficiencySheet, type SheetEntry } from "../src/rules/proficiencySheet.ts";
 import { picksOnlyLanguages, proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts";
 import { reconcile } from "../src/rules/characterReconciler.ts";
 import { clearBackground, setCustomBackground } from "../src/rules/builderTransitions.ts";
 import { ancestryRuleChoices, pickRuleChoice } from "../src/rules/ruleChoices.ts";
 import { ALL_LANGUAGE_NAMES, ALL_TOOLS } from "../src/rules/proficienciesAndLanguages.ts";
 import { anyLanguageChoice, vellariRace } from "./proficiencySheetFixture.ts";
-import { inMemoryCompendium, integratedTestCompendium, makeChar, srdBaselineCompendium } from "./testUtils.ts";
+import { inMemoryCompendium, integratedTestCompendium, makeChar, srdBaselineCompendium, startingSkillPickOf } from "./testUtils.ts";
 
 // Race, subrace and background skill picks are Proficiency Choices read from the Catalog's choice grants.
 // The integrated examples (Investigator, Cloistered Scholar, the Half-Elf descents, Orc and Tortle) run
@@ -27,8 +27,9 @@ const CUSTOM_LANGUAGES_ID = "Custom/Background/Custom Background@0#languages:cho
 const HALF_ELF_ID = "PHB/Race/Half-Elf@0#skills:choice:any";
 const DROW_SKILLS_ID = "SCAG/Subrace/Half-Elf (Drow Descent)@0#skills:choice:any";
 
+/** The race and background skill picks: a class's starting or multiclass skill pick is not one. */
 const skillOffers = (character: Character, compendium = integratedTestCompendium()) =>
-  proficiencyChoiceOffers(character, { compendium, activeBooks: ALL_BOOKS }).filter((offer) => offer.id.includes("#skills:"));
+  proficiencyChoiceOffers(character, { compendium, activeBooks: ALL_BOOKS }).filter((offer) => offer.id.includes("#skills:") && offer.origin !== "class");
 
 const sheetSkills = (character: Character, compendium = integratedTestCompendium()) =>
   names(proficiencySheet(character, { compendium, activeBooks: ALL_BOOKS }).skills);
@@ -273,7 +274,7 @@ test("the Builder's race skill offers come from choice grants, not from the text
     ],
   });
   const character = makeChar({ race: { name: "Sample Folk", source: "TST" } });
-  assert.deepEqual(skillChoiceOffers(character, { compendium: textOnly, activeBooks: ALL_BOOKS }).filter((offer) => offer.source.startsWith("Race")), []);
+  assert.deepEqual(proficiencyChoiceOffers(character, { compendium: textOnly, activeBooks: ALL_BOOKS }).filter((offer) => offer.origin === "race" && offer.categories?.includes("skills")), []);
 });
 
 test("a race skill pick saved in the old skill bucket moves into its Proficiency Choice on reconcile, and the sheet does not change", () => {
@@ -317,7 +318,7 @@ test("a saved background pick outside the pool stays in the old bucket, and the 
   assert.ok(sheetSkills(after, compendium).includes("Stealth"));
 });
 
-test("migrating a race or background pick twice changes nothing, and a class skill pick stays where it was", () => {
+test("migrating a race or background pick twice changes nothing, and a first-class skill pick moves into its starting choice", () => {
   const compendium = integratedTestCompendium();
   const before = makeChar({
     race: { name: "Half-Elf", source: "PHB" },
@@ -328,8 +329,12 @@ test("migrating a race or background pick twice changes nothing, and a class ski
       { id: "Class: Rogue", origin: "class", choose: 1, from: ["Athletics"], picked: ["Athletics"] },
     ],
   });
+  const starting = startingSkillPickOf(before, { compendium, activeBooks: ALL_BOOKS })!.id;
   const once = reconcile(before, compendium, { activeBooks: ALL_BOOKS });
-  assert.deepEqual(once.skillChoices, [{ id: "Class: Rogue", origin: "class", choose: 1, from: ["Athletics"], picked: ["Athletics"] }]);
+  assert.deepEqual(once.proficiencyPicks?.[HALF_ELF_ID], ["Insight"]);
+  assert.deepEqual(once.proficiencyPicks?.[starting], ["Athletics"]);
+  assert.deepEqual(once.skillChoices ?? [], []);
+  assert.deepEqual(once.chosenSkills, []);
   assert.deepEqual(reconcile(once, compendium, { activeBooks: ALL_BOOKS }), once);
 });
 

@@ -4,6 +4,7 @@ import { useAppTheme } from "../../context/ThemeContext";
 import { useSerifFont } from "../../hooks/useSerifFont";
 import { ABILITIES } from "../../rules/abilities";
 import { evaluateCharacter } from "../../rules/characterEvaluation";
+import { proficiencySheet } from "../../rules/proficiencySheet";
 import { currentCompendium } from "../../services/compendium";
 import type { Character } from "../../types/character";
 import { ABILITY_LABELS } from "../builder/builderStyles";
@@ -28,7 +29,7 @@ export function ReviewStep({ character, activeBooks }: { character: Character; a
   const entry = character.classes?.[0];
   const { scores } = evaluateCharacter(character, { compendium: currentCompendium(), activeBooks }).effectiveScores;
   const abilitiesLine = ABILITIES.map((a) => `${ABILITY_LABELS[a]} ${scores[a]}`).join(" · ");
-  const skills = (character.chosenSkills ?? []).join(", ");
+  const skills = proficiencySheet(character, { compendium: currentCompendium(), activeBooks }).skills.map((skill) => skill.name).join(", ");
   const spells = [
     ...(character.knownSpells ?? []).map((s) => s.name),
     ...(character.preparedSpells ?? []).map((p) => p.split("__")[0]),

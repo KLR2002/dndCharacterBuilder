@@ -10,6 +10,7 @@ import { ABILITIES } from "./abilities.ts";
 import { applyAsiSelection, asiLevels, getPendingLevelChoices, removeAsiSelection, subclassLevel } from "./leveling.ts";
 import { getSubclassName } from "./ruleChoices.ts";
 import { classChoicesStepView } from "./classChoices.ts";
+import { moveLegacyClassSkillPicks } from "./proficiencyPicks.ts";
 import { findHeldRace } from "./raceLookup.ts";
 import { isCastingClass, spellOwnerKey } from "./spellcasting.ts";
 import { spellCounts } from "./spellCounts.ts";
@@ -362,12 +363,18 @@ function changeCreationClass(
   return { ...reconciled, ...followed };
 }
 
-/** The class-origin picks the Class Choices step holds: its skill choices and its class/subclass rule choices. */
-function classChoiceSignature(character: Character): string {
-  return JSON.stringify([
-    (character.skillChoices ?? []).filter((sc) => sc.origin === "class"),
-    (character.ruleChoices ?? []).filter((rc) => rc.origin === "class" || rc.origin === "subclass"),
-  ]);
+/**
+ * The picks the Class Choices step holds: the picks on its Proficiency Choices (its skill picks and the other proficiency
+ * offers) and its class/subclass rule choices.
+ */
+function classChoiceSignature(saved: Character, opts: CreationFlowOptions): string {
+  const character = moveLegacyClassSkillPicks(saved, opts.compendium ?? currentCompendium());
+  const view = classChoicesStepView(character, opts);
+  const proficiencyOffers = [...view.skillPicks, ...Object.values(view.cards).flat()].filter((offer) => offer.pick === "proficiency");
+  const picked = [...new Set(proficiencyOffers.map((offer) => offer.id))]
+    .sort()
+    .flatMap((id) => (character.proficiencyPicks?.[id]?.length ? [[id, character.proficiencyPicks[id]]] : []));
+  return JSON.stringify([picked, (character.ruleChoices ?? []).filter((rc) => rc.origin === "class" || rc.origin === "subclass")]);
 }
 
 function spellsSignature(character: Character): string {
@@ -408,7 +415,7 @@ function computeNeedsAttention(
   const released: Partial<Record<CreationStepId, boolean>> = {
     subclass: heldSubclassCount(before) > heldSubclassCount(after),
     subrace: JSON.stringify(before.race ?? null) !== JSON.stringify(after.race ?? null),
-    classChoices: classChoiceSignature(before) !== classChoiceSignature(after),
+    classChoices: classChoiceSignature(before, opts) !== classChoiceSignature(after, opts),
     asiFeats: JSON.stringify(before.asiSelections ?? []) !== JSON.stringify(after.asiSelections ?? []),
     spells: spellsSignature(before) !== spellsSignature(after),
     equipment: equipmentSignature(before) !== equipmentSignature(after),
