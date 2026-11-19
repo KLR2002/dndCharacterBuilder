@@ -36,6 +36,12 @@ export type SpecialisedPick = "fightingStyle" | "artificerInfusion" | "proficien
 /** The Path of the Giant cantrip choice. Its id is frozen. The Reconciler reads it too. */
 export const GIANT_POWER_CHOICE_ID = "BGG__Barbarian__Path of the Giant__Giant Power";
 
+/**
+ * The card a Class Choices step puts a choice in. Absent means the other card. The builder that
+ * issues the choice sets it.
+ */
+export type ChoiceGroup = "fightingStyle" | "maneuver" | "warlock" | "infusion";
+
 /** A Rule Choice the character is currently offered. */
 export interface AvailableRuleChoice {
   id: string;
@@ -52,6 +58,7 @@ export interface AvailableRuleChoice {
   /** The categories a Proficiency Choice's pick lands in. Set by Proficiency Choices only. */
   categories?: ProficiencyCategory[];
   origin: RuleChoiceOrigin;
+  group?: ChoiceGroup;
   pick?: SpecialisedPick;
   /** The option's saved name is `name`; `label`, when given, is the text the option is shown under. */
   options: { name: string; description: string; label?: string }[];

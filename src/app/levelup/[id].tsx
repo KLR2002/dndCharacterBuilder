@@ -24,6 +24,7 @@ import {
   applyLevelUpPlan,
   chooseAverageHitPoints,
   classStepOptions,
+  clearPlanClassChoicePick,
   flowSteps,
   levelUpStepComplete,
   levelUpSummary,
@@ -32,7 +33,9 @@ import {
   rollPlanHitPoints,
   setPlanAsi,
   setPlanClassChoicePick,
+  setPlanExpertisePick,
   setPlanFeatPick,
+  setPlanOptionalFeature,
   setPlanSubclass,
   subclassOptionsForPlan,
   togglePlanSpell,
@@ -208,7 +211,7 @@ export default function LevelUpScreen() {
           <SubclassStep
             plan={plan}
             options={subclassOptionsForPlan(plan, flowOpts)}
-            onPick={(name, source) => commitPlan(setPlanSubclass(plan, name, source))}
+            onPick={(name, source) => commitPlan(setPlanSubclass(character, plan, name, source, flowOpts))}
           />
         );
       case "asiFeat":
@@ -226,7 +229,12 @@ export default function LevelUpScreen() {
         return (
           <ClassChoicesStep
             plan={plan}
+            character={character}
+            activeBooks={activeBooks}
             onToggle={(choiceId, option, choose) => commitPlan(setPlanClassChoicePick(plan, choiceId, option, choose))}
+            onClear={(choiceId) => commitPlan(clearPlanClassChoicePick(plan, choiceId))}
+            onToggleExpertise={(item) => commitPlan(setPlanExpertisePick(plan, item))}
+            onToggleOptionalFeature={(name, enabled) => commitPlan(setPlanOptionalFeature(plan, name, enabled))}
           />
         );
       case "spells":

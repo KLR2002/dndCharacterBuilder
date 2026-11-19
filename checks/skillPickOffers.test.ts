@@ -2,7 +2,7 @@ import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { ruleGrantedSkills } from "../src/rules/proficiencySheet.ts";
-import { skillPickOffers } from "../src/rules/proficiencyChoiceOffers.ts";
+import { proficiencyChoiceOffers, skillPickOffers } from "../src/rules/proficiencyChoiceOffers.ts";
 import { inMemoryCompendium, integratedTestCompendium, makeChar } from "./testUtils.ts";
 import { anyLanguageChoice, lamplighterBackground, placeholderFeat, vellariRace, wardenClass } from "./proficiencySheetFixture.ts";
 import type { ClassData, ProficiencyGrant, SubclassData } from "../src/types/dnd5e.ts";
@@ -130,8 +130,8 @@ test("a skill picked on either card pick is not offered on the other, in both di
   assert.deepEqual(names(pickOf(multiclassFirst, "Keeper's Insight")!), ["Arcana", "History", "Religion"]);
 });
 
-// A race, subrace or background skill pick is shown on the Race or Background tab, so it is not a Skills card pick.
-// A feat's skill pick is one the Class tab owns, as a subclass's or a later class's is.
+// A race, subrace, background or feat skill pick is shown on its own tab or card, so it is not a Skills card pick.
+// A class's, subclass's or a later class's skill pick is one the Class tab owns.
 const skillChoice = (id: string, count: number): ProficiencyGrant => ({
   id,
   kind: "choice",
@@ -141,7 +141,7 @@ const skillChoice = (id: string, count: number): ProficiencyGrant => ({
 });
 const FEAT_SKILL_ID = "GAMMA/Feat/Sample Skilled@0#skills:choice";
 
-test("a race, subrace or background skill pick is not a Skills card pick, and a feat's skill pick is", () => {
+test("a race, subrace, background or feat skill pick is not a Skills card pick", () => {
   const compendium = inMemoryCompendium({
     races: [vellariRace({ grants: [skillChoice("GAMMA/Race/Vellari@0#skills:choice", 1)] })],
     backgrounds: [lamplighterBackground({ grants: [skillChoice("GAMMA/Background/Lamplighter@0#skills:choice", 1)] })],
@@ -154,8 +154,14 @@ test("a race, subrace or background skill pick is not a Skills card pick, and a 
     asiSelections: [{ level: 4, type: "feat", featName: "Sample Skilled", featSource: "PHB" }],
   });
   const offers = skillPickOffers(character, { compendium, activeBooks: ALL_BOOKS });
-  assert.deepEqual(offers.map((offer) => offer.id), [FEAT_SKILL_ID]);
-  assert.equal(offers[0].origin, "feat");
+  assert.deepEqual(offers.map((offer) => offer.id), []);
+  assert.deepEqual(
+    proficiencyChoiceOffers(character, { compendium, activeBooks: ALL_BOOKS })
+      .filter((offer) => offer.origin === "feat")
+      .map((offer) => offer.id),
+    [FEAT_SKILL_ID],
+    "the feat's skill pick is offered, shown with the feat",
+  );
 });
 
 test("the Variant Human's skill pick is not on the Skills card, which keeps the Cleric's and the Rogue's picks", () => {

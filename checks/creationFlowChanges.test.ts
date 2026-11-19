@@ -175,7 +175,7 @@ describe("Changing an earlier step releases what it invalidates", () => {
     assert.equal(finishCreationStep(rogue, "classChoices", flowOpts), rogue);
     assert.equal(creationStepNeedsAttention(rogue, "classChoices"), true);
 
-    // Re-pick the Rogue's subclass and class skills, then walk the flow forward to Class Choices.
+    // Re-pick the Rogue's subclass, class skills and the four Expertise its level 6 offers, then walk the flow forward to Class Choices.
     const offer = skillChoiceOffers(rogue, flowOpts).find((o) => o.source === "Class: Rogue")!;
     const rePicked: Character = {
       ...rogue,
@@ -184,6 +184,7 @@ describe("Changing an earlier step releases what it invalidates", () => {
         { id: offer.source, origin: "class", choose: offer.choose, from: offer.from, picked: offer.from.slice(0, offer.choose) },
       ],
       chosenSkills: offer.from.slice(0, offer.choose),
+      chosenExpertise: offer.from.slice(0, 4),
     };
     let walked = rePicked;
     for (const id of applicableCreationSteps(rePicked, flowOpts)) {

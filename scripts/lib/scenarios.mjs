@@ -380,6 +380,116 @@ function battleMasterCharacter() {
   });
 }
 
+// A level 6 Battle Master. Its plan for level 7 brings the Additional Maneuvers choice, so the Level-Up Flow's Class
+// Choices step shows the Battle Master Maneuvers card (a level 3 or 4 Battle Master brings no class choice at its next level).
+const LEVEL_UP_BATTLE_MASTER_ID = "char_levelup_battlemaster";
+function levelUpBattleMasterCharacter() {
+  return makeChar({
+    id: LEVEL_UP_BATTLE_MASTER_ID,
+    name: "Osric",
+    createdAt: 19,
+    updatedAt: 19,
+    startingOption: "equipment",
+    baseAbilityScores: { str: 15, dex: 14, con: 13, int: 10, wis: 12, cha: 8 },
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [
+      {
+        className: "Fighter",
+        source: catalogSource("classes", "Fighter"),
+        level: 6,
+        subclassName: "Battle Master",
+        subclassSource: "PHB",
+      },
+    ],
+    currentHp: 52,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+    ruleChoices: [
+      {
+        id: "PHB__Fighter__Fighting Style",
+        trait: "Fighting Style",
+        origin: "class",
+        choose: 1,
+        from: ["Defense"],
+        picked: ["Defense"],
+      },
+      {
+        id: "PHB__Fighter__Battle Master__Maneuvers 3",
+        trait: "Combat Superiority (3rd Level)",
+        origin: "subclass",
+        choose: 3,
+        from: ["Riposte", "Rally", "Trip Attack"],
+        picked: ["Riposte", "Rally", "Trip Attack"],
+      },
+    ],
+    asiSelections: [
+      { className: "Fighter", classLevel: 4, level: 4, type: "asi", asi: { str: 2 } },
+      { className: "Fighter", classLevel: 6, level: 6, type: "asi", asi: { dex: 2 } },
+    ],
+  });
+}
+
+// A level 2 Human Fighter with no subclass, so its level 3 plan's Subclass step lists Battle Master. Integrated only:
+// Battle Master is in the integrated catalog.
+const LEVEL_UP_FIGHTER_TWO_ID = "char_levelup_fighter_two";
+function levelUpFighterTwoCharacter() {
+  return makeChar({
+    id: LEVEL_UP_FIGHTER_TWO_ID,
+    name: "Wyn",
+    createdAt: 20,
+    updatedAt: 20,
+    startingOption: "equipment",
+    baseAbilityScores: { str: 15, dex: 14, con: 14, int: 16, wis: 10, cha: 8 },
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [{ className: "Fighter", source: catalogSource("classes", "Fighter"), level: 2 }],
+    currentHp: 18,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+    ruleChoices: [
+      {
+        id: "PHB__Fighter__Fighting Style",
+        trait: "Fighting Style",
+        origin: "class",
+        choose: 1,
+        from: ["Defense"],
+        picked: ["Defense"],
+      },
+    ],
+  });
+}
+
+// A level 5 Rogue of the Thief subclass holding the two Expertise picks of level 1, so its level 6 plan opens the second
+// Expertise milestone with the two skills those picks do not claim. Integrated only: Thief is in the integrated catalog.
+const LEVEL_UP_ROGUE_ID = "char_levelup_rogue";
+function levelUpRogueCharacter() {
+  return makeChar({
+    id: LEVEL_UP_ROGUE_ID,
+    name: "Lark",
+    createdAt: 21,
+    updatedAt: 21,
+    startingOption: "equipment",
+    baseAbilityScores: { str: 10, dex: 16, con: 13, int: 12, wis: 10, cha: 14 },
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [
+      {
+        className: "Rogue",
+        source: catalogSource("classes", "Rogue"),
+        level: 5,
+        subclassName: "Thief",
+        subclassSource: "PHB",
+      },
+    ],
+    chosenSkills: ["Stealth", "Acrobatics", "Perception", "Deception"],
+    chosenExpertise: ["Stealth", "Acrobatics"],
+    currentHp: 33,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+  });
+}
+
 // A level 4 Human Fighter with no Ability Score Improvement taken yet, so the builder's ASI/Feat card has its level 4 slot
 // pending. Integrated mode only: Fighting Initiate, which the card's feat-choice check uses, is in the integrated catalog.
 export const ASI_FIGHTER_ID = "char_asi_fighter";
@@ -497,6 +607,54 @@ function variantOriginCharacter() {
     background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
     classes: [{ className: "Fighter", source: catalogSource("classes", "Fighter"), level: 1 }],
     currentHp: 12,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+  });
+}
+
+// Skilled taken as a feat: a level 1 Variant Human whose origin feat is Skilled, and a level 4 Fighter whose ASI is Skilled.
+// Each saved card shows the three-skill pick the feat opens. Integrated mode only.
+const VARIANT_SKILLED_ID = "char_variant_skilled";
+function variantSkilledCharacter() {
+  return makeChar({
+    id: VARIANT_SKILLED_ID,
+    name: "Ilse",
+    createdAt: 14,
+    updatedAt: 14,
+    startingOption: "equipment",
+    race: { name: "Human", source: catalogSource("races", "Human"), subraceName: "Variant", subraceSource: "PHB" },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [{ className: "Fighter", source: catalogSource("classes", "Fighter"), level: 1 }],
+    originFeats: [{ level: 1, type: "feat", featName: "Skilled", featSource: catalogSource("feats", "Skilled") }],
+    currentHp: 12,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+  });
+}
+
+const ASI_SKILLED_ID = "char_asi_skilled";
+function asiSkilledCharacter() {
+  return makeChar({
+    id: ASI_SKILLED_ID,
+    name: "Dorin",
+    createdAt: 15,
+    updatedAt: 15,
+    startingOption: "equipment",
+    baseAbilityScores: { str: 16, dex: 12, con: 14, int: 10, wis: 12, cha: 8 },
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [{ className: "Fighter", source: catalogSource("classes", "Fighter"), level: 4 }],
+    asiSelections: [
+      {
+        level: 4,
+        className: "Fighter",
+        classLevel: 4,
+        type: "feat",
+        featName: "Skilled",
+        featSource: catalogSource("feats", "Skilled"),
+      },
+    ],
+    currentHp: 36,
     startingGrantsApplied: true,
     backgroundGrantsApplied: true,
   });
@@ -1204,9 +1362,11 @@ export function buildSeed({ root, integrated }) {
       fighterCharacter({ id: FIGHTER_ID, name: "Tavish", picked: false }),
       fighterCharacter({ id: FIGHTER_PICKED_ID, name: "Brannoc", picked: true }),
       battleMasterCharacter(),
+      levelUpBattleMasterCharacter(),
+      ...(INTEGRATED ? [levelUpFighterTwoCharacter(), levelUpRogueCharacter()] : []),
       ...(INTEGRATED ? [magicInitiateCharacter()] : []),
       highElfCharacter(),
-      ...(INTEGRATED ? [backgroundFeatCharacter(), variantOriginCharacter()] : []),
+      ...(INTEGRATED ? [backgroundFeatCharacter(), variantOriginCharacter(), variantSkilledCharacter(), asiSkilledCharacter()] : []),
       grantedSpellsCharacter(),
       ...(INTEGRATED ? [preparedGrantCharacter(), preparedFighterCharacter()] : []),
       ...(INTEGRATED ? [clericCharacter({ id: CLERIC_ID, name: "Corwin", domain: false })] : []),
@@ -1397,6 +1557,23 @@ export function buildScreens({ integrated }) {
               scrollTo: "Fighting Initiate Style",
               expect: { texts: ["Variant Human Origin Feat", "Fighting Initiate Style (1/1):", "Archery"], fitsWidth: true },
             },
+            // Skilled taken as an origin feat, then as an ASI: each saved card shows the three-skill pick under the feat.
+            {
+              shot: true,
+              name: "Builder origin feat Skilled",
+              route: buildRoute(VARIANT_SKILLED_ID, "race"),
+              ready: "Picked 0 / 3",
+              scrollTo: "Skilled",
+              expect: { texts: ["Variant Human Origin Feat", "Skilled", "Picked 0 / 3"], fitsWidth: true },
+            },
+            {
+              shot: true,
+              name: "Builder ASI feat Skilled",
+              route: buildRoute(ASI_SKILLED_ID, "asiFeats"),
+              ready: /Selected Ability Improvements/i,
+              scrollTo: "Skilled",
+              expect: { texts: ["Selected Ability Improvements & Feats:", "Skilled", "Picked 0 / 3"], fitsWidth: true },
+            },
           ]
         : []),
       // The equipment card: one option per slot, the picker of a generic entry, Claim disabled until every slot is picked.
@@ -1432,8 +1609,8 @@ export function buildScreens({ integrated }) {
       { name: "Builder Class optional features card", route: buildRoute(RANGER_ID, "classChoices"), ready: "Optional & Replacement Class Features:", scrollTo: "Optional & Replacement Class Features:", expect: { texts: ["Optional & Replacement Class Features:", "Deft Explorer", "Favored Foe"], fitsWidth: true } },
       { name: "Builder Class optional features card collapsed", route: buildRoute(RANGER_ID, "classChoices"), fresh: true, ready: "Optional & Replacement Class Features:", open: [{ tap: { text: "Optional & Replacement Class Features:", exact: true } }], scrollTo: "Optional & Replacement Class Features:", expect: { texts: ["Optional & Replacement Class Features:", "Tasha's Cauldron optional features and replacements for your classes."], absent: ["Deft Explorer", "Favored Foe"], fitsWidth: true } },
       // A choice card with a badge: the Fighting Style badge sits in the title row beside the chevron, in both states.
-      { name: "Builder Class fighting styles card", route: buildRoute(FIGHTER_ID, "classChoices"), fresh: true, ready: "Fighting Styles", scrollTo: "Fighting Styles", expect: { texts: ["Fighting Styles", "Fighting Style", "Martial specialization granting passive combat bonuses or additional cantrips."], fitsWidth: true } },
-      { name: "Builder Class fighting styles card collapsed", route: buildRoute(FIGHTER_ID, "classChoices"), fresh: true, ready: "Fighting Styles", open: [{ tap: { text: "Fighting Styles", exact: true } }], scrollTo: "Fighting Styles", expect: { texts: ["Fighting Styles", "Fighting Style", "Martial specialization granting passive combat bonuses or additional cantrips."], absent: ["Archery", "Blind Fighting", "Defense"], fitsWidth: true } },
+      { name: "Builder Class fighting styles card", route: buildRoute(FIGHTER_ID, "classChoices"), fresh: true, ready: "Fighting Styles", scrollTo: "Fighting Styles", expect: { texts: ["Fighting Styles", "Fighting Style"], fitsWidth: true } },
+      { name: "Builder Class fighting styles card collapsed", route: buildRoute(FIGHTER_ID, "classChoices"), fresh: true, ready: "Fighting Styles", open: [{ tap: { text: "Fighting Styles", exact: true } }], scrollTo: "Fighting Styles", expect: { texts: ["Fighting Styles", "Fighting Style"], absent: ["Archery", "Blind Fighting", "Defense"], fitsWidth: true } },
       // The Race card: the Variant Human's language and skill picks, named by what they pick, then collapsed to its title.
       ...(INTEGRATED
         ? [
@@ -1664,6 +1841,58 @@ export function buildScreens({ integrated }) {
         ready: "Hit Points",
         expect: { texts: ["Class", "Hit Points", "ASI/Feat", "Review", "Fighter", "3 → 4"], fitsWidth: true },
       },
+      // The Class Choices step of a level 6 → 7 Battle Master shows its maneuver choice in the Battle Master Maneuvers card.
+      {
+        name: "Level-Up Flow class choices maneuvers", shot: true,
+        route: `/levelup/${LEVEL_UP_BATTLE_MASTER_ID}`,
+        open: [{ tap: { label: "Level up Fighter" } }, { tap: { text: "Class Choices", exact: true } }],
+        ready: "Battle Master Maneuvers",
+        expect: { texts: ["Battle Master Maneuvers", "Additional Maneuvers (7th Level)"], fitsWidth: true },
+      },
+      // The Class Choices step of a level 5 → 6 Rogue offers the Expertise milestone the new level opens: its two picks
+      // come from the skills the held level 1 picks do not claim. Integrated only.
+      ...(INTEGRATED
+        ? [
+            {
+              name: "Level-Up Flow expertise", shot: true,
+              route: `/levelup/${LEVEL_UP_ROGUE_ID}`,
+              open: [{ tap: { label: "Level up Rogue" } }, { tap: { text: "Class Choices", exact: true } }],
+              ready: "Rogue Expertise (Level 6)",
+              expect: { texts: ["Expertise", "Rogue Expertise (Level 6)", "Perception", "Deception"], fitsWidth: true },
+            },
+          ]
+        : []),
+      // Picking Battle Master in a Fighter 2 → 3 plan's Subclass step adds the Class Choices step: its maneuver card
+      // and Student of War's tool pick follow the picked subclass. Integrated only.
+      ...(INTEGRATED
+        ? [
+            {
+              name: "Level-Up Flow subclass picks class choices", shot: true,
+              route: `/levelup/${LEVEL_UP_FIGHTER_TWO_ID}`,
+              open: [
+                { tap: { label: "Level up Fighter" } },
+                { tap: { text: "Subclass", exact: true } },
+                { tap: { text: "Battle Master", exact: true } },
+                { tap: { text: "Class Choices", exact: true } },
+              ],
+              ready: "Battle Master Maneuvers",
+              expect: { texts: ["Battle Master Maneuvers", "Combat Superiority (3rd Level)"], fitsWidth: true },
+            },
+            // Picking Eldritch Knight adds the Spells step, which offers the spells the subclass learns from. Integrated only.
+            {
+              name: "Level-Up Flow subclass picks spells", shot: true,
+              route: `/levelup/${LEVEL_UP_FIGHTER_TWO_ID}`, fresh: true,
+              open: [
+                { tap: { label: "Level up Fighter" } },
+                { tap: { text: "Subclass", exact: true } },
+                { tap: { text: "Eldritch Knight", exact: true } },
+                { tap: { text: "Spells", exact: true } },
+              ],
+              ready: "Magic Missile",
+              expect: { texts: ["Magic Missile", "Mage Hand"], fitsWidth: true },
+            },
+          ]
+        : []),
       // The Level-Up Flow's identity line — phone bottom bar below 768px, wide footer from 768px up — opens
       // the same "Character" modal as the Creation Flow's; from 1024px up the panel is the side column, on
       // screen with no tap and no modal. So the default 768px width exercises the Level-Up Flow's wide

@@ -178,6 +178,20 @@ export function proficiencyChoiceOffers(character: Character, query: Proficiency
 }
 
 /**
+ * The Proficiency Choices one held feat opens, matched by the feat's catalog name and source. Each grant id carries
+ * both (`PHB/Feat/Skilled@0#...`), and a feat held twice is one feature instance, so no two held feats share an offer id.
+ */
+export function featProficiencyChoiceOffers(
+  character: Character,
+  feat: { name: string; source: string },
+  query: ProficiencyChoiceQuery,
+): AvailableRuleChoice[] {
+  return choiceOfferEntries(character, query)
+    .filter(({ feature }) => feature.origin === "Feat" && feature.name === feat.name && feature.source === feat.source)
+    .map((entry) => entry.offer);
+}
+
+/**
  * Whether every pick in a card of Proficiency Choice offers is a language pick alone, so the card can be named
  * for languages. A tool, skill, or tool-or-language pick makes it a card of proficiencies.
  */
@@ -188,13 +202,13 @@ export function picksOnlyLanguages(offers: readonly AvailableRuleChoice[]): bool
 /** A skill Proficiency Choice the Builder's Skills card shows. `expertise` is set when its grant gives Expertise. */
 export type SkillPickOffer = AvailableRuleChoice & { expertise: boolean };
 
-/** The origins whose skill picks the Class tab's Skills card holds. A race or background pick is shown on its own tab. */
-const SKILL_CARD_ORIGINS: ReadonlySet<RuleChoiceOrigin> = new Set<RuleChoiceOrigin>(["class", "subclass", "feat"]);
+/** The origins whose skill picks the Class tab's Skills card holds. A race, background or feat pick is shown on its own tab or card. */
+const SKILL_CARD_ORIGINS: ReadonlySet<RuleChoiceOrigin> = new Set<RuleChoiceOrigin>(["class", "subclass"]);
 
 /**
- * The skill Proficiency Choices the Class tab's Skills card holds: a class's, subclass's or feat's skill pick, and a
- * later class's multiclass skill pick. Each is the offer `proficiencyChoiceOffers` gives it, titled for its source (the
- * feature's name, or "<Class> multiclass skill"), and marked when its grant gives Expertise.
+ * The skill Proficiency Choices the Class tab's Skills card holds: a class's or subclass's skill pick, and a later class's
+ * multiclass skill pick. Each is the offer `proficiencyChoiceOffers` gives it, titled for its source (the feature's name,
+ * or "<Class> multiclass skill"), and marked when its grant gives Expertise. A feat's skill pick is shown with the feat.
  */
 export function skillPickOffers(character: Character, query: ProficiencyChoiceQuery): SkillPickOffer[] {
   return choiceOfferEntries(character, query)

@@ -1,6 +1,6 @@
-import { test } from "node:test";
+import { describe, test } from "node:test";
 import assert from "node:assert/strict";
-import { makeChar } from "./testUtils.ts";
+import { makeChar , integratedTestCompendium } from "./testUtils.ts";
 import { choiceCatalogBundle } from "./choiceCatalogFixture.ts";
 import { createCompendium, type Compendium } from "../src/services/compendium.ts";
 import { REQUIRED_CATALOG_FORMAT } from "../src/services/compendiumStorage.ts";
@@ -10,7 +10,15 @@ import { BACKGROUND_FEAT_SOURCE } from "../src/constants/rules.ts";
 import { effectiveScores, hasFeat } from "../src/rules/abilities.ts";
 import { FIGHTING_INITIATE_CHOICE_ID } from "../src/rules/choices/fightingStyles.ts";
 import { featIncreaseOptions, findFeat } from "../src/rules/featIncrease.ts";
-import { applyFeatSlotPick, featSlotView, takenFeatRuleChoices, type FeatSlotPick } from "../src/rules/featSlot.ts";
+import {
+  applyFeatSlotPick,
+  featPickView,
+  featSlotView,
+  takenFeatProficiencyChoices,
+  takenFeatRuleChoices,
+  type FeatSlotPick,
+} from "../src/rules/featSlot.ts";
+import { classChoicesStepView } from "../src/rules/classChoices.ts";
 import type { AbilityKey, AsiSelection } from "../src/types/character.ts";
 import type { FeatData, OptionFeatureData } from "../src/types/dnd5e.ts";
 
@@ -293,4 +301,48 @@ test("a race origin feat entry opens the Rule Choice of its feat: a Variant Huma
   const character = makeChar({ ...WIZARD_4, originFeats: [selection] });
   const opened = takenFeatRuleChoices(character, selection, ALL_BOOKS, compendium);
   assert.deepEqual(opened.map((choice) => choice.id), [FIGHTING_INITIATE_CHOICE_ID]);
+});
+
+describe("A feat's Proficiency Choices come from the Feat Slot, not the Class Choices step", () => {
+  const compendium = integratedTestCompendium();
+  const SKILLED_CHOICE_ID = "PHB/Feat/Skilled@0#skills:choice:any";
+  const FIGHTER_4 = makeChar({ classes: [{ className: "Fighter", source: "PHB", level: 4 }] });
+  const skilledAtAsi: AsiSelection = {
+    level: 4,
+    className: "Fighter",
+    classLevel: 4,
+    type: "feat",
+    featName: "Skilled",
+    featSource: "PHB",
+  };
+  const skilledAsOrigin: AsiSelection = { level: 1, type: "feat", featName: "Skilled", featSource: "PHB" };
+
+  test("a Skilled pick shows its three-skill choice in the Feat Slot view", () => {
+    const view = featPickView(
+      FIGHTER_4,
+      { slot: { kind: "asi", className: "Fighter", classLevel: 4 }, featName: "Skilled", featSource: "PHB" },
+      { compendium, activeBooks: ALL_BOOKS },
+    );
+    assert.deepEqual(view.proficiencyChoices.map((choice) => [choice.id, choice.choose]), [[SKILLED_CHOICE_ID, 3]]);
+  });
+
+  test("a Skilled taken at an ASI gets its choice from the Feat Slot, and the class view does not list it", () => {
+    const character = makeChar({ ...FIGHTER_4, asiSelections: [skilledAtAsi] });
+    const taken = takenFeatProficiencyChoices(character, skilledAtAsi, ALL_BOOKS, compendium);
+    assert.deepEqual(taken.map((choice) => choice.id), [SKILLED_CHOICE_ID]);
+
+    const view = classChoicesStepView(character, { compendium, activeBooks: ALL_BOOKS });
+    assert.equal(view.skillPicks.some((offer) => offer.id === SKILLED_CHOICE_ID), false, "not in skillPicks");
+    assert.equal(view.cards.other.some((choice) => choice.id === SKILLED_CHOICE_ID), false, "not in cards.other");
+  });
+
+  test("a Skilled taken as a Variant Human origin feat gets its choice from the Feat Slot, and the class view does not list it", () => {
+    const character = makeChar({ ...FIGHTER_4, originFeats: [skilledAsOrigin] });
+    const taken = takenFeatProficiencyChoices(character, skilledAsOrigin, ALL_BOOKS, compendium);
+    assert.deepEqual(taken.map((choice) => choice.id), [SKILLED_CHOICE_ID]);
+
+    const view = classChoicesStepView(character, { compendium, activeBooks: ALL_BOOKS });
+    assert.equal(view.skillPicks.some((offer) => offer.id === SKILLED_CHOICE_ID), false, "not in skillPicks");
+    assert.equal(view.cards.other.some((choice) => choice.id === SKILLED_CHOICE_ID), false, "not in cards.other");
+  });
 });
