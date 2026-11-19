@@ -11,7 +11,6 @@ import { useSheetScrollContentPadding } from "../sheet/sheetChrome";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
-import { getConditions } from "../../services/dataService";
 import { currentCompendium } from "../../services/compendium";
 import {
   spendHitDie,
@@ -19,7 +18,7 @@ import {
 } from "../../rules/hitDice";
 import { damage, heal } from "../../rules/hitPoints";
 import { setWildShapeTempHp } from "../../rules/wildShapeHp";
-import { formatModifier } from "../../services/dndRules";
+import { formatModifier } from "../../rules/abilities";
 import { evaluateCharacter } from "../../rules/characterEvaluation";
 import { listSuperiorityPools } from "../../rules/combatDice";
 import { proficiencySheet } from "../../rules/proficiencySheet";
@@ -177,7 +176,7 @@ export const StatsTab: React.FC = () => {
   const passivePerception = skills.find((s) => s.name === "Perception")?.passiveBonus ?? 10;
   const passiveInvestigation = skills.find((s) => s.name === "Investigation")?.passiveBonus ?? 10;
   const passiveInsight = skills.find((s) => s.name === "Insight")?.passiveBonus ?? 10;
-  const allConditions = getConditions();
+  const allConditions = currentCompendium().for().conditions();
 
   // HP Handlers
   const hpState = { currentHp: currentCharacter.currentHp, tempHp: currentCharacter.tempHp };

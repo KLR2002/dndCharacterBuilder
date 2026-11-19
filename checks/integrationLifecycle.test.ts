@@ -1,4 +1,5 @@
 import test from "node:test";
+import { currentCompendium } from "../src/services/compendium.ts";
 import assert from "node:assert/strict";
 import {
   __setCompendiumKvForTests,
@@ -6,14 +7,6 @@ import {
   clearCompendiumData,
   hasIntegratedCatalog,
 } from "../src/services/compendiumStorage.ts";
-import {
-  isCompendiumIntegrated,
-  getRaces,
-  getClasses,
-  getFeats,
-  getBackgrounds,
-  getSpells,
-} from "../src/services/dataService.ts";
 import { getAvailableSpellsForClass } from "../src/rules/spellcasting.ts";
 import { hydrateCompendiumFromStorage, loadTestCatalog, resetTestCompendium } from "./testUtils.ts";
 
@@ -29,22 +22,22 @@ test("End-to-End Integration Lifecycle: SRD baseline -> Integration -> Book gati
     await hydrateCompendiumFromStorage();
 
     assert.equal(await hasIntegratedCatalog(), false, "Should not be marked as integrated");
-    assert.equal(isCompendiumIntegrated(), false, "dataService should report unintegrated");
+    assert.equal(currentCompendium().integrated, false, "the Compendium should report unintegrated");
 
-    const srdRaces = getRaces();
+    const srdRaces = currentCompendium().for().races();
     assert.equal(srdRaces.length, 9, "SRD baseline should contain exactly 9 races");
     assert.ok(srdRaces.every((r) => r.source === "SRD"), "All SRD races must have source === 'SRD'");
 
-    const srdClasses = getClasses();
+    const srdClasses = currentCompendium().for().classes();
     assert.equal(srdClasses.length, 12, "SRD baseline should contain exactly 12 classes");
     assert.ok(srdClasses.every((c) => c.source === "SRD"), "All SRD classes must have source === 'SRD'");
     assert.ok(srdClasses.every((c) => c.subclasses.length === 1), "Each SRD class has exactly 1 archetype");
 
-    const srdFeats = getFeats();
+    const srdFeats = currentCompendium().for().feats();
     assert.equal(srdFeats.length, 1, "Only Grappler feat is part of SRD 5.1");
     assert.equal(srdFeats[0].name, "Grappler");
 
-    const srdBackgrounds = getBackgrounds();
+    const srdBackgrounds = currentCompendium().for().backgrounds();
     assert.equal(srdBackgrounds.length, 1, "Only Acolyte background is part of SRD 5.1");
     assert.equal(srdBackgrounds[0].name, "Acolyte");
 
@@ -70,9 +63,9 @@ test("End-to-End Integration Lifecycle: SRD baseline -> Integration -> Book gati
     await hydrateCompendiumFromStorage();
 
     assert.equal(await hasIntegratedCatalog(), true, "Should report hasIntegratedCatalog = true");
-    assert.equal(isCompendiumIntegrated(), true, "dataService should report integrated");
+    assert.equal(currentCompendium().integrated, true, "the Compendium should report integrated");
 
-    const integratedRaces = getRaces();
+    const integratedRaces = currentCompendium().for().races();
     assert.ok(integratedRaces.length > 9, "Integrated compendium must have expansion races");
     // Verify dataset swapping: SRD records are deactivated to avoid duplicates
     assert.ok(
@@ -80,7 +73,7 @@ test("End-to-End Integration Lifecycle: SRD baseline -> Integration -> Book gati
       "SRD baseline races must be excluded when integrated compendium is active"
     );
 
-    const integratedClasses = getClasses();
+    const integratedClasses = currentCompendium().for().classes();
     assert.ok(integratedClasses.length >= 12, "Integrated classes should include all classes");
     assert.ok(
       integratedClasses.every((c) => c.source !== "SRD"),
@@ -97,14 +90,14 @@ test("End-to-End Integration Lifecycle: SRD baseline -> Integration -> Book gati
     assert.ok(subNames.includes("Eldritch Knight"), "Eldritch Knight exists");
 
     // Verify expanded feats and backgrounds
-    const integratedFeats = getFeats();
+    const integratedFeats = currentCompendium().for().feats();
     assert.ok(integratedFeats.length > 1, "Expansion feats exist");
     assert.ok(integratedFeats.some((f) => f.name === "Alert"), "Alert feat exists in expansion catalog");
 
     // -------------------------------------------------------------
     // Phase 3: Book Gating
     // -------------------------------------------------------------
-    const allSpells = getSpells();
+    const allSpells = currentCompendium().for().spells();
     const tollTheDead = allSpells.find((s) => s.name === "Toll the Dead");
     assert.ok(tollTheDead, "Toll the Dead should be in integrated spells catalog");
     assert.equal(tollTheDead.source, "XGE", "Toll the Dead is from XGE");
@@ -126,18 +119,18 @@ test("End-to-End Integration Lifecycle: SRD baseline -> Integration -> Book gati
     await hydrateCompendiumFromStorage();
 
     assert.equal(await hasIntegratedCatalog(), false, "After revert, hasIntegratedCatalog must be false");
-    assert.equal(isCompendiumIntegrated(), false, "After revert, isCompendiumIntegrated must be false");
+    assert.equal(currentCompendium().integrated, false, "After revert, the Compendium must report unintegrated");
 
-    const revertedRaces = getRaces();
+    const revertedRaces = currentCompendium().for().races();
     assert.equal(revertedRaces.length, 9, "Races should revert to 9 SRD races");
     assert.ok(revertedRaces.every((r) => r.source === "SRD"), "Reverted races must have source === 'SRD'");
 
-    const revertedClasses = getClasses();
+    const revertedClasses = currentCompendium().for().classes();
     assert.equal(revertedClasses.length, 12, "Classes should revert to 12 SRD classes");
     assert.ok(revertedClasses.every((c) => c.source === "SRD"), "Reverted classes must have source === 'SRD'");
     assert.ok(revertedClasses.every((c) => c.subclasses.length === 1), "Reverted classes must each have 1 archetype");
 
-    const revertedFeats = getFeats();
+    const revertedFeats = currentCompendium().for().feats();
     assert.equal(revertedFeats.length, 1, "Feats should revert to 1 SRD feat (Grappler)");
     assert.equal(revertedFeats[0].name, "Grappler");
   } finally {

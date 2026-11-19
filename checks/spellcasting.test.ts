@@ -1,10 +1,10 @@
 import { ALL_BOOKS } from "../src/constants/books.ts";
+import { currentCompendium } from "../src/services/compendium.ts";
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { makeChar, loadTestCatalog, inMemoryCompendium } from "./testUtils.ts";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
 import { grantedSpellClasses, grantedSpellSpells } from "./grantedSpellsFixture.ts";
-import { findSpell } from "../src/services/dataService.ts";
 import {
   getClassSpellProfiles,
   calculateWarlockPactSlots,
@@ -571,7 +571,7 @@ test("getAvailableSpellsForClass filters spell collections by class and activeBo
   assert.deepEqual(bardTceScc.map((s) => s.name), ["Aid", "Silvery Barbs"]);
 });
 
-test("dataset integration: real spells from dataService reflect active book toggles", () => {
+test("dataset integration: real spells from the process-wide Compendium reflect active book toggles", () => {
   const allSpells = loadTestCatalog<SpellData[]>("spells");
 
   // 1. With PHB only:
@@ -632,9 +632,9 @@ test("getClassSpellProfiles populates alwaysPreparedSpells and leaves preparedLi
 });
 
 test("isSpellAvailableForClass: Warlock Otherworldly Patron expanded spell lists", () => {
-  const fireball = findSpell("Fireball")!;
-  const burningHands = findSpell("Burning Hands")!;
-  const command = findSpell("Command")!;
+  const fireball = currentCompendium().findSpell("Fireball")!;
+  const burningHands = currentCompendium().findSpell("Burning Hands")!;
+  const command = currentCompendium().findSpell("Command")!;
 
   assert.ok(fireball, "Fireball must exist in catalog");
   assert.ok(burningHands, "Burning Hands must exist in catalog");
@@ -666,9 +666,9 @@ test("isSpellAvailableForClass: Warlock Otherworldly Patron expanded spell lists
 });
 
 test("isSpellAvailableForClass: Genie Warlock kind-specific and shared spells", () => {
-  const detectEvilAndGood = findSpell("Detect Evil and Good")!;
-  const sanctuary = findSpell("Sanctuary")!;
-  const fireball = findSpell("Fireball")!;
+  const detectEvilAndGood = currentCompendium().findSpell("Detect Evil and Good")!;
+  const sanctuary = currentCompendium().findSpell("Sanctuary")!;
+  const fireball = currentCompendium().findSpell("Fireball")!;
 
   assert.ok(detectEvilAndGood);
   assert.ok(sanctuary);
@@ -722,10 +722,10 @@ test("isSpellAvailableForClass: Genie Warlock kind-specific and shared spells", 
 });
 
 test("isSpellAvailableForClass: Divine Soul Sorcerer Cleric spell access", () => {
-  const cureWounds = findSpell("Cure Wounds")!;
-  const spiritualWeapon = findSpell("Spiritual Weapon")!;
-  const revivify = findSpell("Revivify")!;
-  const fireball = findSpell("Fireball")!;
+  const cureWounds = currentCompendium().findSpell("Cure Wounds")!;
+  const spiritualWeapon = currentCompendium().findSpell("Spiritual Weapon")!;
+  const revivify = currentCompendium().findSpell("Revivify")!;
+  const fireball = currentCompendium().findSpell("Fireball")!;
 
   assert.ok(cureWounds, "Cure Wounds must exist in catalog");
   assert.ok(spiritualWeapon, "Spiritual Weapon must exist in catalog");

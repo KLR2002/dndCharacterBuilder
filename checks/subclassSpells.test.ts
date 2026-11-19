@@ -9,8 +9,7 @@ import {
   getOrphanedSubclassSpells,
 } from "../src/rules/subclassSpells.ts";
 import { isSpellAvailableForClass } from "../src/rules/spellcasting.ts";
-import { findSpell } from "../src/services/dataService.ts";
-import { createCompendium, type Compendium } from "../src/services/compendium.ts";
+import { currentCompendium, createCompendium, type Compendium } from "../src/services/compendium.ts";
 import { DEFAULT_ACTIVE_BOOK_CODES, ALL_BOOKS } from "../src/constants/books.ts";
 import { srdBaselineCompendium , makeChar } from "./testUtils.ts";
 import type { CompendiumCollections } from "../src/services/compendiumStorage.ts";
@@ -455,7 +454,7 @@ test("getOrphanedSubclassSpells detects illegal spells when changing Warlock pat
 });
 
 test("Third casters access Wizard spells when subclass is active", () => {
-  const fireball = findSpell("Fireball")!;
+  const fireball = currentCompendium().findSpell("Fireball")!;
   assert.ok(fireball);
 
   // Fighter with Eldritch Knight subclass has access to Fireball (Wizard spell)
@@ -472,7 +471,7 @@ test("Third casters access Wizard spells when subclass is active", () => {
 });
 
 test("getEligibleSubclassSpellSwaps disallows cantrips", () => {
-  const mindSliver = findSpell("Mind Sliver")!;
+  const mindSliver = currentCompendium().findSpell("Mind Sliver")!;
   assert.ok(mindSliver);
   assert.equal(mindSliver.level, 0);
 

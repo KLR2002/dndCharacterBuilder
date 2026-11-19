@@ -1,7 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { findRace } from "../src/services/dataService.ts";
-import { integrate } from "../src/services/compendium.ts";
+import { currentCompendium, integrate } from "../src/services/compendium.ts";
 import { resetTestCompendium } from "./testUtils.ts";
 import type { RaceData, SubraceData } from "../src/types/dnd5e.ts";
 
@@ -48,9 +47,9 @@ test("a held race with its subrace resolves to the record of the active book, an
   });
   try {
     const held = { name: "Sample Kin", source: "GONE", subraceName: "Sample Line", subraceSource: "GONE" };
-    assert.equal(findRace(held, ["ALT"])?.source, "ALT", "the active book's record is the one the Journal reads");
-    assert.equal(findRace(held)?.source, "OLD", "without active books, the first record listed");
-    assert.equal(findRace({ name: "Sample Kin", source: "ALT", subraceName: "Sample Line", subraceSource: "ALT" }, ["OLD"])?.source, "ALT", "a saved source is kept");
+    assert.equal(currentCompendium().findRace(held, ["ALT"])?.source, "ALT", "the active book's record is the one the Journal reads");
+    assert.equal(currentCompendium().findRace(held, undefined)?.source, "OLD", "without active books, the first record listed");
+    assert.equal(currentCompendium().findRace({ name: "Sample Kin", source: "ALT", subraceName: "Sample Line", subraceSource: "ALT" }, ["OLD"])?.source, "ALT", "a saved source is kept");
   } finally {
     resetTestCompendium();
   }
