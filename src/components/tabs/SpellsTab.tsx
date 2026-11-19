@@ -12,19 +12,14 @@ import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import { findSpell, getSpells } from "../../services/dataService";
-import { calculateMulticlassSpellSlots, formatModifier } from "../../services/dndRules";
-import { evaluateCharacter } from "../../rules/characterEvaluation";
+import { formatModifier } from "../../services/dndRules";
 import { currentCompendium } from "../../services/compendium";
-import {
-  type ClassSpellProfile,
-  type LockedPreparedCard,
-} from "../../rules/spellcasting";
+import { type LockedPreparedCard } from "../../rules/spellcasting";
 import {
   type InnateSpellProfile,
   type InnateSpellEntry,
 } from "../../rules/innateMagic";
 import {
-  getSpellSlotLedger,
   toggleSpellSlot,
   togglePactSlot as togglePactSlotRule,
   spendSorceryPoints,
@@ -38,19 +33,8 @@ import {
   learnSpell as learnSpellRule,
   forgetSpell as forgetSpellRule,
 } from "../../rules/characterSpells";
-import {
-  getSubclassAllowedSwapSchools,
-  getEligibleSubclassSpellSwaps,
-} from "../../rules/subclassSpells";
-import {
-  getAtWillInvocationSpells,
-  getMaxRitualBookLevel,
-  getMysticArcanumTiers,
-  hasInvocation,
-  isSpellEligibleForRitualBook,
-} from "../../rules/ruleChoices";
+import { hasInvocation } from "../../rules/ruleChoices";
 import { effectiveScores } from "../../rules/abilities";
-import { proficiencyBonus, totalLevel } from "../../rules/proficiencies";
 import type { SpellData } from "../../types/dnd5e";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
@@ -60,7 +44,7 @@ import { DetailModal } from "../DetailModal";
 import { SearchBar } from "../ui/SearchBar";
 import { SpellLearnList, LEVEL_NAMES } from "../spells/SpellLearnList";
 import { learnableSpells } from "../../rules/learnableSpells";
-import { spellPage } from "../../rules/spellPage";
+import { spellPage, subclassSwapOffer } from "../../rules/spellPage";
 
 const METAMAGIC_OPTIONS = [
   {
@@ -151,54 +135,22 @@ export const SpellsTab: React.FC = () => {
   const [inscribeSearchQuery, setInscribeSearchQuery] = useState("");
   const [inscribeLevelFilter, setInscribeLevelFilter] = useState<number | null>(null);
 
-  // Unified Character Evaluation pass
-  const evaluated = useMemo(() => {
-    if (!currentCharacter) return null;
-    return evaluateCharacter(currentCharacter, { compendium: currentCompendium(), activeBooks });
-  }, [currentCharacter, activeBooks]);
-
-  // Spell slot ledger from pure domain engine
-  const spellLedger = useMemo(() => {
-    return currentCharacter ? getSpellSlotLedger(currentCharacter, evaluated) : null;
-  }, [currentCharacter, evaluated]);
-
-  // 1. Multiclass Spell Profiles from evaluated model
-  const spellProfiles = useMemo(() => {
-    return evaluated?.spellProfiles ?? [];
-  }, [evaluated]);
-
   const page = useMemo(() => {
     if (!currentCharacter) return null;
     return spellPage(currentCharacter, { compendium: currentCompendium(), activeBooks }, selectedOwnerKey ?? undefined);
   }, [currentCharacter, activeBooks, selectedOwnerKey]);
 
-  const activeProfile: ClassSpellProfile | null = useMemo(() => {
-    return spellProfiles.find((p) => p.ownerKey === page?.owner) ?? null;
-  }, [spellProfiles, page]);
-
-  // 2. Warlock Pact Slots from evaluated model
-  const warlockPactSlots = useMemo(() => {
-    return evaluated?.pactMagic ?? null;
-  }, [evaluated]);
-
-  // 3. Standard Multiclass Spell Slots
-  const multiclassSlotsResult = useMemo(() => {
-    return currentCharacter ? calculateMulticlassSpellSlots(currentCharacter) : { slots: [] as number[] };
-  }, [currentCharacter]);
-
-  const grantedProfiles: InnateSpellProfile[] = useMemo(() => {
-    return evaluated?.grantedSpellSources ?? [];
-  }, [evaluated]);
-
-  const lockedCards: LockedPreparedCard[] = evaluated?.lockedPreparedCards ?? [];
+  const grantedProfiles: InnateSpellProfile[] = page?.grantedCards ?? [];
+  const lockedCards: LockedPreparedCard[] = page?.lockedCards ?? [];
+  const atWillInvocations = page?.atWillCards ?? [];
 
   // Library spells
   const allSpells = useMemo(() => getSpells(activeBooks), [activeBooks]);
 
-  // Spells known by the active profile
+  // Spells known by the open owner
   const activeKnownSpells = useMemo(() => {
-    return activeProfile ? activeProfile.knownSpells : [];
-  }, [activeProfile]);
+    return page?.profile ? page.profile.knownSpells : [];
+  }, [page]);
 
   const hasAgonizingBlast = useMemo(() => {
     return currentCharacter ? hasInvocation(currentCharacter, "Agonizing Blast") : false;
@@ -209,55 +161,30 @@ export const SpellsTab: React.FC = () => {
     return effectiveScores(currentCharacter).modifiers.cha;
   }, [currentCharacter]);
 
-  const warlockClass = useMemo(() => {
-    return (currentCharacter?.classes || []).find((c) => c.className.toLowerCase() === "warlock");
-  }, [currentCharacter]);
-  const warlockLevel = warlockClass ? warlockClass.level : 0;
-  const hasAncientSecrets = useMemo(() => {
-    return currentCharacter ? hasInvocation(currentCharacter, "Book of Ancient Secrets") : false;
-  }, [currentCharacter]);
-  const maxRitualLevel = getMaxRitualBookLevel(warlockLevel);
+  const ritual = page?.ritualBook ?? null;
+  const hasAncientSecrets = ritual !== null;
+  const maxRitualLevel = ritual?.maxLevel ?? 0;
 
+  // The offer from the Spell Page, narrowed by the modal's level filter and search.
   const eligibleInscribeSpells = useMemo(() => {
-    if (!hasAncientSecrets || warlockLevel < 2) return [];
-    const upperBooks = activeBooks ? activeBooks.map((b) => b.toUpperCase()) : undefined;
-    const allSpellsList = getSpells(upperBooks);
-    const currentBookNames = new Set(
-      (currentCharacter?.ritualBook || []).map((r) => r.name.toLowerCase().trim())
-    );
-
-    return allSpellsList
-      .filter((s) => isSpellEligibleForRitualBook(s, warlockLevel, activeBooks))
-      .filter((s) => !currentBookNames.has(s.name.toLowerCase().trim()))
-      .filter((s) => {
-        if (inscribeLevelFilter !== null && s.level !== inscribeLevelFilter) return false;
-        if (inscribeSearchQuery.trim()) {
-          const q = inscribeSearchQuery.toLowerCase().trim();
-          return s.name.toLowerCase().includes(q) || Boolean(s.school?.toLowerCase().includes(q));
-        }
-        return true;
-      })
-      .sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
-  }, [
-    hasAncientSecrets,
-    warlockLevel,
-    activeBooks,
-    currentCharacter?.ritualBook,
-    inscribeLevelFilter,
-    inscribeSearchQuery,
-  ]);
-
-  const mysticArcanumTiers = useMemo(() => {
-    return currentCharacter ? getMysticArcanumTiers(currentCharacter) : [];
-  }, [currentCharacter]);
+    const offer = ritual?.inscribeOffer ?? [];
+    return offer.filter((s) => {
+      if (inscribeLevelFilter !== null && s.level !== inscribeLevelFilter) return false;
+      if (inscribeSearchQuery.trim()) {
+        const q = inscribeSearchQuery.toLowerCase().trim();
+        return s.name.toLowerCase().includes(q) || Boolean(s.school?.toLowerCase().includes(q));
+      }
+      return true;
+    });
+  }, [ritual, inscribeLevelFilter, inscribeSearchQuery]);
 
   const knownNames = useMemo(() => activeKnownSpells.map((k) => k.name), [activeKnownSpells]);
 
   // The Add Spells picker: the spells this owner may learn, plus the ones it knows (shown locked).
   const pickerLearnable = useMemo(() => {
-    if (!activeProfile || !currentCharacter) return null;
-    return learnableSpells(currentCharacter, activeProfile, { activeBooks });
-  }, [activeProfile, currentCharacter, activeBooks]);
+    if (!page?.profile || !currentCharacter) return null;
+    return learnableSpells(currentCharacter, page.profile, { activeBooks });
+  }, [page, currentCharacter, activeBooks]);
 
   const pickerSpells = useMemo(() => {
     if (!pickerLearnable) return [];
@@ -267,29 +194,25 @@ export const SpellsTab: React.FC = () => {
     return [...pickerLearnable.spells, ...known].sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
   }, [pickerLearnable, activeKnownSpells, allSpells]);
 
-  const swapAllowedSchools = useMemo(() => {
-    if (!activeProfile?.subclass) return [];
-    return getSubclassAllowedSwapSchools(activeProfile.subclass);
-  }, [activeProfile]);
-
-  const eligibleSwaps = useMemo(() => {
-    if (!swapTargetSpell || !activeProfile?.subclass) return [];
-    return getEligibleSubclassSpellSwaps(
-      activeProfile.subclass,
-      swapTargetSpell.spell,
-      activeBooks
-    );
-  }, [swapTargetSpell, activeProfile, activeBooks]);
+  // The swap offer for the spell being replaced; the modal is only open while a target is set.
+  const swapOffer = useMemo(() => {
+    if (!swapTargetSpell || !currentCharacter || !page?.owner) return { allowedSchools: [], eligible: [] };
+    return subclassSwapOffer(currentCharacter, page.owner, swapTargetSpell.originalName, {
+      compendium: currentCompendium(),
+      activeBooks,
+    });
+  }, [swapTargetSpell, currentCharacter, page, activeBooks]);
+  const swapAllowedSchools = swapOffer.allowedSchools;
 
   const filteredEligibleSwaps = useMemo(() => {
-    if (!swapSearchQuery) return eligibleSwaps;
+    if (!swapSearchQuery) return swapOffer.eligible;
     const q = swapSearchQuery.toLowerCase();
-    return eligibleSwaps.filter(
+    return swapOffer.eligible.filter(
       (s) =>
         s.name.toLowerCase().includes(q) ||
         Boolean(s.school?.toLowerCase().includes(q))
     );
-  }, [eligibleSwaps, swapSearchQuery]);
+  }, [swapOffer, swapSearchQuery]);
 
   // Helpers and event handlers
   const showSpellDetail = (item: { name: string; source: string; details?: SpellData }) => {
@@ -513,10 +436,6 @@ export const SpellsTab: React.FC = () => {
       </Card>
     ));
 
-  const atWillInvocations = useMemo(() => {
-    return currentCharacter ? getAtWillInvocationSpells(currentCharacter) : [];
-  }, [currentCharacter]);
-
   const renderAtWillInvocationsCard = () => {
     if (atWillInvocations.length === 0) return null;
     return (
@@ -533,8 +452,7 @@ export const SpellsTab: React.FC = () => {
           <Badge label="At Will" variant="accent" size="sm" />
         </View>
         <View style={{ marginTop: 8, gap: 6 }}>
-          {atWillInvocations.map(({ invocationName, spellName }) => {
-            const spell = findSpell(spellName);
+          {atWillInvocations.map(({ invocationName, spellName, details: spell }) => {
             return (
               <View
                 key={`at_will_${invocationName}_${spellName}`}
@@ -577,7 +495,7 @@ export const SpellsTab: React.FC = () => {
     return null;
   }
 
-  if (spellProfiles.length === 0) {
+  if (!page?.profile) {
     if (grantedProfiles.length > 0 || lockedCards.length > 0 || atWillInvocations.length > 0) {
       return (
         <ScrollView style={styles.container} contentContainerStyle={[styles.content, sheetScrollPad]}>
@@ -609,27 +527,26 @@ export const SpellsTab: React.FC = () => {
     );
   }
 
-  // Active profile is guaranteed to exist here
-  const currentProfile = activeProfile!;
+  // The open owner is guaranteed to exist here
   const currentPage = page!;
+  const currentProfile = currentPage.profile!;
   const header = currentPage.header!;
 
-  // Sorcerer specifics
-  const sorcererClass = currentCharacter.classes.find((c) => c.className === "Sorcerer");
-  const sorcererLevel = sorcererClass?.level || 0;
-  const hasMetamagicAccess = sorcererLevel >= 3;
-  const maxSorceryPoints = sorcererLevel;
-  const usedSorceryPoints = currentCharacter.sorceryPointsUsed || 0;
-  const currentSorceryPoints = Math.max(0, maxSorceryPoints - usedSorceryPoints);
-  const maxMetamagic = sorcererLevel >= 17 ? 4 : sorcererLevel >= 10 ? 3 : 2;
-  const selectedMetamagic = currentCharacter.metamagicOptions ?? currentCharacter.chosenMetamagic ?? [];
+  // Sorcery points show from Sorcerer 2; Metamagic from Sorcerer 3.
+  const sorceryPoints = currentPage.sorceryPoints;
+  const metamagic = currentPage.metamagic;
+  const sorcererLevel = sorceryPoints?.max ?? 0;
+  const usedSorceryPoints = sorceryPoints?.used ?? 0;
+  const currentSorceryPoints = sorceryPoints?.remaining ?? 0;
+  const maxMetamagic = metamagic?.allowance ?? 0;
+  const selectedMetamagic = metamagic?.chosen ?? [];
 
-  const pactSlotsUsed = spellLedger?.pactSlots?.used ?? 0;
-  const remainingPactSlots = spellLedger?.pactSlots?.remaining ?? 0;
+  const pact = currentPage.pactSlots;
+  const pactSlotsUsed = pact?.used ?? 0;
+  const remainingPactSlots = pact?.remaining ?? 0;
 
-  // Standard spell slots
-  const spellSlots = multiclassSlotsResult.slots;
-  const hasStandardSlots = spellLedger?.hasStandardSlots ?? false;
+  const arcanumTiers = currentPage.mysticArcanum;
+  const slots = currentPage.slots;
 
   // Slot handlers
   const toggleSlot = (lvl: number, slotIndex: number, _currentUsed?: number) => {
@@ -654,7 +571,7 @@ export const SpellsTab: React.FC = () => {
   };
 
   const toggleMetamagic = (name: string) => {
-    const current = currentCharacter.metamagicOptions ?? currentCharacter.chosenMetamagic ?? [];
+    const current = selectedMetamagic;
     let updated: string[];
     if (current.includes(name)) {
       updated = current.filter((m) => m !== name);
@@ -818,14 +735,14 @@ export const SpellsTab: React.FC = () => {
         </Card>
       )}
 
-      {/* Sorcerer Metamagic & Sorcery Points Section (Sorcerer Level >= 3) */}
-      {hasMetamagicAccess && (
+      {/* Sorcery points (Sorcerer 2); the Metamagic button and list from Sorcerer 3 */}
+      {sorceryPoints && (
         <Card style={[styles.sorceryCard, { borderColor: theme.accentHover }]}>
           <View style={styles.cardHeaderRow}>
             <View style={styles.cardTitleBlock}>
               <Text style={[styles.sectionTitle, { color: theme.accentHover }]}>SORCERY POINTS</Text>
               <Text style={{ color: theme.textSecondary, fontSize: 13, marginTop: 2 }}>
-                {currentSorceryPoints} / {maxSorceryPoints} Available (Long Rest reset)
+                {currentSorceryPoints} / {sorcererLevel} Available (Long Rest reset)
               </Text>
             </View>
 
@@ -844,17 +761,19 @@ export const SpellsTab: React.FC = () => {
                 onPress={() => regainSorceryPoint(1)}
                 disabled={usedSorceryPoints <= 0}
               />
-              <Button
-                title={`Metamagic (${selectedMetamagic.length}/${maxMetamagic})`}
-                size="sm"
-                variant="outline"
-                onPress={() => setMetamagicModalVisible(true)}
-              />
+              {metamagic && (
+                <Button
+                  title={`Metamagic (${selectedMetamagic.length}/${maxMetamagic})`}
+                  size="sm"
+                  variant="outline"
+                  onPress={() => setMetamagicModalVisible(true)}
+                />
+              )}
             </View>
           </View>
 
           {/* Chosen Metamagic list */}
-          {selectedMetamagic.length > 0 && (
+          {metamagic && selectedMetamagic.length > 0 && (
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
               {selectedMetamagic.map((m: string) => {
                 const opt = METAMAGIC_OPTIONS.find((o) => o.name === m);
@@ -880,20 +799,20 @@ export const SpellsTab: React.FC = () => {
       )}
 
       {/* Warlock Pact Slots (Strictly Separate from Multiclass Slots) */}
-      {warlockPactSlots && (
+      {pact && (
         <Card style={[styles.pactCard, { borderColor: theme.accentHover }]}>
           <View style={styles.cardHeaderRow}>
             <View style={styles.cardTitleBlock}>
               <Text style={[styles.sectionTitle, { color: theme.accentHover }]}>WARLOCK PACT MAGIC</Text>
               <Text style={{ color: theme.textSecondary, fontSize: 13, marginTop: 2 }}>
-                {warlockPactSlots.count} {warlockPactSlots.count === 1 ? "slot" : "slots"} of {formatOrdinal(warlockPactSlots.level)} level (Short Rest reset)
+                {pact.total} {pact.total === 1 ? "slot" : "slots"} of {formatOrdinal(pact.level)} level (Short Rest reset)
               </Text>
             </View>
             <Badge label="Short Rest reset" variant="secondary" size="sm" />
           </View>
 
           <View style={styles.slotsTrackerRow}>
-            {Array.from({ length: warlockPactSlots.count }).map((_, slotIdx) => {
+            {Array.from({ length: pact.total }).map((_, slotIdx) => {
               const isUsed = slotIdx < pactSlotsUsed;
               return (
                 <TouchableOpacity
@@ -912,14 +831,14 @@ export const SpellsTab: React.FC = () => {
               );
             })}
             <Text style={{ color: theme.textMuted, fontSize: 12, marginLeft: 8 }}>
-              {remainingPactSlots} / {warlockPactSlots.count} remaining
+              {remainingPactSlots} / {pact.total} remaining
             </Text>
           </View>
         </Card>
       )}
 
       {/* Mystic Arcanum (Warlock Level >= 11) */}
-      {mysticArcanumTiers.length > 0 && (
+      {arcanumTiers.length > 0 && (
         <Card style={{ marginBottom: 16, borderColor: theme.accentHover }}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
             <View style={{ flex: 1, marginRight: 8 }}>
@@ -936,12 +855,9 @@ export const SpellsTab: React.FC = () => {
           </View>
 
           <View style={{ gap: 8 }}>
-            {mysticArcanumTiers.map((tier) => {
-              const spell = tier.spellData || (tier.chosenSpellName ? findSpell(tier.chosenSpellName) : undefined);
+            {arcanumTiers.map((tier) => {
+              const spell = tier.spellData;
               const isSpent = tier.isSpent;
-
-              const warlockDc = currentProfile.className === "Warlock" ? currentProfile.spellSaveDc : (8 + proficiencyBonus(totalLevel(currentCharacter)) + chaModifier);
-              const warlockAtk = currentProfile.className === "Warlock" ? currentProfile.spellAttackBonus : (proficiencyBonus(totalLevel(currentCharacter)) + chaModifier);
 
               return (
                 <View
@@ -995,7 +911,7 @@ export const SpellsTab: React.FC = () => {
                           {tier.chosenSpellName}
                         </Text>
                         <Text style={{ color: theme.textMuted, fontSize: 11, marginTop: 2 }}>
-                          {spell?.castingTime || "1 action"} • {spell?.range || "Self"} • DC {warlockDc} • {formatModifier(warlockAtk)} Atk
+                          {spell?.castingTime || "1 action"} • {spell?.range || "Self"} • DC {tier.dc ?? "—"} • {tier.attackBonus === null ? "—" : formatModifier(tier.attackBonus)} Atk
                         </Text>
                       </TouchableOpacity>
                     ) : null}
@@ -1018,19 +934,14 @@ export const SpellsTab: React.FC = () => {
       )}
 
       {/* Multiclass / Standard Spell Slots Table (Levels 1-9) */}
-      {hasStandardSlots && (
+      {slots && (
         <Card style={{ marginBottom: 16 }}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>SPELL SLOTS</Text>
             <Badge label="Long Rest reset" variant="secondary" size="sm" />
           </View>
           <View style={{ gap: 8 }}>
-            {spellSlots.map((maxSlots, idx) => {
-              if (maxSlots === 0) return null;
-              const lvl = idx + 1;
-              const used = (currentCharacter.usedSpellSlots || {})[lvl] || 0;
-              const remaining = Math.max(0, maxSlots - used);
-
+            {slots.map(({ level: lvl, total: maxSlots, used, remaining }) => {
               return (
                 <View key={`slot_row_${lvl}`} style={styles.slotRow}>
                   <View style={{ width: 80 }}>
@@ -1084,7 +995,7 @@ export const SpellsTab: React.FC = () => {
                 <Badge label="Ritual Casting" variant="accent" size="sm" />
               </View>
               <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }}>
-                {(currentCharacter?.ritualBook || []).length} inscribed rituals • Max level {maxRitualLevel} (half Warlock level rounded up)
+                {ritual?.entries.length ?? 0} inscribed rituals • Max level {maxRitualLevel} (half Warlock level rounded up)
               </Text>
             </View>
             {hasAncientSecrets && (
@@ -1103,20 +1014,20 @@ export const SpellsTab: React.FC = () => {
             )}
           </View>
 
-          {(!currentCharacter?.ritualBook || currentCharacter.ritualBook.length === 0) ? (
+          {(ritual?.entries.length ?? 0) === 0 ? (
             <Text style={{ color: theme.textMuted, fontSize: 12, fontStyle: "italic", paddingVertical: 4 }}>
               No rituals inscribed yet. Choose your 2 starting rituals in the builder or inscribe rituals found during adventures.
             </Text>
           ) : (
             <View style={{ gap: 4 }}>
-              {currentCharacter.ritualBook.map((item, idx) => (
+              {(ritual?.entries ?? []).map((item, idx) => (
                 <View
                   key={`ritual_${item.name}_${idx}`}
                   style={[
                     styles.spellRow,
                     {
                       borderBottomColor: theme.border,
-                      borderBottomWidth: idx === currentCharacter.ritualBook!.length - 1 ? 0 : 1,
+                      borderBottomWidth: idx === (ritual?.entries.length ?? 0) - 1 ? 0 : 1,
                       paddingVertical: 6,
                     },
                   ]}>
