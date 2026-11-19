@@ -267,6 +267,8 @@ export async function scrapeClasses(
                 choose: s.choose.count || 2,
                 from: (s.choose.from || []).map((skill: string) => cleanTags(skill, "plain")),
               };
+            } else if (typeof s.any === "number") {
+              skillProficiencies = { choose: s.any, from: [] };
             }
           }
         }
