@@ -41,17 +41,6 @@ export const DND_SKILLS: SkillDefinition[] = [
   { name: "Persuasion", ability: "cha" },
 ];
 
-export const POINT_BUY_COST: Record<number, number> = {
-  8: 0,
-  9: 1,
-  10: 2,
-  11: 3,
-  12: 4,
-  13: 5,
-  14: 7,
-  15: 9,
-};
-
 export const STANDARD_ARRAY = [15, 14, 13, 12, 10, 8];
 
 /** The base score an ability nothing has set holds: the Point Buy floor, so a new character has all 27 points left. */

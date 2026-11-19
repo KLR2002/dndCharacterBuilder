@@ -12,6 +12,7 @@ import type { Compendium } from "../src/services/compendium.ts";
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
 import { renameSrdNames } from "../src/rules/srdNames.ts";
 import * as rules from "../src/constants/rules.ts";
+import { POINT_BUY_BUDGET, pointBuySpent } from "../src/rules/pointBuy.ts";
 import { featSpellRuleChoices } from "../src/rules/choices/featSpells.ts";
 import { pickRuleChoice } from "../src/rules/ruleChoices.ts";
 import { grantedSpellClasses, grantedSpellFeats, grantedSpellSpells } from "./grantedSpellsFixture.ts";
@@ -694,6 +695,5 @@ test("a new character's base scores are 8 and its Point Buy has all 27 points le
   h.render();
   const created: Character = await create;
   assert.deepEqual(created.baseAbilityScores, { str: 8, dex: 8, con: 8, int: 8, wis: 8, cha: 8 });
-  const spent = Object.values(created.baseAbilityScores).reduce((sum, score) => sum + rules.POINT_BUY_COST[score], 0);
-  assert.equal(27 - spent, 27);
+  assert.equal(POINT_BUY_BUDGET - pointBuySpent(created.baseAbilityScores), 27);
 });
