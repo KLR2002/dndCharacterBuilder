@@ -32,7 +32,6 @@ import {
   UNSET_ABILITY_SCORE,
   unsetAbilityScores,
 } from "../constants/rules.ts";
-import { SRD_SOURCE } from "../constants/books.ts";
 import { allCatalogClasses, findClassData, type CharacterCatalogs } from "./catalogs.ts";
 import { isSwapId, languageSwapStateOf, multiclassGrantsOf, proficiencySwapStateOf } from "./proficiencySheet.ts";
 import { clearProficiencyPick, recordProficiencyPick } from "./proficiencyPools.ts";
@@ -1066,29 +1065,31 @@ export function reclaimBackgroundGrants(character: Character, backgroundData?: B
 /**
  * Checks character features (race, subrace, classes, subclasses, background, feats, spells, items)
  * against active books and returns human-readable warnings for any features from disabled books.
+ * A source the Compendium admits for `activeBooks` raises no warning.
  */
 export function checkActiveBooksIntegrity(
   character: Character,
-  activeBooks: string[]
+  activeBooks: string[],
+  compendium: Compendium = currentCompendium()
 ): string[] {
-  const activeSet = new Set([SRD_SOURCE, ...(activeBooks || []).map((b) => b.toUpperCase())]);
+  const listings = compendium.for(activeBooks);
   const warnings: string[] = [];
 
   // 1. Race & Subrace
-  if (character.race?.source && !activeSet.has(character.race.source.toUpperCase())) {
+  if (character.race?.source && !listings.admits(character.race.source)) {
     warnings.push(`Race "${character.race.name}" is from disabled sourcebook "${character.race.source}".`);
   }
-  if (character.race?.subraceSource && !activeSet.has(character.race.subraceSource.toUpperCase())) {
+  if (character.race?.subraceSource && !listings.admits(character.race.subraceSource)) {
     warnings.push(`Subrace "${character.race.subraceName}" is from disabled sourcebook "${character.race.subraceSource}".`);
   }
 
   // 2. Classes & Subclasses
   for (const cls of character.classes || []) {
-    if (cls.source && !activeSet.has(cls.source.toUpperCase())) {
+    if (cls.source && !listings.admits(cls.source)) {
       warnings.push(`Class "${cls.className}" is from disabled sourcebook "${cls.source}".`);
     }
     const subName = cls.subclassName || cls.subclass;
-    if (cls.subclassSource && !activeSet.has(cls.subclassSource.toUpperCase())) {
+    if (cls.subclassSource && !listings.admits(cls.subclassSource)) {
       warnings.push(`Subclass "${subName || "Unknown"}" is from disabled sourcebook "${cls.subclassSource}".`);
     }
   }
@@ -1097,40 +1098,40 @@ export function checkActiveBooksIntegrity(
   if (
     character.background?.source &&
     !isCustomBackground(character.background) &&
-    !activeSet.has(character.background.source.toUpperCase())
+    !listings.admits(character.background.source)
   ) {
     warnings.push(`Background "${character.background.name}" is from disabled sourcebook "${character.background.source}".`);
   }
 
   // 4. Feats (ASIs & Origin Feats)
   for (const asi of character.asiSelections || []) {
-    if (asi.type === "feat" && asi.featSource && asi.featSource !== BACKGROUND_FEAT_SOURCE && !activeSet.has(asi.featSource.toUpperCase())) {
+    if (asi.type === "feat" && asi.featSource && asi.featSource !== BACKGROUND_FEAT_SOURCE && !listings.admits(asi.featSource)) {
       warnings.push(`Feat "${asi.featName}" is from disabled sourcebook "${asi.featSource}".`);
     }
   }
   for (const feat of character.originFeats || []) {
-    if (feat.featSource && feat.featSource !== BACKGROUND_FEAT_SOURCE && !activeSet.has(feat.featSource.toUpperCase())) {
+    if (feat.featSource && feat.featSource !== BACKGROUND_FEAT_SOURCE && !listings.admits(feat.featSource)) {
       warnings.push(`Feat "${feat.featName}" is from disabled sourcebook "${feat.featSource}".`);
     }
   }
 
   // 5. Spells
   for (const spell of character.knownSpells || []) {
-    if (spell.source && !activeSet.has(spell.source.toUpperCase())) {
+    if (spell.source && !listings.admits(spell.source)) {
       warnings.push(`Spell "${spell.name}" is from disabled sourcebook "${spell.source}".`);
     }
   }
 
   // 6. Items
   for (const item of character.items || []) {
-    if (item.source && !item.isCustom && !activeSet.has(item.source.toUpperCase())) {
+    if (item.source && !item.isCustom && !listings.admits(item.source)) {
       warnings.push(`Item "${item.name}" is from disabled sourcebook "${item.source}".`);
     }
   }
 
   // 7. Ritual Book
   for (const ritual of character.ritualBook || []) {
-    if (ritual.source && !activeSet.has(ritual.source.toUpperCase())) {
+    if (ritual.source && !listings.admits(ritual.source)) {
       warnings.push(`Ritual "${ritual.name}" in Ritual Book is from disabled sourcebook "${ritual.source}".`);
     }
   }

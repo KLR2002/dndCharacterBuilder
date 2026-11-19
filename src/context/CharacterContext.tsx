@@ -312,7 +312,7 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
     const activeSet = new Set(books.map((b) => b.toUpperCase()));
     await changeCharacters((previous) =>
       previous.map((c) => {
-        const warnings = checkActiveBooksIntegrity(c, books);
+        const warnings = checkActiveBooksIntegrity(c, books, currentCompendium());
         const existing = (c.needsReview || []).filter((w) => {
           const match = w.match(/from disabled sourcebook "([^"]+)"/);
           if (match && match[1]) {

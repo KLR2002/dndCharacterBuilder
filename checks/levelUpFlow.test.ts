@@ -116,7 +116,7 @@ test("a level reaching the subclass level plans no Subclass step when the active
     className: "Warden",
     classSource: "PHB",
   } as unknown as SubclassData;
-  const compendium = inMemoryCompendium({ classes: [wardenClass({ subclasses: [lampwright] })] });
+  const compendium = inMemoryCompendium({ classes: [wardenClass({ subclasses: [lampwright] })] }, { integrated: true });
   const warden = makeChar({
     baseAbilityScores: { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 },
     classes: [{ className: "Warden", source: "PHB", level: 2 }],
