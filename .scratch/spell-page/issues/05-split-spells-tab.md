@@ -11,8 +11,12 @@
 
 SpellsTab keeps the page call, the open owner, the modal visibility state and the handlers that call the Ledger's write functions. Props carry Spell Page data and callbacks; components do not call `useCharacter` or write the character. Move the styles with the components. The rendered output must not change: same testIDs, same text, same order.
 
+Before splitting, remove the tab's remaining catalog reads:
+- The Add Spells list (`learnableSpells` plus the known spells looked up in `getSpells`, today `pickerLearnable` / `pickerSpells`) becomes `addSpellsOffer(character, ownerKey, catalogs)` in `src/rules/spellPage.ts`, returning `{ spells, restrictedSchools, knownNames }`.
+- The `findSpell` fallbacks (detail opener, swap target, ritual book rows) read the details the page rows already carry. Add `details` to ritual book entries and to the swap offer's original spell where they are missing.
+
 Add a guard test, `checks/spellsTabComponents.test.ts` (follow `checks/builderStepComponents.test.ts`):
-- `SpellsTab.tsx` and every file in `src/components/spells/` import from `src/rules/` only `spellPage.ts`, the Ledger write functions in `characterSpells.ts`, `learnableSpells.ts` (SpellLearnList's Add Spells list), and types.
+- `SpellsTab.tsx` and every file in `src/components/spells/` import from `src/rules/` only `spellPage.ts`, the Ledger write functions in `characterSpells.ts`, and types, and none imports `services/dataService`.
 - No file in `src/components/spells/` imports `useCharacter`.
 
 **Blocked by:** 04
