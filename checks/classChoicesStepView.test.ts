@@ -1,13 +1,12 @@
 import { ALL_BOOKS } from "../src/constants/books.ts";
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
-import { integratedTestCompendium, makeChar, resetTestCompendium } from "./testUtils.ts";
+import { integratedTestCompendium, makeChar, resetTestCompendium, startingSkillPickOf } from "./testUtils.ts";
 import type { Character, CharacterClass } from "../src/types/character.ts";
 import { classChoicesLevelView, classChoicesStepView } from "../src/rules/classChoices.ts";
 import { isCreationStepValid } from "../src/rules/creationFlow.ts";
 import { offeredRuleChoices } from "../src/rules/ruleChoices.ts";
 import { proficiencyChoiceOffers, skillPickOffers } from "../src/rules/proficiencyChoiceOffers.ts";
-import { skillChoiceOffers } from "../src/rules/proficiencySheet.ts";
 import { classChoiceCharacters } from "./classChoiceCharacters.ts";
 
 resetTestCompendium();
@@ -21,19 +20,11 @@ const cl = (className: string, level: number, subclassName?: string): CharacterC
   subclassName,
 });
 
-/** The character with its class's starting skill pick made, recorded the way the Builder's Skills card records it. */
+/** The character with its class's starting skill pick made, recorded as a pick of that Proficiency Choice. */
 function withStartingSkills(character: Character): Character {
-  const offer = skillChoiceOffers(character, query).find((o) => o.source.startsWith("Class:"));
+  const offer = startingSkillPickOf(character, query);
   assert.ok(offer, "the class offers a starting skill pick");
-  const picked = offer.from.slice(0, offer.choose);
-  return {
-    ...character,
-    chosenSkills: [...(character.chosenSkills ?? []), ...picked],
-    skillChoices: [
-      ...(character.skillChoices ?? []),
-      { id: offer.source, origin: "class", choose: offer.choose, from: offer.from, picked },
-    ],
-  };
+  return { ...character, proficiencyPicks: { [offer.id]: offer.from.slice(0, offer.choose) } };
 }
 
 /** The Class Choices step as the section assembled it before the view existed: the oracle for the parity tests. */
@@ -45,7 +36,6 @@ function oldAssembly(character: Character) {
     (choice) => (choice.origin === "class" || choice.origin === "subclass") && !skillIds.has(choice.id),
   );
   return {
-    startingSkills: skillChoiceOffers(character, query).filter((offer) => offer.source.startsWith("Class:")),
     skillOffers,
     rules,
     others: [...rules.filter((choice) => !choice.group), ...proficiencies],
@@ -58,7 +48,6 @@ describe("The Class Choices view lists the choices the section listed", () => {
       const old = oldAssembly(character);
       const view = classChoicesStepView(character, query);
 
-      assert.deepEqual(view.startingSkills, old.startingSkills);
       assert.deepEqual(view.skillPicks, old.skillOffers);
       for (const group of ["fightingStyle", "maneuver", "warlock", "infusion"] as const) {
         assert.deepEqual(
@@ -75,7 +64,7 @@ describe("The Class Choices view lists the choices the section listed", () => {
 describe("The Class Choices view is complete when every pick it asks for is made", () => {
   test("a Rogue 1 with its skills picked is incomplete until two Expertise picks are made", () => {
     const rogue = withStartingSkills(makeChar({ classes: [cl("Rogue", 1)] }));
-    const skills = skillChoiceOffers(rogue, query)[0].from;
+    const skills = startingSkillPickOf(rogue, query)!.from;
     assert.equal(classChoicesStepView(rogue, query).complete, false, "no Expertise pick yet");
 
     const withExpertise = { ...rogue, chosenExpertise: skills.slice(0, 2) };
@@ -108,7 +97,6 @@ describe("The Level-Up view lists the choices of one class's new level", () => {
     const fighter = makeChar({ classes: [cl("Fighter", 6, "Battle Master")] });
     const view = classChoicesLevelView(fighter, cl("Fighter", 7, "Battle Master"), 6, query);
     assert.deepEqual(view.cards.maneuver.map((choice) => choice.traitName), ["Additional Maneuvers (7th Level)"]);
-    assert.deepEqual(view.startingSkills, []);
     assert.deepEqual(view.skillPicks, []);
     assert.deepEqual(view.expertise, { picks: [], invalidPicks: [] });
     assert.deepEqual(view.optionalFeatures, []);
@@ -118,7 +106,7 @@ describe("The Level-Up view lists the choices of one class's new level", () => {
 
   test("a class's first level lists its starting skill pick", () => {
     const view = classChoicesLevelView(makeChar(), cl("Rogue", 1), 0, query);
-    assert.equal(view.startingSkills.length, 1);
+    assert.deepEqual(view.skillPicks.map((offer) => offer.traitName), ["Rogue starting skills"]);
     assert.equal(view.applies, true);
   });
 
@@ -145,7 +133,7 @@ describe("The Creation Flow reads the view for the Class Choices step", () => {
     const draft = withStartingSkills(makeChar({ classes: [cl("Rogue", 1)] }));
     assert.equal(isCreationStepValid(draft, "classChoices", query), false);
 
-    const skills = skillChoiceOffers(draft, query)[0].from;
+    const skills = startingSkillPickOf(draft, query)!.from;
     assert.equal(isCreationStepValid({ ...draft, chosenExpertise: skills.slice(0, 2) }, "classChoices", query), true);
   });
 });

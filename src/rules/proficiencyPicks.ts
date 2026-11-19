@@ -5,11 +5,13 @@ import type { Compendium } from "../services/compendium.ts";
 import { grantRequirementMet } from "./optionFeatureGrants.ts";
 import { findClassData } from "./catalogs.ts";
 import {
+  isLegacyFirstClassSkillEntry,
   isSwapId,
   MULTICLASS_FEATURE,
   originalOfSwapId,
   multiclassSkillGrantOf,
   originSwapStateOf,
+  startingSkillGrantOf,
   swapLabelOf,
   type OriginSwapState,
 } from "./proficiencySheet.ts";
@@ -167,6 +169,8 @@ type GrantOwner =
   | { kind: "class"; className: string; source: string }
   /** A later class's multiclass skill choice: held only while the class is an entry after the first. */
   | { kind: "multiclass"; className: string; source: string }
+  /** The first class's starting skill choice: held only while the class is the first entry. */
+  | { kind: "starting"; className: string; source: string }
   | { kind: "subclass"; className: string; source: string; subclassName: string; subclassSource: string }
   | { kind: "feat"; featName: string }
   | { kind: "record"; origin: "Race" | "Subrace" | "Background"; name: string; source: string; raceName?: string; raceSource?: string }
@@ -228,6 +232,15 @@ function grantSourcesIn(compendium: Compendium, activeBooks: ActiveBooks): Map<s
         level: feature.level,
         optional: feature.isOptional === true,
         owner: { kind: "class", className: cls.name, source: cls.source },
+      });
+    }
+    const startingSkill = startingSkillGrantOf(cls);
+    if (startingSkill) {
+      add([startingSkill], {
+        feature: STARTING_PROFICIENCIES,
+        level: 1,
+        optional: false,
+        owner: { kind: "starting", className: cls.name, source: cls.source },
       });
     }
     const multiclassSkill = multiclassSkillGrantOf(cls);
@@ -303,6 +316,12 @@ function ownerHeld(source: GrantSource, character: Character, classes: readonly 
     return [...(character.asiSelections ?? []), ...(character.originFeats ?? [])].some(
       (selection) => selection.type === "feat" && selection.featName?.toLowerCase() === wanted,
     );
+  }
+  if (owner.kind === "starting") {
+    const first = character.classes[0];
+    if (!first || first.level < source.level) return false;
+    const firstData = findClassData(classes, first);
+    return firstData !== undefined && firstData.name === owner.className && firstData.source === owner.source;
   }
   // A multiclass grant is held by a class entry after the first only, as the sheet reads it.
   const entries = owner.kind === "multiclass" ? character.classes.slice(1) : character.classes;
@@ -497,6 +516,62 @@ export function moveLegacySkillPicks(character: Character, compendium: Compendiu
     ...character,
     proficiencyPicks: Object.keys(picks).length > 0 ? picks : undefined,
     skillChoices,
+    chosenSkills,
+  };
+}
+
+/**
+ * Moves the first class's starting skill picks saved before the starting skill was a Proficiency Choice into that
+ * choice's pick. Each name goes to the pool's spelling, up to the choice's count. A name the pool does not offer, or
+ * that no open slot takes, stays in its legacy entry and in the skill bucket, where the sheet keeps reading it. A
+ * legacy entry is dropped once every name it held has moved. Returns the character unchanged when nothing moves.
+ */
+export function moveLegacyClassSkillPicks(character: Character, compendium: Compendium): Character {
+  const first = character.classes[0];
+  if (!first) return character;
+  const legacy = (character.skillChoices ?? []).filter((entry) => isLegacyFirstClassSkillEntry(entry, first));
+  if (legacy.length === 0) return character;
+
+  const cls = findClassData(compendium.for().classes(), first);
+  const grant = cls && startingSkillGrantOf(cls);
+  if (!grant) return character;
+
+  const pool = poolNames(grant);
+  const picks: Record<string, string[]> = { ...(character.proficiencyPicks ?? {}) };
+  let open = grant.count - validPicks(grant, picks[grant.id] ?? []).length;
+  const moved = new Set<string>();
+  for (const entry of legacy) {
+    for (const name of entry.picked) {
+      const key = normalizeSkillName(name).toLowerCase();
+      const canonical = pool.find((option) => option.toLowerCase() === key);
+      if (!canonical) continue;
+      const held = picks[grant.id] ?? [];
+      if (held.some((pick) => pick.toLowerCase() === key)) {
+        moved.add(key);
+      } else if (open > 0) {
+        picks[grant.id] = [...held, canonical];
+        open -= 1;
+        moved.add(key);
+      }
+    }
+  }
+  if (moved.size === 0) return character;
+
+  const skillChoices = (character.skillChoices ?? []).flatMap((entry) => {
+    if (!legacy.includes(entry)) return [entry];
+    const rest = entry.picked.filter((name) => !moved.has(normalizeSkillName(name).toLowerCase()));
+    return rest.length > 0 ? [{ ...entry, picked: rest }] : [];
+  });
+  // A moved name leaves the skill bucket unless a saved skill entry still holds it.
+  const stillHeld = new Set(skillChoices.flatMap((entry) => entry.picked.map((name) => normalizeSkillName(name).toLowerCase())));
+  const chosenSkills = (character.chosenSkills ?? []).filter((skill) => {
+    const key = normalizeSkillName(skill).toLowerCase();
+    return !moved.has(key) || stillHeld.has(key);
+  });
+  return {
+    ...character,
+    proficiencyPicks: Object.keys(picks).length > 0 ? picks : undefined,
+    skillChoices: skillChoices.length > 0 ? skillChoices : undefined,
     chosenSkills,
   };
 }
