@@ -194,6 +194,7 @@ export const SpellsTab: React.FC = () => {
   const currentPage = page!;
   const currentProfile = currentPage.profile!;
   const header = currentPage.header!;
+  const countsList = [currentPage.counts.cantrips, currentPage.counts.spells].filter((count) => count !== null);
 
   const sorcererLevel = currentPage.sorceryPoints?.max ?? 0;
   const maxMetamagic = currentPage.metamagic?.allowance ?? 0;
@@ -424,6 +425,18 @@ export const SpellsTab: React.FC = () => {
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={[styles.sectionTitle, { color: theme.text }]}>{currentPage.listTitle}</Text>
           <Text style={{ color: theme.textSecondary, fontSize: 12 }}>{currentPage.listSubtitle}</Text>
+          {countsList.length > 0 && (
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 6 }}>
+              {countsList.map((count) => (
+                <Badge
+                  key={count.text}
+                  label={count.text}
+                  variant={count.warn ? "danger" : "secondary"}
+                  size="sm"
+                />
+              ))}
+            </View>
+          )}
         </View>
         {currentPage.canAddSpells && (
           <Button

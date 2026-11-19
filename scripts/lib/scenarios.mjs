@@ -1634,7 +1634,8 @@ export function buildScreens({ integrated }) {
       { name: "Builder Class equipment picker open", route: buildRoute(FIGHTER_PICKED_ID, "equipment"), open: [{ tap: { text: "Martial weapon", exact: true } }], ready: "Greatsword", scrollTo: "Martial weapon", expect: { placeholders: ["Search…"] } },
       { name: "Builder Class equipment cleric domain", route: buildRoute(CLERIC_DOMAIN_ID, "equipment"), ready: "Starting Equipment & Gold:", scrollTo: "Starting Equipment & Gold:", expect: { texts: ["Chain Mail", "Included"], absent: ["Warhammer"], fitsWidth: true } },
       // The Creation Flow's Spells step (Edit Build on the finished wizard reaches it as well).
-      { shot: true, name: "Builder Spells step", route: buildRoute(WIZARD_ID, "spells"), ready: /add spells/i, expect: { fitsWidth: true } },
+      // The Wizard 3 knows 3 cantrips of 3 due and 5 spellbook spells of 10 due (6, then 2 per level): the spellbook counter is red.
+      { shot: true, name: "Builder Spells step", route: buildRoute(WIZARD_ID, "spells"), ready: /add spells/i, expect: { texts: ["Cantrips 3/3", "Spellbook 5/10"], fitsWidth: true } },
       // The SRD Baseline has one Cleric domain, which the app applies at once, so a Cleric without a domain exists in integrated mode only.
       ...(INTEGRATED
         ? [{ name: "Builder Class equipment cleric", route: buildRoute(CLERIC_ID, "equipment"), ready: "Starting Equipment & Gold:", scrollTo: "Starting Equipment & Gold:", expect: { texts: ["Scale Mail"], absent: ["Warhammer", "Chain Mail"], fitsWidth: true } }]
