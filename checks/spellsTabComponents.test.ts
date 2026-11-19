@@ -4,7 +4,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 // The Spells tab reads rules only through the Spell Page and the Ledger's write functions. Its components
-// render the view they are given and report through callbacks: they never call useCharacter or write the character.
+// render the view they are given and report through callbacks: they never read the character context or write the character.
 
 const TAB = fileURLToPath(new URL("../src/components/tabs/SpellsTab.tsx", import.meta.url));
 const SPELLS_DIR = fileURLToPath(new URL("../src/components/spells/", import.meta.url));
@@ -66,8 +66,8 @@ test("the Spells tab and its components import rules only through the Spell Page
   }
 });
 
-test("no Spells component calls useCharacter: the tab passes the page and callbacks down", () => {
+test("no Spells component reads the character context: the tab passes the page and callbacks down", () => {
   for (const file of spellsFiles) {
-    assert.doesNotMatch(readFileSync(file, "utf8"), /\buseCharacter\b/, file);
+    assert.doesNotMatch(readFileSync(file, "utf8"), /CharacterContext|\buseCharacters?\b/, file);
   }
 });
