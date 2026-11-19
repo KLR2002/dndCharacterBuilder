@@ -4,7 +4,7 @@ import type { ClassSpellProfile, LockedPreparedCard } from "./spellcasting.ts";
 import type { CharacterCatalogs } from "./catalogs.ts";
 import type { ActiveBooks } from "../constants/books.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
-import { effectiveScores } from "./abilities.ts";
+import { getEldritchBlastDamage } from "./attacks.ts";
 import { evaluateCharacter, type EvaluatedCharacter } from "./characterEvaluation.ts";
 import {
   countPrepared,
@@ -22,7 +22,7 @@ import {
   isSpellEligibleForRitualBook,
   type MysticArcanumTierInfo,
 } from "./ruleChoices.ts";
-import type { InnateSpellProfile } from "./innateMagic.ts";
+import type { InnateSpellEntry, InnateSpellProfile } from "./innateMagic.ts";
 import {
   getEligibleSubclassSpellSwaps,
   getSubclassAllowedSwapSchools,
@@ -101,9 +101,31 @@ export interface SpellPage {
   metamagic: { allowance: number; chosen: string[] } | null;
   mysticArcanum: SpellPageArcanumTier[];
   ritualBook: SpellPageRitualBook | null;
-  grantedCards: InnateSpellProfile[];
+  grantedCards: SpellPageGrantedCard[];
   lockedCards: LockedPreparedCard[];
   atWillCards: SpellPageAtWillCard[];
+}
+
+/** A granted source whose spells carry the Agonizing Blast damage text when it applies. */
+export interface SpellPageGrantedCard extends InnateSpellProfile {
+  spells: SpellPageGrantedSpell[];
+}
+
+export interface SpellPageGrantedSpell extends InnateSpellEntry {
+  blast?: AgonizingBlastText;
+}
+
+/** The badge and damage text an Eldritch Blast carries while Agonizing Blast is held. */
+export interface AgonizingBlastText {
+  badge: SpellPageBadge;
+  damage: string;
+}
+
+/** The title, subtitle and body of a spell's detail modal. */
+export interface SpellDetailText {
+  title: string;
+  subtitle: string;
+  content: string;
 }
 
 /** A Mystic Arcanum tier with the Warlock owner's spell save DC and attack bonus. */
@@ -124,6 +146,7 @@ export interface SpellPageAtWillCard {
   invocationName: string;
   spellName: string;
   details?: SpellData;
+  blast?: AgonizingBlastText;
 }
 
 /** A spell entry while the rows are merged, before its badges and controls are decided. */
@@ -227,14 +250,33 @@ function spellPageResources(
           inscribeOffer: inscribeOffer(character, warlockLevel, catalogs.activeBooks, compendium),
         }
       : null,
-    grantedCards: evaluated.grantedSpellSources ?? [],
-    lockedCards: evaluated.lockedPreparedCards ?? [],
-    atWillCards: getAtWillInvocationSpells(character).map(({ invocationName, spellName }) => ({
-      invocationName,
-      spellName,
-      details: compendium.findSpell(spellName),
+    grantedCards: (evaluated.grantedSpellSources ?? []).map((source) => ({
+      ...source,
+      spells: source.spells.map((spell) => withAgonizingBlast(character, spell)),
     })),
+    lockedCards: evaluated.lockedPreparedCards ?? [],
+    atWillCards: getAtWillInvocationSpells(character).map(({ invocationName, spellName }) => {
+      const agonizing = agonizingBlast(character, spellName);
+      return {
+        invocationName,
+        spellName,
+        details: compendium.findSpell(spellName),
+        ...(agonizing === null ? {} : { blast: agonizing }),
+      };
+    }),
   };
+}
+
+/** The Agonizing Blast badge and damage for an Eldritch Blast with the invocation, and null for every other spell. */
+function agonizingBlast(character: Character, spellName: string): AgonizingBlastText | null {
+  if (spellName.toLowerCase() !== "eldritch blast") return null;
+  if (!hasInvocation(character, "Agonizing Blast")) return null;
+  return { badge: { label: "Agonizing Blast", tone: "accent" }, damage: getEldritchBlastDamage(character) };
+}
+
+function withAgonizingBlast(character: Character, spell: InnateSpellEntry): SpellPageGrantedSpell {
+  const agonizing = agonizingBlast(character, spell.name);
+  return agonizing === null ? spell : { ...spell, blast: agonizing };
 }
 
 type SpellPageResources = Pick<
@@ -249,6 +291,24 @@ type SpellPageResources = Pick<
   | "lockedCards"
   | "atWillCards"
 >;
+
+/** The detail modal's text for a spell. The damage line appears on an Eldritch Blast with Agonizing Blast. */
+export function spellDetailText(spell: SpellData, character: Character): SpellDetailText {
+  const agonizing = agonizingBlast(character, spell.name);
+  const content =
+    `${spell.level === 0 ? "Cantrip" : `${spell.level}th-level`} ${spell.school || ""}\n\n` +
+    `• Casting Time: ${spell.castingTime || "1 action"}\n` +
+    `• Range: ${spell.range || "Self"}\n` +
+    `• Components: ${spell.componentsString || "V, S"}\n` +
+    `• Duration: ${spell.duration || "Instantaneous"}\n` +
+    (agonizing === null ? "" : `• Damage: ${agonizing.damage}\n`) +
+    `\n${spell.description || "No description available."}`;
+  return {
+    title: spell.name,
+    subtitle: `${spell.level === 0 ? "Cantrip" : `Level ${spell.level}`} (${spell.source})`,
+    content,
+  };
+}
 
 function classLevel(character: Character, className: string): number {
   return (character.classes || []).find((c) => c.className.toLowerCase() === className)?.level ?? 0;
@@ -440,8 +500,6 @@ function buildLevels(
     compendium,
     activeBooks: catalogs.activeBooks,
   }).restrictedSchools;
-  const hasAgonizingBlast = hasInvocation(character, "Agonizing Blast");
-  const chaModifier = effectiveScores(character).modifiers.cha;
 
   const levels: SpellPageLevel[] = [];
   for (let level = 0; level <= 9; level++) {
@@ -449,9 +507,7 @@ function buildLevels(
     if (entries.length === 0) continue;
     const hasAtWill = entries.some((e) => e.isAtWillInvocation);
     const title = level === 0 && hasAtWill ? "CANTRIPS & AT-WILL" : SPELL_LEVEL_NAMES[level].toUpperCase();
-    const rows = entries.map((entry) =>
-      buildRow(character, profile, level, entry, restrictedSchools, hasAgonizingBlast, chaModifier),
-    );
+    const rows = entries.map((entry) => buildRow(character, profile, level, entry, restrictedSchools));
     levels.push({ level, title, rows });
   }
   return levels;
@@ -463,12 +519,9 @@ function buildRow(
   level: number,
   entry: SpellEntry,
   restrictedSchools: string[],
-  hasAgonizingBlast: boolean,
-  chaModifier: number,
 ): SpellPageRow {
   const school = entry.details?.school;
-  const isEldritchBlast = entry.name.toLowerCase() === "eldritch blast";
-  const showAgonizingBlast = isEldritchBlast && hasAgonizingBlast;
+  const agonizing = agonizingBlast(character, entry.name);
 
   const badges: SpellPageBadge[] = [];
   if (entry.isAlwaysPrepared) {
@@ -499,13 +552,13 @@ function buildRow(
   if (entry.isAtWillInvocation) {
     badges.push({ label: "At Will - Invocation", tone: "accent" });
   }
-  if (showAgonizingBlast) {
-    badges.push({ label: `[Agonizing Blast: +${chaModifier} dmg]`, tone: "accent" });
+  if (agonizing !== null) {
+    badges.push(agonizing.badge);
   }
 
   const subtitle =
     `${entry.details?.school || ""} • ${entry.details?.castingTime || "1 action"} • ${entry.source}` +
-    (showAgonizingBlast ? ` • 1d10 + ${chaModifier} force` : "");
+    (agonizing === null ? "" : ` • ${agonizing.damage}`);
 
   const levelled = level > 0 && profile.className !== "Monk";
   const prepare = !levelled ? "none" : entry.isAlwaysPrepared ? "locked" : "toggle";
