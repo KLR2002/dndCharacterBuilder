@@ -1,6 +1,6 @@
 # Spec: The class skill pick is a Proficiency Choice
 
-**Status:** done (full layout gate pending)
+**Status:** done (full layout suite green: SRD at 320, 393, 768, 1280; integrated at 320)
 
 Architecture review candidate #7 (2026-11-18). Decided with the user on 2026-11-19. Amends ADR 0015; ADR 0026.
 
