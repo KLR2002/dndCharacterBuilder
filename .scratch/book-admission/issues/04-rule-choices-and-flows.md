@@ -18,14 +18,24 @@ Where a function has no Compendium, add a parameter defaulting to `currentCompen
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Before changing the code, run the tests that cover these files and record the count. They must pass after, unchanged, except tests that pin an empty book list as "every book" or an SRD-mode book warning; say which, and why each changed.
-- [ ] New tests:
+**Landed:** merge db8ef70 (3c16d7b); review fix 01bb794.
+- **Converted to `admits`:** `availableRuleChoices`, `availableSubclassRuleChoices` (id-prefix guard kept), `readPointerRow`, `describeClassFeature`, `subclassOptions`, `proficiencyChoiceOffers`, `checkActiveBooksIntegrity` and Origin Customization availability. Each takes an optional Compendium; `FeaturesTab` and `CharacterContext` pass `currentCompendium()`.
+- **Fixed:** with the SRD Baseline and books `["SRD"]`, the Hunter's Prey and Land Biome picks are now offered (red before), and the SRD Baseline raises no book warnings.
+- **Fixtures:** two pre-existing fixtures flagged integrated (`levelUpFlow`, `proficiencyChoices`). The `proficiencyChoices` case is now absent because its class is scoped out.
+- **Baseline re-record:** `books=none` rows went empty (the agreed rule), plus SRD-fixture rows whose non-SRD records are now unscoped. On the real SRD Baseline, 20 of 525 rows differ, all with books `["SRD"]` (Land, Hunter, Fiend), as intended.
+- **Review fix:** a custom background's feature has source `Custom`, which no book admits, so with an Integrated Catalog its skill and language picks vanished (probe: before `[skills, languages]`, after `[]`). It is now exempt by identity; the test was red without the fix.
+- **Not done:** `raceLookup.ts` ~80 would cycle through `compendium.ts`; moved to ticket 05.
+- **Tests:** 10 in `checks/ruleChoiceBookAdmission.test.ts`.
+- check:all, check:live, and `ONLY="Level-Up"`/`ONLY=Builder` at 393 passed, SRD and integrated.
+
+- [x] Before changing the code, run the tests that cover these files and record the count. They must pass after, unchanged, except tests that pin an empty book list as "every book" or an SRD-mode book warning; say which, and why each changed.
+- [x] New tests:
   - Mixed-case books give the same ancestry and subclass Rule Choices and subclass offers as upper-case.
   - A Hunter's Prey option sourced `SRD` is listed by `describeClassFeature` with books `["XGE"]`.
   - With the SRD Baseline and books `["SRD"]` (what "Revert to SRD" saves), an SRD Ranger 3 Hunter is offered Hunter's Prey and an SRD Druid 2 Land is offered its Biome pick. Today the `PHB`-sourced rows are dropped at `ruleChoices.ts` ~194; see `checks/srdBaseline.test.ts`.
   - The book warnings: an integrated character with an XGE feat and books `["PHB"]` warns; the same character with the SRD Baseline does not; an SRD race never warns.
-- [ ] Paste `grep -nE "toUpperCase|SRD_SOURCE|activeBooks\??\.(includes|some)"` over the eight files. What remains must not be admission.
-- [ ] `npm run check:all` and `npm run check:live` pass.
-- [ ] Scoped layout: `ONLY="Level-Up" WIDTHS=393` and `ONLY=Builder WIDTHS=393`, green, SRD and `-- --integrated`.
+- [x] Paste `grep -nE "toUpperCase|SRD_SOURCE|activeBooks\??\.(includes|some)"` over the eight files. What remains must not be admission.
+- [x] `npm run check:all` and `npm run check:live` pass.
+- [x] Scoped layout: `ONLY="Level-Up" WIDTHS=393` and `ONLY=Builder WIDTHS=393`, green, SRD and `-- --integrated`.
