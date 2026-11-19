@@ -48,7 +48,7 @@ import {
   stopExpoWeb,
   waitForExpoWeb,
 } from "./lib/app-driver.mjs";
-import { buildScreens, buildSeed, ACTIONS_ID, ASI_FIGHTER_ID, CHARACTER_ID, DRAFT_ID, DRUID_ID, EDIT_BUILD_ID, LOW_CON_ID, MAX_LEVEL_ID, RANGER_ID, SORCERER_SWAP_ID, WIZARD_ID } from "./lib/scenarios.mjs";
+import { buildScreens, buildSeed, ACTIONS_ID, ASI_FIGHTER_ID, CHARACTER_ID, DRAFT_ID, DRUID_ID, EDIT_BUILD_ID, LEVEL_UP_SORCERER_ID, LOW_CON_ID, MAX_LEVEL_ID, RANGER_ID, SORCERER_SWAP_ID, WIZARD_ID } from "./lib/scenarios.mjs";
 import { applyWideOverride } from "./lib/scenario-override.mjs";
 import { playStep, playSteps } from "./lib/web-steps.mjs";
 import { ACCENT_PALETTES, BASE_DARK_THEME } from "../src/constants/theme.ts";
@@ -2914,6 +2914,47 @@ async function checkLevelUpCancelAndReview(ctx, width, meta) {
   return failures;
 }
 
+// A level 4 Sorcerer's level 5 plan: the Spells step learns the due spell, forgets Shield and replaces it with Magic
+// Missile, and Review shows the replacement. The character is not applied, so the seed stays as it is.
+async function checkLevelUpReplaceSpell(ctx, width, meta) {
+  const page = await ctx.newPage();
+  const prefix = `[${width}px level-up replace a spell]`;
+  let failures = 0;
+  let failedShotTaken = false;
+  const fail = (msg) => {
+    failures++;
+    console.log(`${prefix} ${msg}`);
+    if (!failedShotTaken) {
+      failedShotTaken = true;
+      shotFailed(page, meta, width);
+    }
+  };
+
+  await gotoApp(page, `${BASE}/levelup/${LEVEL_UP_SORCERER_ID}`);
+  await page.getByLabel("Level up Sorcerer").first().click();
+  await page.getByText("Continue", { exact: true }).first().click();
+  await page.getByLabel("Average hit points").first().waitFor({ state: "visible", timeout: 10000 });
+  await page.getByLabel("Average hit points").first().click();
+  await settle(page);
+  // The plan's Subclass step is pre-selected for the one offered subclass: continue past it to the Spells step.
+  for (let i = 0; i < 4 && (await page.locator('[aria-label^="Learn "]').count()) === 0; i++) await continueFlow(page, fail);
+
+  await learnDueSpells(page);
+  await page.getByLabel("Forget Shield", { exact: true }).first().click().catch(() => fail("no \"Forget Shield\" row on the Spells step"));
+  await settle(page);
+  await page.getByLabel("Replace with Magic Missile", { exact: true }).first().click().catch(() => fail("no \"Replace with Magic Missile\" row after forgetting Shield"));
+  await settle(page);
+  await maybeShot(page, join(SHOTS, `LevelUp-ReplaceSpell-Spells-${width}.png`), meta);
+  await continueFlow(page, fail);
+
+  if (!(await waitForVisibleText(page, "Shield → Magic Missile"))) fail("Review does not show the \"Replace\" row \"Shield → Magic Missile\"");
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  if (overflow > 0) fail(`the page scrolls sideways by ${overflow}px`);
+  await maybeShot(page, join(SHOTS, `LevelUp-ReplaceSpell-${width}.png`), meta);
+  await closePage(page);
+  return failures;
+}
+
 // After a level-up through the flow, the Spells tab still learns, forgets and swaps spells. In the
 // integrated catalog the Aberrant Mind Sorcerer's subclass-granted spells carry the Swap control; the SRD
 // Baseline has no swappable subclass, so there the Wizard plays learn and forget.
@@ -4166,6 +4207,8 @@ const EXTRA_CHECKS = [
   { name: "Level up hidden at level 20", run: checkLevelUpHiddenAtMaxLevel },
   { name: "Level-Up Flow cancel and review", run: checkLevelUpCancelAndReview },
   { name: "Spells after level-up", run: checkSpellsAfterLevelUp },
+  // SRD only: the walk's Sorcerer 4 to 5 plan has the SRD Baseline's steps and counts.
+  ...(INTEGRATED ? [] : [{ name: "Level-Up Flow replace a spell", run: checkLevelUpReplaceSpell, shot: true }]),
   { name: "Dice animation", run: checkDiceAnimation },
   { name: "Dice throw animation", run: checkDiceThrow, shot: true },
   { name: "Dice fresh page throw", run: (ctx, width, meta) => checkDiceFreshPage(ctx, width, meta, "throw") },
