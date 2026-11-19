@@ -1,7 +1,8 @@
 import React, { useState } from "react";
 import { ScrollView, Text, TouchableOpacity } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { POINT_BUY_COST, UNSET_ABILITY_SCORE, unsetAbilityScores } from "../../constants/rules";
+import { UNSET_ABILITY_SCORE, unsetAbilityScores } from "../../constants/rules";
+import { POINT_BUY_BUDGET, canSetPointBuyScore, pointBuySpent } from "../../rules/pointBuy";
 import { proficiencySheet, ruleGrantedSkills, skillChoiceOffers, sourceGrants } from "../../rules/proficiencySheet";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
@@ -41,7 +42,6 @@ import { builderStyles as styles } from "../builder/builderStyles";
 import { classChoiceTransitions } from "../builder/classChoiceWiring";
 import { ClassSteps } from "../builder/ClassSteps";
 
-const ABILITY_KEYS: AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
 
 interface BuilderTabProps {
   character?: Character;
@@ -118,20 +118,13 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   // ─────────────────────────────────────────────────────────────────────────
   // ABILITY SCORES
   // ─────────────────────────────────────────────────────────────────────────
-  let pointBuySpent = 0;
-  for (const k of ABILITY_KEYS) {
-    const score = character.baseAbilityScores?.[k] ?? UNSET_ABILITY_SCORE;
-    pointBuySpent += POINT_BUY_COST[score] ?? 0;
-  }
-  const pointBuyRemaining = 27 - pointBuySpent;
+  const pointBuyRemaining = POINT_BUY_BUDGET - pointBuySpent(character.baseAbilityScores ?? {});
 
   const updateBaseScore = (key: AbilityKey, delta: number) => {
     const current = character.baseAbilityScores?.[key] ?? UNSET_ABILITY_SCORE;
     const next = current + delta;
-    if (character.abilityMethod === "pointBuy") {
-      if (next < 8 || next > 15) return;
-      const diff = (POINT_BUY_COST[next] ?? 0) - (POINT_BUY_COST[current] ?? 0);
-      if (pointBuySpent + diff > 27) return;
+    if (character.abilityMethod === "pointBuy" && !canSetPointBuyScore(character.baseAbilityScores ?? {}, key, next)) {
+      return;
     }
     onUpdate({
       baseAbilityScores: {
