@@ -1964,7 +1964,7 @@ export function buildScreens({ integrated }) {
                 { tap: { text: "Spells", exact: true } },
               ],
               ready: "Magic Missile",
-              expect: { texts: ["Magic Missile", "Mage Hand"], fitsWidth: true },
+              expect: { texts: ["Magic Missile", "Mage Hand", "Cantrips 0/2", "Spells 0/3"], fitsWidth: true },
             },
           ]
         : []),
