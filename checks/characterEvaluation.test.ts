@@ -24,8 +24,8 @@ test("evaluateCharacter evaluates single-class Fighter 1", () => {
     classes: [cl("Fighter", 1)],
     baseAbilityScores: scores({ str: 16, dex: 14, con: 14 }),
     items: [
-      { id: "chain_mail", name: "Chain Mail", source: "PHB", ac: 16, isEquipped: true, section: "equipped", quantity: 1, weight: 55 },
-      { id: "shield", name: "Shield", source: "PHB", ac: 2, isEquipped: true, section: "equipped", quantity: 1, weight: 6 },
+      { id: "chain_mail", name: "Chain Mail", source: "PHB", ac: 16, isEquipped: true, quantity: 1, weight: 55 },
+      { id: "shield", name: "Shield", source: "PHB", ac: 2, isEquipped: true, quantity: 1, weight: 6 },
     ],
   });
 

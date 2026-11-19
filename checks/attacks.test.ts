@@ -25,7 +25,6 @@ const weaponItem = (
   source: "PHB",
   quantity: 1,
   isEquipped: true,
-  section: "equipped",
   ...overrides,
 });
 
@@ -41,7 +40,6 @@ test("getWeaponAttacks detects equipped weapons and ignores unequipped or non-we
         source: "PHB",
         quantity: 1,
         isEquipped: true,
-        section: "equipped",
         ac: 2,
       },
       {
@@ -50,7 +48,6 @@ test("getWeaponAttacks detects equipped weapons and ignores unequipped or non-we
         source: "PHB",
         quantity: 1,
         isEquipped: true,
-        section: "equipped",
         ac: 16,
       },
     ],

@@ -123,22 +123,22 @@ function pickedFerry(base: Character = ferry(), zero = "a", simple = ["Quill Kni
   return c;
 }
 
-const summary = (items: { id: string; name: string; quantity: number; isEquipped: boolean; section: string }[]) =>
-  items.map((i) => [i.id, i.name, i.quantity, i.isEquipped, i.section]);
+const summary = (items: { id: string; name: string; quantity: number; isEquipped: boolean }[]) =>
+  items.map((i) => [i.id, i.name, i.quantity, i.isEquipped]);
 
 test("a claim grants the fixed items and the picked option of each slot, and never an item of the unpicked option", () => {
   const kit = resolveStartingEquipment(pickedFerry(), catalogs);
   assert.equal(kit.hasSlots, true);
   assert.equal(kit.complete, true);
   assert.deepEqual(summary(kit.items), [
-    ["start_ferryman_0", "Quill Knife", 1, true, "equipped"],
-    ["start_ferryman_1", "Tallow Lamp", 2, false, "carried"],
-    ["start_ferryman_2", "Brass Fiddle", 1, false, "carried"],
-    ["start_ferryman_3", "Quill Knife", 1, true, "equipped"],
-    ["start_ferryman_4", "Hand Sling", 1, false, "carried"],
-    ["start_ferryman_5", "Tidestone", 1, false, "carried"],
-    ["start_ferryman_6", "Gull Shield", 1, true, "equipped"],
-    ["start_ferryman_7", "Reed Pack", 1, false, "carried"],
+    ["start_ferryman_0", "Quill Knife", 1, true],
+    ["start_ferryman_1", "Tallow Lamp", 2, false],
+    ["start_ferryman_2", "Brass Fiddle", 1, false],
+    ["start_ferryman_3", "Quill Knife", 1, true],
+    ["start_ferryman_4", "Hand Sling", 1, false],
+    ["start_ferryman_5", "Tidestone", 1, false],
+    ["start_ferryman_6", "Gull Shield", 1, true],
+    ["start_ferryman_7", "Reed Pack", 1, false],
   ]);
   assert.equal(kit.items.some((i) => i.name === "Oarblade" || i.name === "Brine Mail"), false, "the unpicked options grant nothing");
 });
@@ -212,7 +212,6 @@ test("the equipment rule equips melee weapons, the first body armor and the firs
   const kit = resolveStartingEquipment(pickedFerry(), catalogs);
   const equipped = kit.items.filter((i) => i.isEquipped).map((i) => i.name);
   assert.deepEqual(equipped, ["Quill Knife", "Quill Knife", "Gull Shield"]);
-  assert.ok(kit.items.filter((i) => !i.isEquipped).every((i) => i.section === "carried"));
 });
 
 test("an item the catalog does not know is granted by its printed name and source", () => {
@@ -222,8 +221,8 @@ test("an item the catalog does not know is granted by its printed name and sourc
   );
   assert.equal(kit.complete, true);
   assert.deepEqual(summary(kit.items), [
-    ["start_chartmaker_0", "Sea Chart", 1, false, "carried"],
-    ["start_chartmaker_1", "Tallow Lamp", 1, false, "carried"],
+    ["start_chartmaker_0", "Sea Chart", 1, false],
+    ["start_chartmaker_1", "Tallow Lamp", 1, false],
   ]);
   assert.equal(kit.items[0].source, SRC);
 });

@@ -22,7 +22,7 @@ const readCatalog = (name: string) => loadTestCatalog(name);
 const catalog = { classes: readCatalog("classes"), races: readCatalog("races"), backgrounds: readCatalog("backgrounds"), feats: readCatalog("feats"), activeBooks: ALL_BOOKS };
 const cl = (className: string, level: number, subclassName?: string): CharacterClass => ({ className, source: "PHB", level, subclassName });
 const scores = (values = {}) => ({ str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10, ...values });
-const item = (armorCategory: ArmorCategory | "", ac?: number) => ({ id: armorCategory, name: "Unnamed gear", source: "PHB", quantity: 1, isEquipped: true, section: "equipped" as const, ac, armorCategory: armorCategory || undefined });
+const item = (armorCategory: ArmorCategory | "", ac?: number) => ({ id: armorCategory, name: "Unnamed gear", source: "PHB", quantity: 1, isEquipped: true, ac, armorCategory: armorCategory || undefined });
 
 test("2014 ASI schedules are class-level based, including fighter and rogue extras", () => {
   assert.deepEqual(asiLevels("Fighter"), [4, 6, 8, 12, 14, 16, 19]);
@@ -127,7 +127,7 @@ test("armorCategory overrides misleading names, caps medium Dex, and recognizes 
 });
 test("a stored armor category sets the Dex cap; a legacy item is classed by its name, never its description", () => {
   const c = makeChar({ baseAbilityScores: scores({ dex: 18 }) });
-  const leather = { id: "leather", name: "Leather Armor", source: "SRD", quantity: 1, isEquipped: true, section: "equipped" as const, ac: 11 };
+  const leather = { id: "leather", name: "Leather Armor", source: "SRD", quantity: 1, isEquipped: true, ac: 11 };
   const legacy = { ...leather, description: "The wearer's torso sits under a plate shaped like a breastplate." };
   const legacyResult = armorClass({ ...c, items: [legacy] }, { activeBooks: ALL_BOOKS });
   assert.equal(legacyResult.ac, 15);

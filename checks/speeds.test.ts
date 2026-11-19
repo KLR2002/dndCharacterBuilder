@@ -23,7 +23,6 @@ function makeEquippedArmor(name: string, category: "light" | "medium" | "heavy",
     weight: 20,
     cost: "50 gp",
     isEquipped: true,
-    section: "equipped",
     ac,
     armorCategory: category,
   };
