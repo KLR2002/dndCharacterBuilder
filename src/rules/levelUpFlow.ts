@@ -16,9 +16,9 @@ import {
   setOptionalFeatureEnabled,
   validateMulticlass,
 } from "./builderTransitions.ts";
-import { learnSpell } from "./characterSpells.ts";
+import { forgetSpell, learnSpell } from "./characterSpells.ts";
 import { getClassSpellProfiles } from "./spellcasting.ts";
-import { spellsGainedAt } from "./spellCounts.ts";
+import { ownKnownSpells, spellsDueAt, spellsGainedAt } from "./spellCounts.ts";
 import { learnableSpells, type LearnableSpells } from "./learnableSpells.ts";
 import { maxHp, recordRolledHitPoints } from "./hp.ts";
 import {
@@ -73,6 +73,11 @@ export interface LevelUpPicks {
   subclass?: { name: string; source: string };
   asi?: AsiSelection;
   learnedSpells?: { name: string; source: string }[];
+  /**
+   * A known caster's swap of one known spell for another, applied after the new spells. Both halves are optional while
+   * the step is being filled in; the step completes only with both or neither.
+   */
+  replacedSpell?: { forget?: { name: string; source: string }; learn?: { name: string; source: string } };
   /** The options picked on each of the level's class choices, by choice id. */
   classChoicePicks?: Record<string, string[]>;
   /** The options picked on each of the picked feat's own rule choices (fighting style, maneuvers, invocation), by choice id. */
@@ -184,7 +189,8 @@ export function planLevelUp(character: Character, options: PlanLevelUpOptions): 
     compendium,
     activeBooks,
   });
-  if (wantsSpellsStep(plannedClassEntry(character, { className, source, toLevel, subclassName: picks.subclass?.name }), spellsDue)) {
+  const replaceable = spellReplacementOffered(character, { className, source, toLevel, subclass: picks.subclass }, { compendium, activeBooks });
+  if (wantsSpellsStep(plannedClassEntry(character, { className, source, toLevel, subclassName: picks.subclass?.name }), spellsDue, replaceable)) {
     wanted.add("spells");
   }
   const steps = STEP_ORDER.filter((id) => wanted.has(id)).map((id) => ({ id, className, classLevel: toLevel }));
@@ -333,6 +339,16 @@ export function applyLevelUpPlan(
       }
     }
   }
+  const replaced = plan.picks.replacedSpell;
+  if (replaced?.forget && replaced.learn) {
+    const profile = getClassSpellProfiles(next, { activeBooks, compendium }).find((p) =>
+      sameName(p.className, plan.className)
+    );
+    if (profile) {
+      next = forgetSpell(next, profile, replaced.forget, compendium, activeBooks);
+      next = learnSpell(next, profile, replaced.learn, compendium, activeBooks);
+    }
+  }
   return next;
 }
 
@@ -462,14 +478,91 @@ function plannedSpellsDue(
  * Whether a class entry brings the Spells step. With spell counts due, the step is there when a cantrip or spell is due
  * or a level may replace a spell. With no counts, a spellcasting class or a third caster subclass brings it.
  */
-function wantsSpellsStep(entry: CharacterClass, due: LevelUpSpellsDue | null): boolean {
+function wantsSpellsStep(entry: CharacterClass, due: LevelUpSpellsDue | null, replaceable: boolean): boolean {
   if (due === null) return casterKindOf(entry) !== undefined || isThirdCaster(entry);
-  return due.cantrips > 0 || due.spells > 0 || spellReplacementOffered();
+  return due.cantrips > 0 || due.spells > 0 || replaceable;
 }
 
-/** Whether a level may replace a known spell, which brings the Spells step on its own. No level offers one yet. */
-function spellReplacementOffered(): boolean {
-  return false;
+/** A class level as the planning reads it: the class, its new level and the subclass it takes or holds. */
+interface PlannedLevel {
+  className: string;
+  source: string;
+  toLevel: number;
+  subclass?: { name: string; source: string };
+}
+
+/** The Character as it stands at the planned level, the planned class at its new level with its subclass. */
+function characterAtPlannedLevel(character: Character, planned: PlannedLevel): Character {
+  const atLevel: CharacterClass = {
+    className: planned.className,
+    source: planned.source,
+    level: planned.toLevel,
+    ...(planned.subclass ? { subclassName: planned.subclass.name, subclassSource: planned.subclass.source } : {}),
+  };
+  const index = character.classes.findIndex((c) => sameName(c.className, planned.className));
+  return {
+    ...character,
+    classes:
+      index === -1
+        ? [...character.classes, atLevel]
+        : character.classes.map((c, i) => (i === index ? atLevel : c)),
+  };
+}
+
+/**
+ * The spells the planned class's owner may forget: its known levelled spells, as spellCounts counts them. Empty when the
+ * planned class has no Spell Owner.
+ */
+function forgettableSpells(character: Character, planned: PlannedLevel, opts: { compendium: Compendium; activeBooks: ActiveBooks }): SpellData[] {
+  const planning = characterAtPlannedLevel(character, planned);
+  const classes = allCatalogClasses(opts);
+  const profile = getClassSpellProfiles(planning, { activeBooks: opts.activeBooks, compendium: opts.compendium, classes }).find((p) =>
+    sameName(p.className, planned.className)
+  );
+  if (!profile) return [];
+  return ownKnownSpells(profile, opts.compendium)
+    .filter((spell) => spell.level > 0)
+    .map((spell) => opts.compendium.findSpell(spell.name, spell.source))
+    .filter((spell): spell is SpellData => spell !== undefined);
+}
+
+/**
+ * Whether the planned level may replace a known spell: its Spell Owner counts its spells as known (not a Wizard's
+ * spellbook or a prepared caster) and it has a levelled spell to forget. A stale Catalog offers none.
+ */
+function spellReplacementOffered(character: Character, planned: PlannedLevel, opts: { compendium: Compendium; activeBooks: ActiveBooks }): boolean {
+  const due = spellsDueAt({ className: planned.className, source: planned.source, subclassName: planned.subclass?.name, level: planned.toLevel }, opts);
+  if (due.spells?.kind !== "known") return false;
+  return forgettableSpells(character, planned, opts).length > 0;
+}
+
+/** The replacement a level offers: the spells it may forget and the spells it may learn in their place. */
+export interface LevelUpReplacementOptions {
+  forget: SpellData[];
+  learn: SpellData[];
+  /** The schools the planned class's learnable spells are restricted to, as on the Spells step. */
+  restrictedSchools: string[];
+}
+
+/**
+ * The replacement options of a plan's level, or null when the level offers none. `learn` holds the planned class's
+ * levelled spells, less the spells already picked as new.
+ */
+export function levelUpReplacementOptions(
+  character: Character,
+  plan: LevelUpPlan,
+  opts: { compendium?: Compendium; activeBooks?: ActiveBooks } = {}
+): LevelUpReplacementOptions | null {
+  const resolved = { compendium: opts.compendium ?? currentCompendium(), activeBooks: opts.activeBooks ?? DEFAULT_ACTIVE_BOOK_CODES };
+  const planned: PlannedLevel = { className: plan.className, source: plan.source, toLevel: plan.toLevel, subclass: plan.picks.subclass };
+  if (!spellReplacementOffered(character, planned, resolved)) return null;
+  const picked = new Set((plan.picks.learnedSpells ?? []).map((s) => s.name.toLowerCase()));
+  const learnable = levelUpLearnableSpells(character, plan, resolved);
+  return {
+    forget: forgettableSpells(character, planned, resolved),
+    learn: learnable.spells.filter((s) => s.level > 0 && !picked.has(s.name.toLowerCase())),
+    restrictedSchools: learnable.restrictedSchools,
+  };
 }
 
 /** What the planned level brings on its class: the skill and rule choices, the Expertise milestones and the optional features. */
@@ -542,7 +635,16 @@ export function setPlanSubclass(
     { className: plan.className, source: plan.source, fromLevel: plan.fromLevel, toLevel: plan.toLevel, subclassName: name },
     { compendium, activeBooks }
   );
-  const spells = wantsSpellsStep(plannedClassEntry(character, { className: plan.className, source: plan.source, toLevel: plan.toLevel, subclassName: name }), spellsDue);
+  const replaceable = spellReplacementOffered(
+    character,
+    { className: plan.className, source: plan.source, toLevel: plan.toLevel, subclass: { name, source } },
+    { compendium, activeBooks }
+  );
+  const spells = wantsSpellsStep(
+    plannedClassEntry(character, { className: plan.className, source: plan.source, toLevel: plan.toLevel, subclassName: name }),
+    spellsDue,
+    replaceable
+  );
   if (spells) stepIds.add("spells");
   else stepIds.delete("spells");
   const steps = STEP_ORDER.filter((id) => stepIds.has(id)).map((id) => ({ id, className: plan.className, classLevel: plan.toLevel }));
@@ -555,15 +657,42 @@ export function setPlanSubclass(
     spellsDue,
     picks: { ...plan.picks, subclass: { name, source }, classChoicePicks, expertisePicks, optionalFeatures },
   };
-  // Without a Spells step the learned spells go with it; with one, only the spells it still offers stay picked.
+  // Without a Spells step the learned spells and the replacement go with it; with one, only the spells it still offers stay picked.
   if (!spells) {
     const picks = { ...next.picks };
     delete picks.learnedSpells;
+    delete picks.replacedSpell;
     return { ...next, picks };
   }
   const offeredSpells = new Set(newSpellsForLevelUp(character, next, opts).map((spell) => spell.name.toLowerCase()));
   const learnedSpells = (plan.picks.learnedSpells ?? []).filter((spell) => offeredSpells.has(spell.name.toLowerCase()));
-  return { ...next, picks: { ...next.picks, learnedSpells } };
+  const withLearned: LevelUpPlan = { ...next, picks: { ...next.picks, learnedSpells } };
+  return withReplacement(withLearned, offeredReplacement(character, withLearned, plan.picks.replacedSpell, opts));
+}
+
+/** The part of a replacement the level still offers: each half kept only while its spell is in the offered list. */
+function offeredReplacement(
+  character: Character,
+  plan: LevelUpPlan,
+  replaced: LevelUpPicks["replacedSpell"],
+  opts: { compendium?: Compendium; activeBooks?: ActiveBooks }
+): LevelUpPicks["replacedSpell"] {
+  if (!replaced) return undefined;
+  const offered = levelUpReplacementOptions(character, plan, opts);
+  if (!offered) return undefined;
+  const isOffered = (list: { name: string }[], spell: { name: string } | undefined) =>
+    spell !== undefined && list.some((s) => sameName(s.name, spell.name));
+  const forget = isOffered(offered.forget, replaced.forget) ? replaced.forget : undefined;
+  const learn = isOffered(offered.learn, replaced.learn) ? replaced.learn : undefined;
+  return forget || learn ? { ...(forget && { forget }), ...(learn && { learn }) } : undefined;
+}
+
+/** Sets or clears the plan's replacement; an empty replacement is removed from the picks. The given plan is never mutated. */
+function withReplacement(plan: LevelUpPlan, replaced: LevelUpPicks["replacedSpell"]): LevelUpPlan {
+  const picks = { ...plan.picks };
+  if (replaced?.forget || replaced?.learn) picks.replacedSpell = replaced;
+  else delete picks.replacedSpell;
+  return { ...plan, picks };
 }
 
 /** Sets the plan's ASI/Feat pick. The given plan is never mutated. */
@@ -708,7 +837,32 @@ export function togglePlanSpell(plan: LevelUpPlan, spell: { name: string; source
   const current = plan.picks.learnedSpells ?? [];
   const has = current.some((s) => sameName(s.name, spell.name));
   const learnedSpells = has ? current.filter((s) => !sameName(s.name, spell.name)) : [...current, spell];
-  return { ...plan, picks: { ...plan.picks, learnedSpells } };
+  const next: LevelUpPlan = { ...plan, picks: { ...plan.picks, learnedSpells } };
+  // A spell picked as new cannot also be the replacement's learn.
+  const replaced = plan.picks.replacedSpell;
+  if (!has && replaced?.learn && sameName(replaced.learn.name, spell.name)) {
+    return withReplacement(next, replaced.forget ? { forget: replaced.forget } : undefined);
+  }
+  return next;
+}
+
+/** Sets the spell the level forgets, or clears it when it is already the one picked. The given plan is never mutated. */
+export function setPlanReplacedForget(plan: LevelUpPlan, spell: { name: string; source: string }): LevelUpPlan {
+  const replaced = plan.picks.replacedSpell;
+  const forget = replaced?.forget && sameName(replaced.forget.name, spell.name) ? undefined : spell;
+  return withReplacement(plan, { ...(forget && { forget }), ...(replaced?.learn && { learn: replaced.learn }) });
+}
+
+/** Sets the spell the level learns in place of the forgotten one, or clears it when it is already the one picked. The given plan is never mutated. */
+export function setPlanReplacedLearn(plan: LevelUpPlan, spell: { name: string; source: string }): LevelUpPlan {
+  const replaced = plan.picks.replacedSpell;
+  const learn = replaced?.learn && sameName(replaced.learn.name, spell.name) ? undefined : spell;
+  return withReplacement(plan, { ...(replaced?.forget && { forget: replaced.forget }), ...(learn && { learn }) });
+}
+
+/** Removes the level's spell replacement. The given plan is never mutated. */
+export function clearPlanReplacedSpell(plan: LevelUpPlan): LevelUpPlan {
+  return withReplacement(plan, undefined);
 }
 
 /**
@@ -843,6 +997,8 @@ export function levelUpStepComplete(
         expertiseFilled(getMilestonePicks(plan.expertiseMilestones ?? [], plan.picks.expertisePicks ?? []))
       );
     case "spells": {
+      const replaced = plan.picks.replacedSpell;
+      if (replaced && !(replaced.forget && replaced.learn)) return false;
       const due = plan.spellsDue;
       if (!due) return true;
       const compendium = opts.compendium ?? currentCompendium();
@@ -920,6 +1076,10 @@ export function levelUpSummary(
   if (plan.picks.learnedSpells?.length) {
     rows.push({ label: "Spells", value: plan.picks.learnedSpells.map((s) => s.name).join(", ") });
   }
+  const replaced = plan.picks.replacedSpell;
+  if (replaced?.forget && replaced.learn) {
+    rows.push({ label: "Replace", value: `${replaced.forget.name} → ${replaced.learn.name}` });
+  }
   return rows;
 }
 
@@ -948,20 +1108,12 @@ export function levelUpLearnableSpells(
   const compendium = opts.compendium ?? currentCompendium();
   const activeBooks = opts.activeBooks ?? DEFAULT_ACTIVE_BOOK_CODES;
   const classes = allCatalogClasses({ compendium, activeBooks });
-  const atLevel: CharacterClass = {
+  const planned = characterAtPlannedLevel(character, {
     className: plan.className,
     source: plan.source,
-    level: plan.toLevel,
-    ...(plan.picks.subclass ? { subclassName: plan.picks.subclass.name, subclassSource: plan.picks.subclass.source } : {}),
-  };
-  const index = character.classes.findIndex((c) => sameName(c.className, plan.className));
-  const planned: Character = {
-    ...character,
-    classes:
-      index === -1
-        ? [...character.classes, atLevel]
-        : character.classes.map((c, i) => (i === index ? atLevel : c)),
-  };
+    toLevel: plan.toLevel,
+    subclass: plan.picks.subclass,
+  });
   const profile = getClassSpellProfiles(planned, { activeBooks, compendium, classes }).find((p) =>
     sameName(p.className, plan.className)
   );
