@@ -1,7 +1,6 @@
 import type { Compendium } from "../services/compendium.ts";
 import type { Character } from "../types/character.ts";
-
-const SRD_SOURCE = "SRD";
+import { SRD_SOURCE } from "../constants/books.ts";
 
 /**
  * Renames the spells and items a character saved under an old name from the SRD. The integrated catalog's record

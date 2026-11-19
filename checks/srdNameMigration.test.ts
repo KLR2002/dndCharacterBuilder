@@ -1,6 +1,7 @@
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { renameSrdNames } from "../src/rules/srdNames.ts";
+import { spellPage } from "../src/rules/spellPage.ts";
 import type { Character, InventoryItem } from "../src/types/character.ts";
 import { integratedTestCompendium, makeChar, srdBaselineCompendium } from "./testUtils.ts";
 
@@ -80,5 +81,27 @@ describe("Saved SRD names follow the integrated catalog's SRD names", () => {
     });
 
     assert.equal(renameSrdNames(character, srdBaselineCompendium()), character);
+  });
+});
+
+describe("An SRD name resolves in an Integrated Catalog that prints the record under another name", () => {
+  test("findSpell and findItem match an SRD-sourced or unsourced name through srdName", () => {
+    assert.equal(integrated.findSpell("Acid Arrow", "SRD")?.name, "Melf's Acid Arrow");
+    assert.equal(integrated.findSpell("Acid Arrow")?.name, "Melf's Acid Arrow");
+    assert.equal(integrated.findItem("Handy Haversack", "SRD")?.name, "Heward's Handy Haversack");
+  });
+
+  test("a name with another source does not match through srdName", () => {
+    assert.equal(integrated.findSpell("Acid Arrow", "PHB"), undefined);
+  });
+
+  test("a renamed known spell shows its details on the Spell Page", () => {
+    const character = renameSrdNames(
+      savedWizard({ knownSpells: [{ name: "Melf's Acid Arrow", source: "SRD", ownerKey: "Wizard__PHB" }] }),
+      integrated,
+    );
+    const page = spellPage(character, { compendium: integrated, activeBooks: ["PHB"] });
+    const row = page.levels.flatMap((group) => group.rows).find((r) => r.name === "Acid Arrow");
+    assert.equal(row?.details?.level, 2);
   });
 });
