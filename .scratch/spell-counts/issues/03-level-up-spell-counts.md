@@ -10,13 +10,15 @@
 
 **Blocked by:** 02
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Tests:
+**Landed:** merge d60b4f5 (484bcc5, a20cac0). `spellsDueAt(entry, catalogs)` and `spellsGainedAt(entry, fromLevel, toLevel, catalogs)` in `spellCounts.ts` (a new class counts from zero); `LevelUpPlan.spellsDue`, set in `planLevelUp` and `setPlanSubclass`; the step appears when something is due (stale: old rule; `spellReplacementOffered()` stub for 04); completion needs exact picks. `SpellsStep` shows `Cantrips n/m` / `Spells n/m`; `SpellLearnList.isSpellDisabled` (unset in the builder) disables unpicked rows of a full count. Review already listed learned spells. Layout walks now learn the due spells (`learnDueSpells`); the Spells-after-level-up check searches Charm Person. Level-Up layout green at 393 SRD and integrated; check:all passed.
+
+- [x] Tests:
   - A Sorcerer 3 → 4: cantrips due 1, spells due 1. The step is incomplete with 1 spell, and complete with 1 cantrip and 1 spell.
   - A Wizard 2 → 3: spells due 2, cantrips due 0.
   - A Cleric 1 → 2: no Spells step. A Cleric 3 → 4: a Spells step with 1 cantrip.
   - A Fighter 2 → 3 picking Eldritch Knight in the flow (integrated test compendium): the step appears with cantrips 2 and spells 3.
   - A stale compendium: a Sorcerer 3 → 4 has the step and it completes with no picks.
-- [ ] `npm run check:all` passes.
-- [ ] Scoped layout: `ONLY="Level-Up" WIDTHS=393 npm run layout:check` green, SRD and `-- --integrated`. Scenarios that complete a Spells step with too few or too many picks must be updated to pick the due number; say which. Open the `Level-Up Flow subclass picks spells` screenshot and describe the counters.
+- [x] `npm run check:all` passes.
+- [x] Scoped layout: `ONLY="Level-Up" WIDTHS=393 npm run layout:check` green, SRD and `-- --integrated`. Scenarios that complete a Spells step with too few or too many picks must be updated to pick the due number; say which. Open the `Level-Up Flow subclass picks spells` screenshot and describe the counters.
