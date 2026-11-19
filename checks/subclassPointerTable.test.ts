@@ -15,7 +15,7 @@ import { makeChar } from "./testUtils.ts";
  * names and structure) and the recorded characterization baseline, which is never re-recorded here.
  */
 
-/** The sixteen ids the table held before the pointer conversion. Persisted, so frozen. */
+/** The ids the table holds. Persisted, so frozen: a new row adds its id here. */
 const FROZEN_IDS = [
   "PHB__Druid__Circle of the Land__Biome",
   "XGE__Sorcerer__Divine Soul__Affinity",
@@ -33,6 +33,10 @@ const FROZEN_IDS = [
   "PHB__Barbarian__Path of the Totem Warrior__Totem Spirit 3",
   "PHB__Barbarian__Path of the Totem Warrior__Aspect of the Beast 6",
   "PHB__Barbarian__Path of the Totem Warrior__Totemic Attunement 14",
+  "PHB__Ranger__Hunter__Hunter's Prey 3",
+  "PHB__Ranger__Hunter__Defensive Tactics 7",
+  "PHB__Ranger__Hunter__Multiattack 11",
+  "PHB__Ranger__Hunter__Superior Hunter's Defense 15",
 ] as const;
 
 const BASELINE_PATH = new URL("./fixtures/subclassChoiceBaseline.json", import.meta.url);

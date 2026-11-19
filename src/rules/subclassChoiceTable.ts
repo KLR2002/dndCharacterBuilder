@@ -1,4 +1,4 @@
-import type { ActiveBooks } from "../constants/books.ts";
+import { SRD_SOURCE, type ActiveBooks } from "../constants/books.ts";
 import type { Character } from "../types/character.ts";
 import type { Compendium } from "../services/compendium.ts";
 import { formatCantripOptions, GIANT_POWER_CHOICE_ID, type ChoiceOwner } from "./choices/types.ts";
@@ -144,6 +144,8 @@ export interface SubclassChoiceRow {
 }
 
 const LAND = { className: "Druid", subclass: "Land" };
+
+const HUNTER = { className: "Ranger", subclass: "Hunter" };
 
 /** The Way of the Four Elements disciplines: the catalog's ED option records, unlocked by prerequisite. */
 const ELEMENTAL_DISCIPLINE_RECORDS: OptionLocator = { optionRecords: { featureType: "ED" } };
@@ -311,6 +313,42 @@ export const SUBCLASS_CHOICE_ROWS: readonly SubclassChoiceRow[] = [
     effectLevel: 14,
     locator: { feature: { name: "Totemic Attunement", level: 14 } },
   },
+  {
+    id: "PHB__Ranger__Hunter__Hunter's Prey 3",
+    source: "PHB",
+    owner: HUNTER,
+    traitName: "Hunter's Prey",
+    level: 3,
+    effectLevel: 3,
+    locator: { feature: { name: "Hunter's Prey", level: 3 } },
+  },
+  {
+    id: "PHB__Ranger__Hunter__Defensive Tactics 7",
+    source: "PHB",
+    owner: HUNTER,
+    traitName: "Defensive Tactics",
+    level: 7,
+    effectLevel: 7,
+    locator: { feature: { name: "Defensive Tactics", level: 7 } },
+  },
+  {
+    id: "PHB__Ranger__Hunter__Multiattack 11",
+    source: "PHB",
+    owner: HUNTER,
+    traitName: "Multiattack",
+    level: 11,
+    effectLevel: 11,
+    locator: { feature: { name: "Multiattack", level: 11 } },
+  },
+  {
+    id: "PHB__Ranger__Hunter__Superior Hunter's Defense 15",
+    source: "PHB",
+    owner: HUNTER,
+    traitName: "Superior Hunter's Defense",
+    level: 15,
+    effectLevel: 15,
+    locator: { feature: { name: "Superior Hunter's Defense", level: 15 } },
+  },
 ];
 
 const ROW_OWNERS = new Map(SUBCLASS_CHOICE_ROWS.map((row) => [row.id, row.owner] as const));
@@ -458,7 +496,7 @@ export function readPointerRow(
           .filter((o) => !row.excludeOptions?.includes(o.name))
           .filter((o) => {
             const book = o.source?.toUpperCase();
-            return !book || book === rowBook || !active || active.includes(book);
+            return !book || book === rowBook || book === SRD_SOURCE || !active || active.includes(book);
           })
           .map(({ name, description }) => ({ name, description })),
       };

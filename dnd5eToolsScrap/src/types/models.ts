@@ -270,6 +270,8 @@ export interface ItemModel {
   bonusAc?: number;
   /** Set on base weapons only: the simple or martial category the source data gives them. */
   weaponCategory?: "simple" | "martial";
+  /** The name the SRD gives this record, when the source marks it as an SRD record under another name. */
+  srdName?: string;
 }
 
 export interface SpellClassVariantModel {
@@ -303,6 +305,8 @@ export interface SpellModel {
   higherLevels: string | null;
   /** The kinds of attack roll the spell needs, as the source names them: "M" melee, "R" ranged, "O" other. Absent when none. */
   spellAttack?: string[];
+  /** The name the SRD gives this record, when the source marks it as an SRD record under another name. */
+  srdName?: string;
   rawEntries?: any[];
 }
 
