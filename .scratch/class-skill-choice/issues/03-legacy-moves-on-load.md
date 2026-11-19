@@ -42,6 +42,7 @@
   - A character holding every legacy shape (one per migration pass, built from that pass's existing tests) comes out of `migrateSavedPicks` with each moved, and `reconcile` then leaves it unchanged.
   - `migrateSavedPicks` is idempotent.
   - A Proficiency Choice pick saved under a grant alias moves when `reconcileForActiveBooks` runs with a compendium whose grant carries that alias. That is the catalog-change case.
+  - `checks/classSkillChoice.test.ts` "…holds once the Integrated Catalog is synced, and back" and "…saved under its SRD-named id moves…" still pass. The second calls `reconcile`; switch it to `migrateSavedPicks` if the alias move leaves `reconcile`.
   - `reconcile` alone no longer moves a legacy class tool bucket: proof the pass left.
 - [ ] Every existing test of a moved pass that called `reconcile` to trigger the move calls `migrateSavedPicks` instead; list them.
 - [ ] `npm run check:all` and `npm run check:live` pass.
