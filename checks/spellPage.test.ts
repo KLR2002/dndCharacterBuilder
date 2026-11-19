@@ -1,7 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { ALL_BOOKS } from "../src/constants/books.ts";
-import { spellPage, type SpellPageRow } from "../src/rules/spellPage.ts";
+import { spellDetailText, spellPage, type SpellPageRow } from "../src/rules/spellPage.ts";
+import { getEldritchBlastDamage } from "../src/rules/attacks.ts";
 import { swapSubclassSpell } from "../src/rules/characterSpells.ts";
 import { integratedTestCompendium, makeChar } from "./testUtils.ts";
 import type { Character } from "../src/types/character.ts";
@@ -238,4 +239,61 @@ test("a character without a class profile still reads the granted, locked and at
   assert.deepEqual(bare.lockedCards, []);
   assert.deepEqual(bare.atWillCards, []);
   assert.equal(bare.profile, null);
+});
+
+function eldritchWarlock(cha: number, invocations: string[]): Character {
+  return makeChar({
+    baseAbilityScores: { str: 8, dex: 10, con: 12, int: 10, wis: 10, cha },
+    classes: [{ className: "Warlock", source: "PHB", level: 2 }],
+    ruleChoices: [
+      {
+        id: "PHB__Warlock__Invocations 2",
+        trait: "Eldritch Invocations (2nd Level)",
+        picked: invocations,
+        choose: 2,
+        origin: "class",
+        from: [],
+      },
+    ],
+    knownSpells: [{ name: "Eldritch Blast", ability: "cha", className: "Warlock", source: "PHB" }],
+  });
+}
+
+test("Agonizing Blast puts the damage text in the Eldritch Blast row subtitle, with one badge", () => {
+  const row = rowNamed(spellPage(eldritchWarlock(8, ["Agonizing Blast"]), catalogs), "Eldritch Blast");
+  assert.ok(row.subtitle.endsWith(" • 1d10 - 1 force"), row.subtitle);
+  assert.deepEqual(
+    row.badges.filter((b) => b.label === "Agonizing Blast"),
+    [{ label: "Agonizing Blast", tone: "accent" }],
+  );
+  assert.ok(!row.badges.some((b) => b.label.includes("dmg")));
+});
+
+test("Charisma 16 with Agonizing Blast reads 1d10 + 3 force on the row", () => {
+  const row = rowNamed(spellPage(eldritchWarlock(16, ["Agonizing Blast"]), catalogs), "Eldritch Blast");
+  assert.ok(row.subtitle.endsWith(" • 1d10 + 3 force"), row.subtitle);
+});
+
+test("without Agonizing Blast the Eldritch Blast row has no damage text and no badge", () => {
+  const row = rowNamed(spellPage(eldritchWarlock(16, ["Armor of Shadows"]), catalogs), "Eldritch Blast");
+  assert.ok(!row.subtitle.includes("force"), row.subtitle);
+  assert.ok(!row.badges.some((b) => b.label === "Agonizing Blast"));
+});
+
+test("spellDetailText gives the Eldritch Blast damage line only with Agonizing Blast", () => {
+  const spell = compendium.findSpell("Eldritch Blast");
+  assert.ok(spell, "Eldritch Blast is in the compendium");
+
+  const detail = spellDetailText(spell, eldritchWarlock(8, ["Agonizing Blast"]));
+  assert.equal(detail.title, "Eldritch Blast");
+  assert.ok(detail.content.includes("• Damage: 1d10 - 1 force"), detail.content);
+
+  const plain = spellDetailText(spell, eldritchWarlock(8, ["Armor of Shadows"]));
+  assert.ok(!plain.content.includes("Damage:"), plain.content);
+  assert.ok(!plain.subtitle.includes("force"), plain.subtitle);
+});
+
+test("the Actions-tab Eldritch Blast damage reads the same formula", () => {
+  assert.equal(getEldritchBlastDamage(eldritchWarlock(8, ["Agonizing Blast"])), "1d10 - 1 force");
+  assert.equal(getEldritchBlastDamage(eldritchWarlock(16, ["Agonizing Blast"])), "1d10 + 3 force");
 });

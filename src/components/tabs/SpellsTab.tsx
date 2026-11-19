@@ -15,10 +15,7 @@ import { findSpell, getSpells } from "../../services/dataService";
 import { formatModifier } from "../../services/dndRules";
 import { currentCompendium } from "../../services/compendium";
 import { type LockedPreparedCard } from "../../rules/spellcasting";
-import {
-  type InnateSpellProfile,
-  type InnateSpellEntry,
-} from "../../rules/innateMagic";
+import type { InnateSpellEntry } from "../../rules/innateMagic";
 import {
   toggleSpellSlot,
   togglePactSlot as togglePactSlotRule,
@@ -33,8 +30,6 @@ import {
   learnSpell as learnSpellRule,
   forgetSpell as forgetSpellRule,
 } from "../../rules/characterSpells";
-import { hasInvocation } from "../../rules/ruleChoices";
-import { effectiveScores } from "../../rules/abilities";
 import type { SpellData } from "../../types/dnd5e";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
@@ -44,7 +39,12 @@ import { DetailModal } from "../DetailModal";
 import { SearchBar } from "../ui/SearchBar";
 import { SpellLearnList, LEVEL_NAMES } from "../spells/SpellLearnList";
 import { learnableSpells } from "../../rules/learnableSpells";
-import { spellPage, subclassSwapOffer } from "../../rules/spellPage";
+import {
+  spellDetailText,
+  spellPage,
+  subclassSwapOffer,
+  type SpellPageGrantedCard,
+} from "../../rules/spellPage";
 
 const METAMAGIC_OPTIONS = [
   {
@@ -140,7 +140,7 @@ export const SpellsTab: React.FC = () => {
     return spellPage(currentCharacter, { compendium: currentCompendium(), activeBooks }, selectedOwnerKey ?? undefined);
   }, [currentCharacter, activeBooks, selectedOwnerKey]);
 
-  const grantedProfiles: InnateSpellProfile[] = page?.grantedCards ?? [];
+  const grantedProfiles: SpellPageGrantedCard[] = page?.grantedCards ?? [];
   const lockedCards: LockedPreparedCard[] = page?.lockedCards ?? [];
   const atWillInvocations = page?.atWillCards ?? [];
 
@@ -151,15 +151,6 @@ export const SpellsTab: React.FC = () => {
   const activeKnownSpells = useMemo(() => {
     return page?.profile ? page.profile.knownSpells : [];
   }, [page]);
-
-  const hasAgonizingBlast = useMemo(() => {
-    return currentCharacter ? hasInvocation(currentCharacter, "Agonizing Blast") : false;
-  }, [currentCharacter]);
-
-  const chaModifier = useMemo(() => {
-    if (!currentCharacter) return 0;
-    return effectiveScores(currentCharacter).modifiers.cha;
-  }, [currentCharacter]);
 
   const ritual = page?.ritualBook ?? null;
   const hasAncientSecrets = ritual !== null;
@@ -217,27 +208,8 @@ export const SpellsTab: React.FC = () => {
   // Helpers and event handlers
   const showSpellDetail = (item: { name: string; source: string; details?: SpellData }) => {
     const s = item.details || findSpell(item.name, item.source);
-    if (!s) return;
-
-    const isEb = s.name.toLowerCase() === "eldritch blast";
-    const ebSubtitle = isEb && hasAgonizingBlast ? ` • 1d10 + ${chaModifier} force [Agonizing Blast: +${chaModifier} dmg]` : "";
-    const ebDamageLine = isEb && hasAgonizingBlast ? `• Damage: 1d10 + ${chaModifier} force [Agonizing Blast: +${chaModifier} dmg]\n` : "";
-
-    const formattedDesc =
-      `${s.level === 0 ? "Cantrip" : `${s.level}th-level`} ${s.school || ""}\n\n` +
-      `• Casting Time: ${s.castingTime || "1 action"}\n` +
-      `• Range: ${s.range || "Self"}\n` +
-      `• Components: ${s.componentsString || "V, S"}\n` +
-      `• Duration: ${s.duration || "Instantaneous"}\n` +
-      ebDamageLine +
-      `\n${s.description || "No description available."}`;
-
-    setDetailModal({
-      visible: true,
-      title: s.name,
-      subtitle: `${s.level === 0 ? "Cantrip" : `Level ${s.level}`} (${s.source})${ebSubtitle}`,
-      content: formattedDesc,
-    });
+    if (!s || !currentCharacter) return;
+    setDetailModal({ visible: true, ...spellDetailText(s, currentCharacter) });
   };
 
   const toggleInnateSpellUse = (spell: InnateSpellEntry) => {
@@ -246,7 +218,7 @@ export const SpellsTab: React.FC = () => {
   };
 
   const renderInnateCard = (
-    profile: InnateSpellProfile,
+    profile: SpellPageGrantedCard,
     copy: { subtitle: string; showMinLevel: boolean; key?: string }
   ) => {
     if ((profile.spells.length === 0 && !profile.notices?.length) || !currentCharacter) return null;
@@ -351,21 +323,13 @@ export const SpellsTab: React.FC = () => {
                         size="sm"
                       />
                     )}
-                    {spell.name.toLowerCase() === "eldritch blast" && hasAgonizingBlast && (
-                      <Badge
-                        label={`[Agonizing Blast: +${chaModifier} dmg]`}
-                        variant="accent"
-                        size="sm"
-                      />
-                    )}
+                    {spell.blast && <Badge label={spell.blast.badge.label} variant={spell.blast.badge.tone} size="sm" />}
                     <Ionicons name="information-circle-outline" size={14} color={theme.textMuted} />
                   </View>
                   <Text style={{ color: theme.textSecondary, fontSize: 11 }}>
                     {spell.castingTime}
                     {copy.showMinLevel ? ` • Min Level ${spell.minCharacterLevel}` : ""}
-                    {spell.name.toLowerCase() === "eldritch blast" && hasAgonizingBlast
-                      ? ` • 1d10 + ${chaModifier} force`
-                      : ""}
+                    {spell.blast ? ` • ${spell.blast.damage}` : ""}
                   </Text>
                 </TouchableOpacity>
 
@@ -452,7 +416,7 @@ export const SpellsTab: React.FC = () => {
           <Badge label="At Will" variant="accent" size="sm" />
         </View>
         <View style={{ marginTop: 8, gap: 6 }}>
-          {atWillInvocations.map(({ invocationName, spellName, details: spell }) => {
+          {atWillInvocations.map(({ invocationName, spellName, details: spell, blast }) => {
             return (
               <View
                 key={`at_will_${invocationName}_${spellName}`}
@@ -466,20 +430,12 @@ export const SpellsTab: React.FC = () => {
                       {spellName}
                     </Text>
                     <Badge label="At Will - Invocation" variant="accent" size="sm" />
-                    {spellName.toLowerCase() === "eldritch blast" && hasAgonizingBlast && (
-                      <Badge
-                        label={`[Agonizing Blast: +${chaModifier} dmg]`}
-                        variant="accent"
-                        size="sm"
-                      />
-                    )}
+                    {blast && <Badge label={blast.badge.label} variant={blast.badge.tone} size="sm" />}
                     <Ionicons name="information-circle-outline" size={14} color={theme.textMuted} />
                   </View>
                   <Text style={{ color: theme.textSecondary, fontSize: 11 }}>
                     {spell?.castingTime || "1 action"} • {invocationName}
-                    {spellName.toLowerCase() === "eldritch blast" && hasAgonizingBlast
-                      ? ` • 1d10 + ${chaModifier} force`
-                      : ""}
+                    {blast ? ` • ${blast.damage}` : ""}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -1216,14 +1172,7 @@ export const SpellsTab: React.FC = () => {
           searchPlaceholder={`Search ${currentProfile.className} spells...`}
           rowDetail={(s) => `${s.level === 0 ? "Cantrip" : `Lvl ${s.level}`} • ${s.school || ""} • ${s.source}`}
           onToggle={(s) => addSpellToCharacter(s.name, s.source)}
-          onViewDetail={(s) =>
-            setDetailModal({
-              visible: true,
-              title: s.name,
-              subtitle: `${s.level === 0 ? "Cantrip" : `Level ${s.level}`} (${s.source})`,
-              content: `${s.level === 0 ? "Cantrip" : `${s.level}th-level`} ${s.school || ""}\n\n• Casting Time: ${s.castingTime || "1 action"}\n• Range: ${s.range || "Self"}\n• Components: ${s.componentsString || "V, S"}\n• Duration: ${s.duration || "Instantaneous"}\n\n${s.description || ""}`,
-            })
-          }
+          onViewDetail={(s) => setDetailModal({ visible: true, ...spellDetailText(s, currentCharacter) })}
         />
       </Modal>
 
@@ -1258,14 +1207,7 @@ export const SpellsTab: React.FC = () => {
               key={`${s.name}_${s.source}`}
               style={[styles.pickerSpellRow, { borderBottomColor: theme.border }]}>
               <TouchableOpacity
-                onPress={() =>
-                  setDetailModal({
-                    visible: true,
-                    title: s.name,
-                    subtitle: `${s.level === 0 ? "Cantrip" : `Level ${s.level}`} (${s.source})`,
-                    content: `${s.level === 0 ? "Cantrip" : `${s.level}th-level`} ${s.school || ""}\n\n• Casting Time: ${s.castingTime || "1 action"}\n• Range: ${s.range || "Self"}\n• Components: ${s.componentsString || "V, S"}\n• Duration: ${s.duration || "Instantaneous"}\n\n${s.description || ""}`,
-                  })
-                }
+                onPress={() => setDetailModal({ visible: true, ...spellDetailText(s, currentCharacter) })}
                 style={{ flex: 1 }}>
                 <Text style={{ color: theme.text, fontSize: 14, fontWeight: "600" }}>{s.name}</Text>
                 <Text style={{ color: theme.textMuted, fontSize: 12 }}>
