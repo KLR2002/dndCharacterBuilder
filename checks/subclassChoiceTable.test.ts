@@ -27,6 +27,10 @@ test("every shipped subclass and class Rule Choice row keeps its persisted id", 
       "PHB__Barbarian__Path of the Totem Warrior__Totem Spirit 3",
       "PHB__Barbarian__Path of the Totem Warrior__Aspect of the Beast 6",
       "PHB__Barbarian__Path of the Totem Warrior__Totemic Attunement 14",
+      "SRD__Ranger__Hunter__Hunter's Prey 3",
+      "SRD__Ranger__Hunter__Defensive Tactics 7",
+      "SRD__Ranger__Hunter__Multiattack 11",
+      "SRD__Ranger__Hunter__Superior Hunter's Defense 15",
     ]
   );
 });

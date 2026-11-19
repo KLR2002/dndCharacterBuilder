@@ -66,6 +66,28 @@ const totemWarrior: SubclassData = {
   description: "Placeholder description for the Totem Warrior subclass.",
 };
 
+const hunterFeature = (name: string, level: number): ClassFeatureData => ({
+  name,
+  level,
+  description: `Placeholder prose for ${name}.`,
+  choices: placeholderChoices(level),
+});
+
+const hunterSubclass: SubclassData = {
+  name: "Hunter",
+  shortName: "Hunter",
+  source: "PHB",
+  className: "Ranger",
+  classSource: "PHB",
+  features: [
+    hunterFeature("Hunter's Prey", 3),
+    hunterFeature("Defensive Tactics", 7),
+    hunterFeature("Multiattack", 11),
+    hunterFeature("Superior Hunter's Defense", 15),
+  ],
+  description: "Placeholder description for the Hunter subclass.",
+};
+
 // Spell-choice subclasses. Option names are the real ones the Rule Choices offer; the spells are
 // invented. Each subclass carries its raw `additionalSpells` and the `spellChoice` the scraper lifts
 // from them, so a test can check the two agree.
@@ -346,6 +368,7 @@ export const choiceCatalogClasses = (): ClassData[] => [
   classWith("Sorcerer", [divineSoulSubclass]),
   classWith("Warlock", [genieSubclass]),
   classWith("Cleric", [natureDomain, deathDomain, arcanaDomain]),
+  classWith("Ranger", [hunterSubclass]),
 ];
 
 // The Elemental Discipline option records, as the scraper emits them: the real names and unlock

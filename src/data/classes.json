@@ -730,6 +730,33 @@
         "description": ""
       }
     ],
+    "grants": [
+      {
+        "id": "PHB/Bard/Starting Proficiencies@1#tools:choice:from",
+        "aliases": [
+          "PHB/Bard/Starting Proficiencies@1#0",
+          "PHB/Bard/Starting Proficiencies@1#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol"
+        ],
+        "kind": "choice",
+        "category": "tools",
+        "count": 3,
+        "pool": {
+          "kind": "names",
+          "names": [
+            "bagpipes",
+            "drum",
+            "dulcimer",
+            "flute",
+            "horn",
+            "lute",
+            "lyre",
+            "pan flute",
+            "shawm",
+            "viol"
+          ]
+        }
+      }
+    ],
     "multiclassing": {
       "requirements": {
         "Charisma": 13
@@ -780,34 +807,7 @@
         ]
       }
     },
-    "description": "",
-    "grants": [
-      {
-        "id": "PHB/Bard/Starting Proficiencies@1#tools:choice:from",
-        "aliases": [
-          "PHB/Bard/Starting Proficiencies@1#0",
-          "PHB/Bard/Starting Proficiencies@1#tools:choice:from=bagpipes,drum,dulcimer,flute,horn,lute,lyre,pan flute,shawm,viol"
-        ],
-        "kind": "choice",
-        "category": "tools",
-        "count": 3,
-        "pool": {
-          "kind": "names",
-          "names": [
-            "bagpipes",
-            "drum",
-            "dulcimer",
-            "flute",
-            "horn",
-            "lute",
-            "lyre",
-            "pan flute",
-            "shawm",
-            "viol"
-          ]
-        }
-      }
-    ]
+    "description": ""
   },
   {
     "name": "Cleric",
@@ -1824,7 +1824,65 @@
             }
           }
         ],
+        "spellChoice": {
+          "pick": 1,
+          "options": [
+            {
+              "name": "Arctic",
+              "description": "Hold Person, Spike Growth, Sleet Storm, Slow, Freedom Of Movement, Ice Storm, Commune With Nature, Cone Of Cold",
+              "source": "SRD"
+            },
+            {
+              "name": "Coast",
+              "description": "Mirror Image, Misty Step, Water Breathing, Water Walk, Control Water, Freedom Of Movement, Conjure Elemental, Scrying",
+              "source": "SRD"
+            },
+            {
+              "name": "Desert",
+              "description": "Blur, Silence, Create Food And Water, Protection From Energy, Blight, Hallucinatory Terrain, Insect Plague, Wall Of Stone",
+              "source": "SRD"
+            },
+            {
+              "name": "Forest",
+              "description": "Barkskin, Spider Climb, Call Lightning, Plant Growth, Divination, Freedom Of Movement, Commune With Nature, Tree Stride",
+              "source": "SRD"
+            },
+            {
+              "name": "Grassland",
+              "description": "Invisibility, Pass Without Trace, Daylight, Haste, Divination, Freedom Of Movement, Dream, Insect Plague",
+              "source": "SRD"
+            },
+            {
+              "name": "Mountain",
+              "description": "Spider Climb, Spike Growth, Lightning Bolt, Meld Into Stone, Stone Shape, Stoneskin, Passwall, Wall Of Stone",
+              "source": "SRD"
+            },
+            {
+              "name": "Swamp",
+              "description": "Darkness, Melf's Acid Arrow, Water Walk, Stinking Cloud, Freedom Of Movement, Locate Creature, Insect Plague, Scrying",
+              "source": "SRD"
+            },
+            {
+              "name": "Underdark",
+              "description": "Spider Climb, Web, Gaseous Form, Stinking Cloud, Greater Invisibility, Stone Shape, Cloudkill, Insect Plague",
+              "source": "SRD"
+            }
+          ]
+        },
         "description": ""
+      }
+    ],
+    "grants": [
+      {
+        "id": "PHB/Druid/Starting Proficiencies@1#tools:fixed:herbalism kit",
+        "aliases": [
+          "PHB/Druid/Starting Proficiencies@1#0"
+        ],
+        "kind": "fixed",
+        "category": "tools",
+        "names": [
+          "herbalism kit"
+        ]
       }
     ],
     "multiclassing": {
@@ -1849,20 +1907,7 @@
         ]
       }
     },
-    "description": "",
-    "grants": [
-      {
-        "id": "PHB/Druid/Starting Proficiencies@1#tools:fixed:herbalism kit",
-        "aliases": [
-          "PHB/Druid/Starting Proficiencies@1#0"
-        ],
-        "kind": "fixed",
-        "category": "tools",
-        "names": [
-          "herbalism kit"
-        ]
-      }
-    ]
+    "description": ""
   },
   {
     "name": "Fighter",
@@ -2590,6 +2635,7 @@
         ],
         "additionalSpells": [
           {
+            "ability": "wis",
             "innate": {
               "11": {
                 "daily": {
@@ -2604,19 +2650,6 @@
         "description": ""
       }
     ],
-    "multiclassing": {
-      "requirements": {
-        "Dexterity": 13,
-        "Wisdom": 13
-      },
-      "proficienciesGained": {
-        "weapons": [
-          "simple",
-          "{@item shortsword|phb|shortswords}"
-        ]
-      }
-    },
-    "description": "",
     "grants": [
       {
         "id": "PHB/Monk/Starting Proficiencies@1#tools:choice:from",
@@ -2660,7 +2693,20 @@
           ]
         }
       }
-    ]
+    ],
+    "multiclassing": {
+      "requirements": {
+        "Dexterity": 13,
+        "Wisdom": 13
+      },
+      "proficienciesGained": {
+        "weapons": [
+          "simple",
+          "{@item shortsword|phb|shortswords}"
+        ]
+      }
+    },
+    "description": ""
   },
   {
     "name": "Paladin",
@@ -3470,79 +3516,110 @@
             "description": "Emulating the Hunter archetype means accepting your place as a bulwark between civilization and the terrors of the wilderness. As you walk the Hunter's path, you learn specialized techniques for fighting the threats you face, from rampaging ogres and hordes of orcs to towering giants and terrifying dragons.\n\n- **Hunter's Prey**"
           },
           {
-            "name": "Horde Breaker",
-            "level": 3,
-            "description": "Once on each of your turns when you make a weapon attack, you can make another attack with the same weapon against a different creature that is within 5 feet of the original target and within range of your weapon."
-          },
-          {
             "name": "Hunter's Prey",
             "level": 3,
-            "description": "At 3rd level, you gain one of the following features of your choice.\n\n- **Colossus Slayer**\n- **Giant Killer**\n- **Horde Breaker**"
-          },
-          {
-            "name": "Colossus Slayer",
-            "level": 3,
-            "description": "Your tenacity can wear down the most potent foes. When you hit a creature with a weapon attack, the creature takes an extra 1d8 damage if it's below its hit point maximum. You can deal this extra damage only once per turn."
-          },
-          {
-            "name": "Giant Killer",
-            "level": 3,
-            "description": "When a Large or larger creature within 5 feet of you hits or misses you with an attack, you can use your reaction to attack that creature immediately after its attack, provided that you can see the creature."
+            "description": "At 3rd level, you gain one of the following features of your choice.\n\n- **Colossus Slayer**\n- **Giant Killer**\n- **Horde Breaker**",
+            "choices": {
+              "pick": 1,
+              "options": [
+                {
+                  "name": "Colossus Slayer",
+                  "description": "Your tenacity can wear down the most potent foes. When you hit a creature with a weapon attack, the creature takes an extra 1d8 damage if it's below its hit point maximum. You can deal this extra damage only once per turn.",
+                  "source": "SRD",
+                  "level": 3
+                },
+                {
+                  "name": "Giant Killer",
+                  "description": "When a Large or larger creature within 5 feet of you hits or misses you with an attack, you can use your reaction to attack that creature immediately after its attack, provided that you can see the creature.",
+                  "source": "SRD",
+                  "level": 3
+                },
+                {
+                  "name": "Horde Breaker",
+                  "description": "Once on each of your turns when you make a weapon attack, you can make another attack with the same weapon against a different creature that is within 5 feet of the original target and within range of your weapon.",
+                  "source": "SRD",
+                  "level": 3
+                }
+              ]
+            }
           },
           {
             "name": "Defensive Tactics",
             "level": 7,
-            "description": "At 7th level, you gain one of the following features of your choice.\n\n- **Escape the Horde**\n- **Multiattack Defense**\n- **Steel Will**"
-          },
-          {
-            "name": "Escape the Horde",
-            "level": 7,
-            "description": "Opportunity attacks against you are made with disadvantage."
-          },
-          {
-            "name": "Multiattack Defense",
-            "level": 7,
-            "description": "When a creature hits you with an attack, you gain a +4 bonus to AC against all subsequent attacks made by that creature for the rest of the turn."
-          },
-          {
-            "name": "Steel Will",
-            "level": 7,
-            "description": "You have advantage on saving throws against being frightened."
+            "description": "At 7th level, you gain one of the following features of your choice.\n\n- **Escape the Horde**\n- **Multiattack Defense**\n- **Steel Will**",
+            "choices": {
+              "pick": 1,
+              "options": [
+                {
+                  "name": "Escape the Horde",
+                  "description": "Opportunity attacks against you are made with disadvantage.",
+                  "source": "SRD",
+                  "level": 7
+                },
+                {
+                  "name": "Multiattack Defense",
+                  "description": "When a creature hits you with an attack, you gain a +4 bonus to AC against all subsequent attacks made by that creature for the rest of the turn.",
+                  "source": "SRD",
+                  "level": 7
+                },
+                {
+                  "name": "Steel Will",
+                  "description": "You have advantage on saving throws against being frightened.",
+                  "source": "SRD",
+                  "level": 7
+                }
+              ]
+            }
           },
           {
             "name": "Multiattack",
             "level": 11,
-            "description": "At 11th level, you gain one of the following features of your choice.\n\n- **Volley**\n- **Whirlwind Attack**"
-          },
-          {
-            "name": "Volley",
-            "level": 11,
-            "description": "You can use your action to make a ranged attack against any number of creatures within 10 feet of a point you can see within your weapon's range. You must have ammunition for each target, as normal, and you make a separate attack roll for each target."
-          },
-          {
-            "name": "Whirlwind Attack",
-            "level": 11,
-            "description": "You can use your action to make a melee attack against any number of creatures within 5 feet of you, with a separate attack roll for each target."
-          },
-          {
-            "name": "Evasion",
-            "level": 15,
-            "description": "You can nimbly dodge out of the way of certain area effects, such as a red dragon's fiery breath or a lightning bolt spell. When you are subjected to an effect that allows you to make a Dexterity saving throw to take only half damage, you instead take no damage if you succeed on the saving throw, and only half damage if you fail."
-          },
-          {
-            "name": "Stand Against the Tide",
-            "level": 15,
-            "description": "When a hostile creature misses you with a melee attack, you can use your reaction to force that creature to repeat the same attack against another creature (other than itself) of your choice."
+            "description": "At 11th level, you gain one of the following features of your choice.\n\n- **Volley**\n- **Whirlwind Attack**",
+            "choices": {
+              "pick": 1,
+              "options": [
+                {
+                  "name": "Volley",
+                  "description": "You can use your action to make a ranged attack against any number of creatures within 10 feet of a point you can see within your weapon's range. You must have ammunition for each target, as normal, and you make a separate attack roll for each target.",
+                  "source": "SRD",
+                  "level": 11
+                },
+                {
+                  "name": "Whirlwind Attack",
+                  "description": "You can use your action to make a melee attack against any number of creatures within 5 feet of you, with a separate attack roll for each target.",
+                  "source": "SRD",
+                  "level": 11
+                }
+              ]
+            }
           },
           {
             "name": "Superior Hunter's Defense",
             "level": 15,
-            "description": "At 15th level, you gain one of the following features of your choice.\n\n- **Evasion**\n- **Stand Against the Tide**\n- **Uncanny Dodge**"
-          },
-          {
-            "name": "Uncanny Dodge",
-            "level": 15,
-            "description": "When an attacker that you can see hits you with an attack, you can use your reaction to halve the attack's damage against you."
+            "description": "At 15th level, you gain one of the following features of your choice.\n\n- **Evasion**\n- **Stand Against the Tide**\n- **Uncanny Dodge**",
+            "choices": {
+              "pick": 1,
+              "options": [
+                {
+                  "name": "Evasion",
+                  "description": "You can nimbly dodge out of the way of certain area effects, such as a red dragon's fiery breath or a lightning bolt spell. When you are subjected to an effect that allows you to make a Dexterity saving throw to take only half damage, you instead take no damage if you succeed on the saving throw, and only half damage if you fail.",
+                  "source": "SRD",
+                  "level": 15
+                },
+                {
+                  "name": "Stand Against the Tide",
+                  "description": "When a hostile creature misses you with a melee attack, you can use your reaction to force that creature to repeat the same attack against another creature (other than itself) of your choice.",
+                  "source": "SRD",
+                  "level": 15
+                },
+                {
+                  "name": "Uncanny Dodge",
+                  "description": "When an attacker that you can see hits you with an attack, you can use your reaction to halve the attack's damage against you.",
+                  "source": "SRD",
+                  "level": 15
+                }
+              ]
+            }
           }
         ],
         "description": ""
@@ -3948,6 +4025,19 @@
         "description": ""
       }
     ],
+    "grants": [
+      {
+        "id": "PHB/Rogue/Starting Proficiencies@1#tools:fixed:thieves' tools",
+        "aliases": [
+          "PHB/Rogue/Starting Proficiencies@1#0"
+        ],
+        "kind": "fixed",
+        "category": "tools",
+        "names": [
+          "thieves' tools"
+        ]
+      }
+    ],
     "multiclassing": {
       "requirements": {
         "Dexterity": 13
@@ -3991,20 +4081,7 @@
         ]
       }
     },
-    "description": "",
-    "grants": [
-      {
-        "id": "PHB/Rogue/Starting Proficiencies@1#tools:fixed:thieves' tools",
-        "aliases": [
-          "PHB/Rogue/Starting Proficiencies@1#0"
-        ],
-        "kind": "fixed",
-        "category": "tools",
-        "names": [
-          "thieves' tools"
-        ]
-      }
-    ]
+    "description": ""
   },
   {
     "name": "Sorcerer",
