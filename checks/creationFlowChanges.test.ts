@@ -312,7 +312,13 @@ describe("Changing the ancestry or the background", () => {
       abilityMethod: "standardArray",
       standardArrayPicks: { str: 8, dex: 12, con: 13, int: 10, wis: 15, cha: 14 },
       baseAbilityScores: { str: 8, dex: 12, con: 13, int: 10, wis: 15, cha: 14 },
-      knownSpells: [{ name: "Ensnaring Strike", source: "GGR", ownerKey: "Cleric__PHB" }],
+      // A Cleric 3 is due 3 cantrips, so the fixture holds them: the Spells step is valid only with the background's spell released.
+      knownSpells: [
+        { name: "Sacred Flame", source: "PHB", ownerKey: "Cleric__PHB" },
+        { name: "Guidance", source: "PHB", ownerKey: "Cleric__PHB" },
+        { name: "Light", source: "PHB", ownerKey: "Cleric__PHB" },
+        { name: "Ensnaring Strike", source: "GGR", ownerKey: "Cleric__PHB" },
+      ],
       creationProgress: { currentStep: "spells" },
     });
     const changed = applyCreationStepChange(
@@ -320,7 +326,11 @@ describe("Changing the ancestry or the background", () => {
       { step: "background", background: { name: "Hermit", source: "PHB" } },
       flowOpts,
     );
-    assert.deepEqual(changed.knownSpells ?? [], [], "the spell only the old background's list gave is released");
+    assert.deepEqual(
+      changed.knownSpells?.map((k) => k.name),
+      ["Sacred Flame", "Guidance", "Light"],
+      "the spell only the old background's list gave is released",
+    );
     assert.equal(isCreationStepValid(changed, "spells", flowOpts), true, "the Spells step stays valid");
     assert.equal(creationStepNeedsAttention(changed, "spells"), true, "the Spells step is flagged because a pick of it was released");
   });
