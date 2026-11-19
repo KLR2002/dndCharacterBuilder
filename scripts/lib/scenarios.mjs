@@ -1049,6 +1049,30 @@ function arcanumCharacter() {
   });
 }
 
+// A level 4 Sorcerer holding Shield under its own key, so its level 5 plan offers the spell swap: forget Shield, learn
+// Magic Missile. The Level-Up Flow replacement scenario walks it to Review.
+export const LEVEL_UP_SORCERER_ID = "char_levelup_sorcerer";
+function levelUpSorcererCharacter() {
+  const classSource = catalogSource("classes", "Sorcerer");
+  const spellSource = (name) => catalogSource("spells", name);
+  const ownerKey = `Sorcerer__${classSource}`;
+  return makeChar({
+    id: LEVEL_UP_SORCERER_ID,
+    name: "Vesna",
+    createdAt: 24,
+    updatedAt: 24,
+    startingOption: "equipment",
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    baseAbilityScores: { str: 8, dex: 14, con: 12, int: 10, wis: 10, cha: 16 },
+    classes: [{ className: "Sorcerer", source: classSource, level: 4 }],
+    currentHp: 26,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+    knownSpells: ["Shield", "Mage Hand"].map((name) => ({ name, source: spellSource(name), ownerKey })),
+  });
+}
+
 // A level 2 Sorcerer: its Sorcery Points card shows the points alone, with no Metamagic button.
 const SORCERER_TWO_ID = "char_sorcerer_two";
 function sorcererTwoCharacter() {
@@ -1433,6 +1457,7 @@ export function buildSeed({ root, integrated }) {
       arcanumCharacter(),
       arcanumOtherClassCharacter(),
       sorcererTwoCharacter(),
+      levelUpSorcererCharacter(),
       actionsCharacter(),
       ...(INTEGRATED ? [aberrantSorcererCharacter()] : []),
     ],
@@ -1634,7 +1659,8 @@ export function buildScreens({ integrated }) {
       { name: "Builder Class equipment picker open", route: buildRoute(FIGHTER_PICKED_ID, "equipment"), open: [{ tap: { text: "Martial weapon", exact: true } }], ready: "Greatsword", scrollTo: "Martial weapon", expect: { placeholders: ["Search…"] } },
       { name: "Builder Class equipment cleric domain", route: buildRoute(CLERIC_DOMAIN_ID, "equipment"), ready: "Starting Equipment & Gold:", scrollTo: "Starting Equipment & Gold:", expect: { texts: ["Chain Mail", "Included"], absent: ["Warhammer"], fitsWidth: true } },
       // The Creation Flow's Spells step (Edit Build on the finished wizard reaches it as well).
-      { shot: true, name: "Builder Spells step", route: buildRoute(WIZARD_ID, "spells"), ready: /add spells/i, expect: { fitsWidth: true } },
+      // The Wizard 3 knows 3 cantrips of 3 due and 5 spellbook spells of 10 due (6, then 2 per level): the spellbook counter is red.
+      { shot: true, name: "Builder Spells step", route: buildRoute(WIZARD_ID, "spells"), ready: /add spells/i, expect: { texts: ["Cantrips 3/3", "Spellbook 5/10"], fitsWidth: true } },
       // The SRD Baseline has one Cleric domain, which the app applies at once, so a Cleric without a domain exists in integrated mode only.
       ...(INTEGRATED
         ? [{ name: "Builder Class equipment cleric", route: buildRoute(CLERIC_ID, "equipment"), ready: "Starting Equipment & Gold:", scrollTo: "Starting Equipment & Gold:", expect: { texts: ["Scale Mail"], absent: ["Warhammer", "Chain Mail"], fitsWidth: true } }]
@@ -1963,7 +1989,7 @@ export function buildScreens({ integrated }) {
                 { tap: { text: "Spells", exact: true } },
               ],
               ready: "Magic Missile",
-              expect: { texts: ["Magic Missile", "Mage Hand"], fitsWidth: true },
+              expect: { texts: ["Magic Missile", "Mage Hand", "Cantrips 0/2", "Spells 0/3"], fitsWidth: true },
             },
           ]
         : []),
