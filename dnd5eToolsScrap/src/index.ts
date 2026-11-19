@@ -205,18 +205,6 @@ async function main(): Promise<void> {
         file: path.relative(process.cwd(), file),
       };
       console.log(`  ✓ Saved ${count} items -> ${file} (${formatBytes(bytes)})`);
-
-      const candidatePaths = [
-        path.resolve(process.cwd(), "../src/data/items.json"),
-        path.resolve(process.cwd(), "src/data/items.json"),
-      ];
-      for (const p of candidatePaths) {
-        if (fs.existsSync(path.dirname(p))) {
-          saveJson(p, items);
-          console.log(`  ✓ Synced items to ${p}`);
-          break;
-        }
-      }
     }
 
     // 7. Spells
@@ -259,19 +247,6 @@ async function main(): Promise<void> {
         file: path.relative(process.cwd(), file),
       };
       console.log(`  ✓ Saved ${count} books -> ${file} (${formatBytes(bytes)})`);
-
-      // Sync to src/data/books.json if possible
-      const candidatePaths = [
-        path.resolve(process.cwd(), "../src/data/books.json"),
-        path.resolve(process.cwd(), "src/data/books.json"),
-      ];
-      for (const p of candidatePaths) {
-        if (fs.existsSync(path.dirname(p))) {
-          saveJson(p, books);
-          console.log(`  ✓ Synced books to ${p}`);
-          break;
-        }
-      }
     }
 
     // 10. Conditions & Diseases
@@ -286,22 +261,9 @@ async function main(): Promise<void> {
         file: path.relative(process.cwd(), file),
       };
       console.log(`  ✓ Saved ${count} conditions -> ${file} (${formatBytes(bytes)})`);
-
-      // Sync to src/data/conditions.json if possible
-      const candidatePaths = [
-        path.resolve(process.cwd(), "../src/data/conditions.json"),
-        path.resolve(process.cwd(), "src/data/conditions.json"),
-      ];
-      for (const p of candidatePaths) {
-        if (fs.existsSync(path.dirname(p))) {
-          saveJson(p, conditions);
-          console.log(`  ✓ Synced conditions to ${p}`);
-          break;
-        }
-      }
     }
 
-    // 11. Origin Rules: written to the data dir only. The SRD Baseline carries none, so nothing is synced to src/data.
+    // 11. Origin Rules: written to the data dir only.
     if (shouldRun("originrules")) {
       console.log("\n[11/11] Scraping Origin Rules (Customizing Your Origin)...");
       const originRules = await scrapeOriginRules(client);
