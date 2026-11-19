@@ -1015,10 +1015,10 @@ test("a tab whose target never shows fails the scenario, saves the -FAILED.png s
   assert.ok(world.errors.join("\n").includes("[360dp] Stats"));
   assert.equal(world.callsTo("input tap").length, 0);
   // The failed step target is a failure after launch: every selected scenario (ONLY "Stats" matches
-  // five) saves its stuck screen as -FAILED.png, and no normal screenshot is taken.
+  // six) saves its stuck screen as -FAILED.png, and no normal screenshot is taken.
   const failed = join(shots, "Stats-360-FAILED.png");
-  assert.equal(world.callsTo("screencap").length, 5);
-  assert.equal(world.callsTo("pull").length, 5);
+  assert.equal(world.callsTo("screencap").length, 6);
+  assert.equal(world.callsTo("pull").length, 6);
   assert.ok(world.callsTo("screencap").every((c) => (c.args.at(-1) as string).includes("-FAILED.png")));
   assert.ok(existsSync(failed));
   assert.deepEqual([...readFileSync(failed).subarray(0, 8)], [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
