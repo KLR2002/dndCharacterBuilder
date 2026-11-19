@@ -500,7 +500,7 @@ function levelUpRogueCharacter() {
       },
     ],
     proficiencyPicks: {
-      [`${catalogSource("classes", "Rogue")}/Rogue/Starting Proficiencies@1#skills:choice:from`]: ["Stealth", "Acrobatics", "Perception", "Deception"],
+      ["PHB/Rogue/Starting Proficiencies@1#skills:choice:from"]: ["Stealth", "Acrobatics", "Perception", "Deception"],
     },
     chosenExpertise: ["Stealth", "Acrobatics"],
     currentHp: 33,
@@ -1342,8 +1342,8 @@ function reviewDraftCharacter() {
     ],
     creationProgress: { currentStep: "review" },
   });
-  // The starting skill grant of the Fighter record in this catalog, picked with two of the Fighter's skills.
-  const startingSkillId = `${catalogSource("classes", "Fighter")}/Fighter/Starting Proficiencies@1#skills:choice:from`;
+  // The Fighter's starting skill grant, picked with two of its skills. Its id names the PHB with either catalog.
+  const startingSkillId = "PHB/Fighter/Starting Proficiencies@1#skills:choice:from";
   return { ...base, proficiencyPicks: { [startingSkillId]: ["Acrobatics", "Athletics"] } };
 }
 
