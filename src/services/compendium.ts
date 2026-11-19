@@ -48,7 +48,10 @@ export interface Compendium {
   for(activeBooks?: readonly string[]): CompendiumListings;
   /** The race a held race resolves to, subrace included: the saved source's record, else an active book's (see findHeldRace). */
   findRace(held: HeldRace, activeBooks: ActiveBooks): RaceData | undefined;
-  /** The other name lookups are never scoped, so existing character picks always resolve. */
+  /**
+   * The other name lookups are never scoped, so existing character picks always resolve. A spell or item name
+   * with source SRD, or no source, also resolves to the record whose `srdName` it is.
+   */
   findClass(name: string, source?: string): ClassData | undefined;
   findSpell(name: string, source?: string): SpellData | undefined;
   findItem(name: string, source?: string): ItemData | undefined;
@@ -95,6 +98,18 @@ function once<T>(compute: () => T[]): () => T[] {
 
 function findIn<T extends { name: string; source: string }>(records: T[], name: string, source?: string): T | undefined {
   return records.find((r) => r.name === name && (!source || r.source === source));
+}
+
+// A name saved from the SRD Baseline is the SRD's name. An Integrated Catalog prints some of those records under
+// another name and records the SRD's as `srdName`, so an SRD-sourced or unsourced name also resolves through it.
+function findNamedIn<T extends { name: string; source: string; srdName?: string }>(
+  records: T[],
+  name: string,
+  source?: string,
+): T | undefined {
+  const found = findIn(records, name, source);
+  if (found || (source && source !== SRD_SOURCE)) return found;
+  return records.find((r) => r.srdName === name);
 }
 
 export function createCompendium(
@@ -177,8 +192,8 @@ export function createCompendium(
     for: (activeBooks) => (!activeBooks || !integrated ? unscoped : scopedFor(activeBooks)),
     findRace: (held, activeBooks) => findHeldRace(races.records, held, activeBooks).race,
     findClass: (name, source) => findIn(classes.records, name, source),
-    findSpell: (name, source) => findIn(spells.records, name, source),
-    findItem: (name, source) => findIn(items.records, name, source),
+    findSpell: (name, source) => findNamedIn(spells.records, name, source),
+    findItem: (name, source) => findNamedIn(items.records, name, source),
     findBackground: (name, source) => findIn(backgrounds.records, name, source),
     findBeast: (name, source) => findIn(beasts.records, name, source),
   };
