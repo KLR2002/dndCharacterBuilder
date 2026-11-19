@@ -18,7 +18,7 @@
 
 **Status:** done
 
-**Landed:** merge e30cff1 (a56c811 pins, bb7910c).
+**Landed:** merge a962ae1 (7818a28 pins, a67da08).
 - **Parts:** `armorClass` returns `parts: { kind, label, value }[]`, with kinds base, ability, shield, fightingStyle, infusion and magic. `breakdown` is rendered from them and `ac` is their sum.
 - **Text unchanged:** five breakdown pins in the new `checks/ac.test.ts` were written against the old code and still pass.
 - **Stats tab:** the Defense and Infused badges read `parts`, with no regex left.

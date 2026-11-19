@@ -14,7 +14,7 @@
 
 **Status:** done
 
-**Landed:** merge 7b0ff7f (0888d89).
+**Landed:** merge a90e890 (01f6582).
 - **Fix:** the three syncs to `src/data` are removed from `dnd5eToolsScrap/src/index.ts`.
 - **Check:** `dnd5eToolsScrap/checks/scraper-stays-out-of-src-data.test.ts` fails if `index.ts` names `src/data`; it was red before the removal.
 - **Scraper run:** a run for items, books and conditions left `src/data` clean. The run also showed upstream drift in the tracked `dnd5eToolsScrap/data/books.json` (author names, dates, groups), which was restored, not committed.

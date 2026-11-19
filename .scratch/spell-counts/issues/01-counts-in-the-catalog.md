@@ -12,7 +12,7 @@
 - **Types.** Add the fields, with doc comments, to:
   - the scraper models: `dnd5eToolsScrap/src/types/models.ts` (~163 `spellcasting`, and `SubclassModel`)
   - the app types: `src/types/dnd5e.ts` (`ClassData.spellcasting` ~189, `SubclassData` ~160)
-- **Format.** Raise `REQUIRED_CATALOG_FORMAT` in `src/services/compendiumStorage.ts` from 16 to 17, and update `checks/compendium.test.ts` as commit 34dc2e1 did for 16.
+- **Format.** Raise `REQUIRED_CATALOG_FORMAT` in `src/services/compendiumStorage.ts` from 16 to 17, and update `checks/compendium.test.ts` as commit c7d7592 did for 16.
 - **Data.** Regenerate the tracked `dnd5eToolsScrap/data/classes.json` the way the scraper's README says. Then run `node scripts/prune-to-srd.mjs`, which should add the fields to the SRD classes in `src/data/classes.json`. Check that the prune changes nothing else in `src/data` beyond those fields and any timestamp it always writes; restore an unrelated timestamp-only change.
 
 The app does not read the fields yet (ticket 02).
@@ -21,7 +21,7 @@ The app does not read the fields yet (ticket 02).
 
 **Status:** done
 
-**Landed:** 10d3937 (scraper fields, `dnd5eToolsScrap/checks/spell-counts.test.ts`, types, format 17), c200265 (regenerated `dnd5eToolsScrap/data/classes.json`; it also carries changes the scraper already made since the last regeneration: class fluff descriptions, folded subclass choices, `additionalSpells`), 49c2645 (SRD Baseline). The full `prune-to-srd` was not used: it would bring PHB fluff descriptions (non-SRD) and folded Ranger choices into `src/data` and fail `featureOptionsDescription.test.ts`; only the three count fields were copied from the PHB records (SRD: Bard 2→4 cantrips / 4→22 spells, Cleric 3→5, Druid 2→4, Ranger 0→11 spells, Sorcerer 4→6 / 2→15, Warlock 2→4 / 2→15, Wizard 3→5 / spellbook 6 then 2; Paladin none). Filed `.scratch/quick-fixes-nov-2026/issues/06-prune-to-srd-keeps-the-baseline.md`. check:all and check:live passed.
+**Landed:** a7d2e29 (scraper fields, `dnd5eToolsScrap/checks/spell-counts.test.ts`, types, format 17), 0c12c00 (regenerated `dnd5eToolsScrap/data/classes.json`; it also carries changes the scraper already made since the last regeneration: class fluff descriptions, folded subclass choices, `additionalSpells`), 111d16e (SRD Baseline). The full `prune-to-srd` was not used: it would bring PHB fluff descriptions (non-SRD) and folded Ranger choices into `src/data` and fail `featureOptionsDescription.test.ts`; only the three count fields were copied from the PHB records (SRD: Bard 2→4 cantrips / 4→22 spells, Cleric 3→5, Druid 2→4, Ranger 0→11 spells, Sorcerer 4→6 / 2→15, Warlock 2→4 / 2→15, Wizard 3→5 / spellbook 6 then 2; Paladin none). Filed `.scratch/quick-fixes-nov-2026/issues/06-prune-to-srd-keeps-the-baseline.md`. check:all and check:live passed.
 
 - [x] A scraper test (`dnd5eToolsScrap/checks/`, like `feat-ability-choices.test.ts`) feeds raw records and checks the output:
   - a Bard-like class with `cantripProgression` and `spellsKnownProgression`
