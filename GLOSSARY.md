@@ -307,8 +307,12 @@ The UI restriction that hides all sourcebook selection and filtering controls un
 _Avoid_: Book lock, catalog curtain, toggle hiding
 
 **Compendium**:
-The synchronous, read-only view over the active player catalog (the SRD Baseline or the Integrated Catalog). Listings are scoped to the active sourcebooks; lookups by name are not, so a character's existing choices always resolve.
+The synchronous, read-only view over the active player catalog (the SRD Baseline or the Integrated Catalog). Listings are scoped to the active sourcebooks, and each one answers whether a source is admitted (`admits`); lookups by name are not scoped, so a character's existing choices always resolve.
 _Avoid_: data service, catalog store, content provider
+
+**Book Admission**:
+The one rule for whether a record's source is admitted: a record with no source, an `SRD` record, and a record whose book is in the active list (codes compare without case) are admitted. With no book list every book is admitted; an empty list admits no book. Rules ask the Compendium's listings rather than comparing book codes.
+_Avoid_: source gate, book whitelist
 
 **Dataset Swapping**:
 The runtime cutover mechanism that unloads the SRD Baseline from memory and exclusively queries the Integrated Catalog once integration is active, preventing duplicate entities or overlapping source confusion.

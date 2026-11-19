@@ -134,8 +134,7 @@ export function fightingStyleRuleChoices(
   compendium: Compendium = currentCompendium()
 ): AvailableRuleChoice[] {
   const out: Omit<AvailableRuleChoice, "origin" | "pick">[] = [];
-  const upperBooks = activeBooks ? activeBooks.map((b) => b.toUpperCase()) : undefined;
-  const allOptions = compendium.for(upperBooks).optionsAndFeatures();
+  const allOptions = compendium.for(activeBooks).optionsAndFeatures();
   // A held class resolves whatever the active books, so its record's source is read from the unscoped listing.
   const classes = compendium.for().classes();
 
@@ -260,7 +259,7 @@ export function fightingStyleRuleChoices(
 
   // Cantrip Sub-Choices
   if (hasFightingStyle(character, "Blessed Warrior")) {
-    const clericCantrips = compendium.for(upperBooks).spells().filter(
+    const clericCantrips = compendium.for(activeBooks).spells().filter(
       (s) => s.level === 0 && s.classes?.some((cls) => cls.toLowerCase() === "cleric")
     );
     out.push({
@@ -274,7 +273,7 @@ export function fightingStyleRuleChoices(
   }
 
   if (hasFightingStyle(character, "Druidic Warrior")) {
-    const druidCantrips = compendium.for(upperBooks).spells().filter(
+    const druidCantrips = compendium.for(activeBooks).spells().filter(
       (s) => s.level === 0 && s.classes?.some((cls) => cls.toLowerCase() === "druid")
     );
     out.push({

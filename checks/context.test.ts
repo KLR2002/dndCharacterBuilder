@@ -95,14 +95,13 @@ async function providerHarness(initial: unknown = [makeChar()], options: {
     if (name.includes("migrateCharacter")) return { migrateCharacter };
     if (name.includes("srdNames")) return { renameSrdNames };
     if (name.includes("characterReconciler")) return { reconcileForActiveBooks };
-    if (name.includes("dataService")) return {
-      getRaces: () => options.races ?? [],
-      getClasses: () => options.classes ?? [],
-    };
     if (name.endsWith("services/compendium")) return {
       integrate: (bundle: any) => { integrated = bundle; },
       revertToSrd: () => { integrated = null; },
-      currentCompendium: () => options.catalog ?? { stale: integrated ? compendiumStorage.isCatalogStale(integrated) : false },
+      currentCompendium: () => options.catalog ?? {
+        stale: integrated ? compendiumStorage.isCatalogStale(integrated) : false,
+        for: () => ({ races: () => options.races ?? [], classes: () => options.classes ?? [] }),
+      },
     };
     if (name.includes("constants/rules")) return rules;
     if (name.includes("constants/books")) return { DEFAULT_ACTIVE_BOOK_CODES: [] };

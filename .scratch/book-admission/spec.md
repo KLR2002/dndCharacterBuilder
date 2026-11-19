@@ -1,6 +1,6 @@
 # Spec: One book-admission rule
 
-**Status:** ready-for-agent
+**Status:** done (full layout suite green: SRD at 320, 393, 768, 1280; integrated at 320)
 
 Architecture review candidate #6, "pass one book-scoped Compendium" (2026-11-18). Decided with the user on 2026-11-19. ADR 0025. Builds on `.scratch/srd-baseline-stays-srd/`, after which SRD folded options carry source `"SRD"`.
 

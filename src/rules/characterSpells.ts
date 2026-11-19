@@ -377,18 +377,18 @@ function isAlwaysPrepared(profile: ClassSpellProfile, name: string): boolean {
  * Whether the spell is on the owner's class list under the active books. Fighter and Rogue gate
  * against the Wizard list.
  */
-function isOnOwnerList(profile: ClassSpellProfile, spell: SpellData, activeBooks: ActiveBooks): boolean {
+function isOnOwnerList(profile: ClassSpellProfile, spell: SpellData, activeBooks: ActiveBooks, compendium: Compendium): boolean {
   const gatingClass =
     profile.className === "Fighter" || profile.className === "Rogue" ? "Wizard" : profile.className;
-  return isSpellAvailableForClass(spell, gatingClass, activeBooks, profileSpellContext(profile));
+  return isSpellAvailableForClass(spell, gatingClass, activeBooks, profileSpellContext(profile), compendium);
 }
 
 /**
  * Whether the owner may learn or prepare the spell: on its class list under the active books, and
  * within the owner's maximum spell level.
  */
-function withinOwnerGate(profile: ClassSpellProfile, spell: SpellData, activeBooks: ActiveBooks): boolean {
-  return spell.level <= profile.maxSpellLevel && isOnOwnerList(profile, spell, activeBooks);
+function withinOwnerGate(profile: ClassSpellProfile, spell: SpellData, activeBooks: ActiveBooks, compendium: Compendium): boolean {
+  return spell.level <= profile.maxSpellLevel && isOnOwnerList(profile, spell, activeBooks, compendium);
 }
 
 /**
@@ -419,7 +419,7 @@ export function togglePrepared(
   }
 
   const data = compendium.findSpell(spell.name, spell.source);
-  if (data && !withinOwnerGate(profile, data, activeBooks)) return character;
+  if (data && !withinOwnerGate(profile, data, activeBooks, compendium)) return character;
 
   return reconcile({ ...character, preparedSpells: [...current, canonical] }, compendium, { activeBooks });
 }
@@ -438,7 +438,7 @@ export function learnSpell(
   activeBooks: ActiveBooks
 ): Character {
   const data = compendium.findSpell(spell.name, spell.source);
-  if (data && !withinOwnerGate(profile, data, activeBooks)) return character;
+  if (data && !withinOwnerGate(profile, data, activeBooks, compendium)) return character;
   if (isKnown(character, profile, spell)) return character;
 
   const learned: KnownSpell = {

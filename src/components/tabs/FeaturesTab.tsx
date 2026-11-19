@@ -12,19 +12,11 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
-import {
-  findRace,
-  getBackgrounds,
-  getClasses,
-  getFeats,
-  getRaces,
-  getOptionsAndFeatures,
-} from "../../services/dataService";
 import { evaluateCharacter } from "../../rules/characterEvaluation";
 import { findHeldRace, findHeldRecord, heldSourceOf } from "../../rules/raceLookup";
 import { setOptionalFeatureEnabled } from "../../rules/builderTransitions";
 import { currentCompendium } from "../../services/compendium";
-import { findClassData } from "../../rules/catalogs";
+import { catalogListings, findClassData } from "../../rules/catalogs";
 import { hasCustomFlag, isCustomBackground } from "../../rules/customBackground";
 import {
   getAvailableOptionalFeatures,
@@ -76,10 +68,7 @@ export const FeaturesTab: React.FC = () => {
 
   const [wildShapeModalVisible, setWildShapeModalVisible] = useState(false);
 
-  const isMmActive = useMemo(
-    () => (activeBooks || []).some((b) => b.toUpperCase() === "MM"),
-    [activeBooks]
-  );
+  const isMmActive = useMemo(() => catalogListings({ activeBooks }).admits("MM"), [activeBooks]);
 
   const handleEnableMonsterManual = () => {
     if (isMmActive) return;
@@ -116,7 +105,7 @@ export const FeaturesTab: React.FC = () => {
 
     // 1. Race / Lineage Features
     if (currentCharacter.lineageReplacement) {
-      const lineageData = findRace({ name: currentCharacter.lineageReplacement }, activeBooks);
+      const lineageData = currentCompendium().findRace({ name: currentCharacter.lineageReplacement }, activeBooks);
       if (lineageData?.traits) {
         for (const trait of lineageData.traits) {
           list.push({
@@ -129,7 +118,7 @@ export const FeaturesTab: React.FC = () => {
         }
       }
     } else if (currentCharacter.race) {
-      const races = getRaces(activeBooks);
+      const races = currentCompendium().for(activeBooks).races();
       const { race: raceData, subrace: subraceData } = findHeldRace(races, currentCharacter.race, activeBooks);
       // A trait a recorded choice replaced must not appear at all, and the
       // Features tab builds its own list rather than going through
@@ -204,7 +193,7 @@ export const FeaturesTab: React.FC = () => {
           description: currentCharacter.background.customFeatureDesc || "Custom feature description.",
         });
       } else {
-        const bgs = getBackgrounds(activeBooks);
+        const bgs = currentCompendium().for(activeBooks).backgrounds();
         const bgData = findHeldRecord(bgs, currentCharacter.background, activeBooks);
         if (bgData?.feature) {
           list.push({
@@ -236,7 +225,8 @@ export const FeaturesTab: React.FC = () => {
               cf,
               classData.source,
               activeBooks,
-              `A ${c.className} feature gained at level ${cf.level}.`
+              `A ${c.className} feature gained at level ${cf.level}.`,
+              currentCompendium()
             );
             list.push({
               id: `class_${c.className}_${cf.name}_${cf.level}`,
@@ -253,7 +243,7 @@ export const FeaturesTab: React.FC = () => {
       if (c.className === "Warlock") {
         const chosenInvocations = getChosenInvocations(currentCharacter);
         if (chosenInvocations.length > 0) {
-          const allOptions = getOptionsAndFeatures(activeBooks);
+          const allOptions = currentCompendium().for(activeBooks).optionsAndFeatures();
           for (const invName of chosenInvocations) {
             const invData = allOptions.find(
               (o) =>
@@ -322,7 +312,8 @@ export const FeaturesTab: React.FC = () => {
                   sf,
                   sc.source,
                   activeBooks,
-                  `A ${c.subclassName} archetype feature gained at level ${sf.level}.`
+                  `A ${c.subclassName} archetype feature gained at level ${sf.level}.`,
+                  currentCompendium()
                 ),
               });
             }
@@ -333,7 +324,7 @@ export const FeaturesTab: React.FC = () => {
 
     // 5. Feats
     if (currentCharacter.asiSelections) {
-      const allFeats = getFeats(activeBooks);
+      const allFeats = currentCompendium().for(activeBooks).feats();
       for (const asi of currentCharacter.asiSelections) {
         if (asi.type === "feat" && asi.featName) {
           const fData = findHeldRecord(allFeats, { name: asi.featName, source: asi.featSource }, activeBooks);
@@ -353,7 +344,7 @@ export const FeaturesTab: React.FC = () => {
 
   const availableOptional = useMemo(() => {
     if (!currentCharacter) return [];
-    const allClasses = getClasses(activeBooks);
+    const allClasses = currentCompendium().for(activeBooks).classes();
     return getAvailableOptionalFeatures(currentCharacter, allClasses);
   }, [currentCharacter, activeBooks]);
 

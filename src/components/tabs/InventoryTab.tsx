@@ -13,7 +13,6 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
-import { getItems } from "../../services/dataService";
 import { evaluateCharacter } from "../../rules/characterEvaluation";
 import { armorCategoryOfType } from "../../rules/ac";
 import { currentCompendium } from "../../services/compendium";
@@ -73,7 +72,7 @@ export const InventoryTab: React.FC = () => {
   }>({ visible: false });
 
   // Library Items
-  const allLibraryItems = useMemo(() => getItems(activeBooks), [activeBooks]);
+  const allLibraryItems = useMemo(() => currentCompendium().for(activeBooks).items(), [activeBooks]);
   const filteredLibraryItems = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
     return allLibraryItems.filter((i) => {

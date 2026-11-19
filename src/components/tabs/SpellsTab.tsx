@@ -11,7 +11,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
-import { formatModifier } from "../../services/dndRules";
+import { formatModifier } from "../../rules/abilities";
 import { currentCompendium } from "../../services/compendium";
 import { type LockedPreparedCard } from "../../rules/spellcasting";
 import type { InnateSpellEntry } from "../../rules/innateMagic";

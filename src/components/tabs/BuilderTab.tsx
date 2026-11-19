@@ -5,9 +5,8 @@ import { POINT_BUY_COST, UNSET_ABILITY_SCORE, unsetAbilityScores } from "../../c
 import { proficiencySheet, ruleGrantedSkills, skillChoiceOffers, sourceGrants } from "../../rules/proficiencySheet";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
-import { getFeats } from "../../services/dataService";
 import { currentCompendium } from "../../services/compendium";
-import { calculateTotalLevel } from "../../services/dndRules";
+import { totalLevel } from "../../rules/proficiencies";
 import { evaluateCharacter } from "../../rules/characterEvaluation";
 import { catalogListings, type CharacterCatalogs } from "../../rules/catalogs";
 import {
@@ -107,10 +106,10 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   const allRaces = listings.races();
   const allClasses = listings.classes().filter((cl) => !SIDEKICK_CLASSES.has(cl.name));
   const allBackgrounds = listings.backgrounds();
-  const allFeats = getFeats(activeBooks);
+  const allFeats = currentCompendium().for(activeBooks).feats();
 
   const { scores: effectiveScores, modifiers } = evaluateCharacter(character, catalogs).effectiveScores;
-  const totalLevel = calculateTotalLevel(character);
+  const level = totalLevel(character);
   const primaryClass = character.classes[0]?.className;
 
   const { pendingAsi } = getPendingLevelChoices(character, allClasses);
@@ -460,7 +459,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
           fullHealOnLevelUp={fullHealOnLevelUp}
           allClasses={allClasses}
           allFeats={allFeats}
-          totalLevel={totalLevel}
+          totalLevel={level}
           effectiveScores={effectiveScores}
           classChoices={classChoices}
           autoGranted={autoGrantedBase}

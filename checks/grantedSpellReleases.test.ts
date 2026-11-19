@@ -33,7 +33,7 @@ const compendium = inMemoryCompendium({
   spells: grantedSpellSpells(),
   races: grantedSpellRaces(),
   backgrounds: grantedSpellBackgrounds(),
-});
+}, { integrated: true });
 
 const ACTIVE = ["TST"];
 const TEST_BOOKS = ["TST", "TST2"];

@@ -62,8 +62,7 @@ export function battleMasterManeuverChoices(
   compendium: Compendium = currentCompendium()
 ): AvailableRuleChoice[] {
   const out: AvailableRuleChoice[] = [];
-  const upperBooks = activeBooks ? activeBooks.map((b) => b.toUpperCase()) : undefined;
-  const allOptions = compendium.for(upperBooks).optionsAndFeatures();
+  const allOptions = compendium.for(activeBooks).optionsAndFeatures();
 
   const seenManeuverNames = new Set<string>();
   const maneuverOptions: { name: string; description: string }[] = [];

@@ -172,12 +172,8 @@ export function artificerInfusionChoices(
   const artificerLevel = artificer ? artificer.level : 0;
   if (artificerLevel < 2) return [];
 
-  if (activeBooks && activeBooks.length > 0) {
-    const upper = activeBooks.map((b) => b.toUpperCase());
-    if (!upper.includes("TCE") && !upper.includes("ERLW")) {
-      return [];
-    }
-  }
+  const listings = compendium.for(activeBooks);
+  if (!listings.admits("TCE") && !listings.admits("ERLW")) return [];
 
   // A stale catalog may hold infusion records from before the umbrella flag and the Replicate rows: no choice until re-sync.
   if (compendium.stale) return [];
