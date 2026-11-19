@@ -43,12 +43,20 @@ test("a class's starting skill grant is a skills choice of its record's count, f
   assert.deepEqual(grant?.pool, { kind: "names", names: FIGHTER_SKILLS });
 });
 
-test("a starting skill record with no pool is a choice from any skill, with the record's count", () => {
-  const anySkills: ClassData = { ...srdClass("Bard"), skillProficiencies: { choose: 3, from: [] } };
-  const grant = startingSkillGrantOf(anySkills);
+test("the SRD Bard's starting skill grant is a choice of three from any skill", () => {
+  const grant = startingSkillGrantOf(srdClass("Bard"));
   assert.equal(grant?.id, "PHB/Bard/Starting Proficiencies@1#skills:choice:any");
   assert.equal(grant?.count, 3);
   assert.deepEqual(grant?.pool, { kind: "any" });
+});
+
+test("an SRD Bard 1 is offered one starting skill Proficiency Choice of three from all eighteen skills", () => {
+  const bard: CharacterClass = { className: "Bard", source: "SRD", level: 1 };
+  const offer = offerOf(makeChar({ classes: [bard] }), "PHB/Bard/Starting Proficiencies@1#skills:choice:any");
+  assert.ok(offer, "the Bard's starting skill choice is offered");
+  assert.equal(offer.choose, 3);
+  assert.equal(offer.level, 1);
+  assert.equal(offer.options.length, 18);
 });
 
 test("a class record that gives no skill choice gives no starting skill grant", () => {
