@@ -27,3 +27,4 @@ A hand-written grants table inside `src/` was rejected: it would bundle non-SRD 
 - The Catalog Format is 13: a catalog saved at format 12 carries no `gatedBy` and is stale.
 - The Catalog Format is 14: a catalog saved at format 13 still gives the MTF Elf (Sea) subrace a language of choice, which the scraper no longer writes. The retired grant ids are listed in `RETIRED_GRANT_IDS` (`checks/proficiencyGrantIds.test.ts`).
 - The Catalog Format is 15: a catalog saved at format 14 carries no class descriptions, which the scraper reads from the class fluff files.
+- The Catalog Format is 18: a catalog saved at format 17 gives a class whose starting skills are any N skills a choice of two, not N, so the Bard offers two starting skills and is stale.
