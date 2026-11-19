@@ -112,6 +112,9 @@ export interface SpellPageGrantedCard extends InnateSpellProfile {
 }
 
 export interface SpellPageGrantedSpell extends InnateSpellEntry {
+  details?: SpellData;
+  /** Uses left on the spell's resource counter, or its maximum when it has none. */
+  remaining: number;
   blast?: AgonizingBlastText;
 }
 
@@ -135,9 +138,14 @@ export interface SpellPageArcanumTier extends MysticArcanumTierInfo {
   attackBonus: number | null;
 }
 
+export interface SpellPageRitualEntry extends RitualBookEntry {
+  /** The catalog spell the entry names, when the catalog has it. */
+  details?: SpellData;
+}
+
 export interface SpellPageRitualBook {
   maxLevel: number;
-  entries: RitualBookEntry[];
+  entries: SpellPageRitualEntry[];
   /** The rituals the book can still take: eligible, not inscribed, sorted by level then name. */
   inscribeOffer: SpellData[];
 }
@@ -243,13 +251,16 @@ function spellPageResources(
     ritualBook: hasInvocation(character, "Book of Ancient Secrets")
       ? {
           maxLevel: getMaxRitualBookLevel(warlockLevel),
-          entries: character.ritualBook ?? [],
+          entries: (character.ritualBook ?? []).map((entry) => ({
+            ...entry,
+            details: compendium.findSpell(entry.name, entry.source) ?? compendium.findSpell(entry.name),
+          })),
           inscribeOffer: inscribeOffer(character, warlockLevel, catalogs.activeBooks, compendium),
         }
       : null,
     grantedCards: (evaluated.grantedSpellSources ?? []).map((source) => ({
       ...source,
-      spells: source.spells.map((spell) => withAgonizingBlast(character, spell)),
+      spells: source.spells.map((spell) => grantedSpell(character, spell, compendium)),
     })),
     lockedCards: evaluated.lockedPreparedCards ?? [],
     atWillCards: getAtWillInvocationSpells(character).map(({ invocationName, spellName }) => {
@@ -271,9 +282,15 @@ function agonizingBlast(character: Character, spellName: string): AgonizingBlast
   return { badge: { label: "Agonizing Blast", tone: "accent" }, damage: getEldritchBlastDamage(character) };
 }
 
-function withAgonizingBlast(character: Character, spell: InnateSpellEntry): SpellPageGrantedSpell {
+function grantedSpell(character: Character, spell: InnateSpellEntry, compendium: Compendium): SpellPageGrantedSpell {
   const agonizing = agonizingBlast(character, spell.name);
-  return agonizing === null ? spell : { ...spell, blast: agonizing };
+  const counter = spell.resourceCounterId ? character.resourceCounters?.[spell.resourceCounterId] : undefined;
+  return {
+    ...spell,
+    details: compendium.findSpell(spell.name, spell.source),
+    remaining: counter !== undefined ? counter.current : (spell.maxUses ?? 1),
+    ...(agonizing === null ? {} : { blast: agonizing }),
+  };
 }
 
 type SpellPageResources = Pick<
@@ -329,20 +346,51 @@ function inscribeOffer(
     .sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
 }
 
-/** The subclass spell replacements the open owner's subclass allows for one granted spell, and the schools it may take. */
+/**
+ * The subclass spell replacements the open owner's subclass allows for one granted spell, the schools it may
+ * take, and the granted spell itself (null when the catalog does not have it).
+ */
 export function subclassSwapOffer(
   character: Character,
   ownerKey: string,
   originalSpellName: string,
   catalogs: CharacterCatalogs,
-): { allowedSchools: string[]; eligible: SpellData[] } {
+): { original: SpellData | null; allowedSchools: string[]; eligible: SpellData[] } {
   const compendium = catalogs.compendium ?? currentCompendium();
   const subclass = evaluateCharacter(character, catalogs).spellProfiles.find((p) => p.ownerKey === ownerKey)?.subclass;
-  const original = compendium.findSpell(originalSpellName);
-  if (!subclass || !original) return { allowedSchools: [], eligible: [] };
+  const original = compendium.findSpell(originalSpellName) ?? null;
+  if (!subclass || !original) return { original, allowedSchools: [], eligible: [] };
   return {
+    original,
     allowedSchools: getSubclassAllowedSwapSchools(subclass),
     eligible: getEligibleSubclassSpellSwaps(subclass, original, catalogs.activeBooks, compendium),
+  };
+}
+
+/** The Add Spells list for one Spell Owner: the spells it may learn, plus the ones it already knows (shown locked). */
+export interface AddSpellsOffer {
+  /** Sorted by level and name. */
+  spells: SpellData[];
+  /** The schools the owner's learnable spells are restricted to. Empty when unrestricted. */
+  restrictedSchools: string[];
+  knownNames: string[];
+}
+
+/** The Add Spells list for the Spell Owner with this key. An unknown key gives an empty list. */
+export function addSpellsOffer(character: Character, ownerKey: string, catalogs: CharacterCatalogs): AddSpellsOffer {
+  const compendium = catalogs.compendium ?? currentCompendium();
+  const profile = evaluateCharacter(character, catalogs).spellProfiles.find((p) => p.ownerKey === ownerKey);
+  if (!profile) return { spells: [], restrictedSchools: [], knownNames: [] };
+
+  const learnable = learnableSpells(character, profile, { compendium, activeBooks: catalogs.activeBooks });
+  const scoped = compendium.for(catalogs.activeBooks).spells();
+  const known = profile.knownSpells
+    .map((k) => scoped.find((s) => s.name === k.name && s.source === k.source))
+    .filter((s): s is SpellData => s !== undefined);
+  return {
+    spells: [...learnable.spells, ...known].sort((a, b) => a.level - b.level || a.name.localeCompare(b.name)),
+    restrictedSchools: learnable.restrictedSchools,
+    knownNames: profile.knownSpells.map((k) => k.name),
   };
 }
 
