@@ -75,8 +75,8 @@ function spellcasterWithSpentResources() {
       second_wind: { id: "second_wind", name: "Second Wind", current: 1, max: 1, resetOn: "short" },
     },
     items: [
-      { id: "w1", name: "Dagger", source: "PHB", quantity: 1, isEquipped: true, section: "equipped", damage: "1d4", damageType: "piercing" },
-      { id: "ammo", name: "Arrows (20)", source: "SRD", quantity: 20, isEquipped: false, section: "carried" },
+      { id: "w1", name: "Dagger", source: "PHB", quantity: 1, isEquipped: true, damage: "1d4", damageType: "piercing" },
+      { id: "ammo", name: "Arrows (20)", source: "SRD", quantity: 20, isEquipped: false },
     ],
   });
 }

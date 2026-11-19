@@ -60,7 +60,6 @@ test("attacks read the sheet: an equipped sword is proficient for a Githyanki, a
     source: "PHB",
     quantity: 1,
     isEquipped: true,
-    section: "equipped",
   });
   const proficient = (character: Character, weapon: string) => {
     const evaluated = evaluateCharacter(

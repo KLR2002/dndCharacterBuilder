@@ -103,11 +103,8 @@ export const InventoryTab: React.FC = () => {
   const pouch = currentCharacter.pouch || { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 };
   const { currentWeight, maxCapacity, encumbered, heavilyEncumbered } = evaluated.carryingWeight;
 
-  // Separate equipped vs carried. An older save can hold section "equipped" without the isEquipped flag;
-  // either marks the item as equipped, so the Equipped list shows both.
-  const isShownEquipped = (item: InventoryItem) => item.isEquipped || item.section === "equipped";
-  const equippedItems = items.filter(isShownEquipped);
-  const carriedItems = items.filter((i) => !isShownEquipped(i));
+  const equippedItems = items.filter((i) => i.isEquipped);
+  const carriedItems = items.filter((i) => !i.isEquipped);
 
   // Currency Handlers
   const updateCoin = (coin: "cp" | "sp" | "ep" | "gp" | "pp", delta: number) => {
@@ -136,11 +133,7 @@ export const InventoryTab: React.FC = () => {
     const newEquipped = !item.isEquipped;
     const updated = items.map((i) => {
       if (i.id === item.id) {
-        return {
-          ...i,
-          isEquipped: newEquipped,
-          section: (newEquipped ? "equipped" : "carried") as "equipped" | "carried",
-        };
+        return { ...i, isEquipped: newEquipped };
       }
       return i;
     });
@@ -203,7 +196,6 @@ export const InventoryTab: React.FC = () => {
       source: itemData.source || "PHB",
       quantity: 1,
       isEquipped: false,
-      section: "carried",
       weight: itemData.weight ?? null,
       cost: itemData.cost || itemData.value || null,
       damage: itemData.damage || itemData.dmg1 || null,
@@ -241,7 +233,6 @@ export const InventoryTab: React.FC = () => {
       source: "Custom",
       quantity: 1,
       isEquipped: customSection === "equipped",
-      section: customSection,
       weight: customWeight ? parseFloat(customWeight) : null,
       cost: customCost.trim() || null,
       damage: customDamage.trim() || null,
@@ -460,16 +451,16 @@ export const InventoryTab: React.FC = () => {
                 <TouchableOpacity
                   onPress={() => toggleEquip(item)}
                   accessibilityRole="checkbox"
-                  accessibilityState={{ checked: isShownEquipped(item) }}
-                  accessibilityLabel={isShownEquipped(item) ? `Equipped: ${item.name}` : `Equip ${item.name}`}
+                  accessibilityState={{ checked: item.isEquipped }}
+                  accessibilityLabel={item.isEquipped ? `Equipped: ${item.name}` : `Equip ${item.name}`}
                   style={[
                     styles.equipCheck,
                     {
-                      borderColor: isShownEquipped(item) ? theme.accentHover : theme.border,
-                      backgroundColor: isShownEquipped(item) ? theme.accentGlow : "transparent",
+                      borderColor: item.isEquipped ? theme.accentHover : theme.border,
+                      backgroundColor: item.isEquipped ? theme.accentGlow : "transparent",
                     },
                   ]}>
-                  {isShownEquipped(item) && <Ionicons name="checkmark" size={14} color={theme.accentHover} />}
+                  {item.isEquipped && <Ionicons name="checkmark" size={14} color={theme.accentHover} />}
                 </TouchableOpacity>
 
                 {/* Item Info (click to view details) */}
@@ -568,16 +559,16 @@ export const InventoryTab: React.FC = () => {
                 <TouchableOpacity
                   onPress={() => toggleEquip(item)}
                   accessibilityRole="checkbox"
-                  accessibilityState={{ checked: isShownEquipped(item) }}
-                  accessibilityLabel={isShownEquipped(item) ? `Equipped: ${item.name}` : `Equip ${item.name}`}
+                  accessibilityState={{ checked: item.isEquipped }}
+                  accessibilityLabel={item.isEquipped ? `Equipped: ${item.name}` : `Equip ${item.name}`}
                   style={[
                     styles.equipCheck,
                     {
-                      borderColor: isShownEquipped(item) ? theme.accentHover : theme.border,
-                      backgroundColor: isShownEquipped(item) ? theme.accentGlow : "transparent",
+                      borderColor: item.isEquipped ? theme.accentHover : theme.border,
+                      backgroundColor: item.isEquipped ? theme.accentGlow : "transparent",
                     },
                   ]}>
-                  {isShownEquipped(item) && <Ionicons name="checkmark" size={14} color={theme.accentHover} />}
+                  {item.isEquipped && <Ionicons name="checkmark" size={14} color={theme.accentHover} />}
                 </TouchableOpacity>
 
                 {/* Item Info */}

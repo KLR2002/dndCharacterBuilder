@@ -169,7 +169,6 @@ test("picking a held kensei weapon records it, keeps it a Monk Weapon, and adds 
     source: "PHB",
     quantity: 1,
     isEquipped: true,
-    section: "equipped",
   };
   const attacks = getWeaponAttacks({ ...picked, items: [equipped] }, { catalogs: { compendium, activeBooks: ALL_BOOKS } });
   assert.equal(attacks.find((attack) => attack.name === "Rapier")?.isMonkWeapon, true, "a held kensei weapon is a Monk Weapon");
@@ -229,7 +228,6 @@ test("a picked kensei weapon counts as a Monk Weapon, and an unpicked heavy weap
     source: "PHB",
     quantity: 1,
     isEquipped: true,
-    section: "equipped",
   });
   const character = monk(3, {
     proficiencyPicks: { [MELEE_3]: ["Rapier"], [RANGED_3]: ["Longbow"] },

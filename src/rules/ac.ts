@@ -62,7 +62,7 @@ function isItemInfusedWith(
 export function armorClass(character: Character, opts: RulesOptions): { ac: number; breakdown: string } {
   const { dex, con, wis } = effectiveScores(character, opts).modifiers;
   const equipped = (opts.items ?? character.items).filter(i => i.isEquipped);
-  const armor = equipped.find(i => i.ac != null && armorCategory(i) !== "shield" && i.section === "equipped");
+  const armor = equipped.find(i => i.ac != null && armorCategory(i) !== "shield");
   const shield = equipped.find(i => armorCategory(i) === "shield");
   const shieldBonus = shield ? (shield.ac ?? 2) : 0;
   const shieldText = shield ? ` + ${shieldBonus} (Shield)` : "";
