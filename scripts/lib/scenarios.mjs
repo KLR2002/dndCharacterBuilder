@@ -5,9 +5,7 @@
 // Baseline mode). See docs/agents/driving-the-app.md.
 import { join } from "node:path";
 import { makeChar, defaultSettings } from "../../checks/testUtils.ts";
-import { ALL_BOOKS } from "../../src/constants/books.ts";
 import { BREAKPOINTS } from "../../src/hooks/responsiveLayout.ts";
-import { skillPickOffers } from "../../src/rules/proficiencyChoiceOffers.ts";
 import { integratedCollections, makeCatalogReader } from "./app-driver.mjs";
 
 // The inputs of the buildScreens/buildSeed call in progress. The character builders and the scenario entries
@@ -501,7 +499,9 @@ function levelUpRogueCharacter() {
         subclassSource: "PHB",
       },
     ],
-    chosenSkills: ["Stealth", "Acrobatics", "Perception", "Deception"],
+    proficiencyPicks: {
+      [`${catalogSource("classes", "Rogue")}/Rogue/Starting Proficiencies@1#skills:choice:from`]: ["Stealth", "Acrobatics", "Perception", "Deception"],
+    },
     chosenExpertise: ["Stealth", "Acrobatics"],
     currentHp: 33,
     startingGrantsApplied: true,
@@ -1342,9 +1342,9 @@ function reviewDraftCharacter() {
     ],
     creationProgress: { currentStep: "review" },
   });
-  const offer = skillPickOffers(base, { activeBooks: ALL_BOOKS }).find((o) => o.traitName === "Fighter starting skills");
-  const picked = offer.options.slice(0, offer.choose).map((option) => option.name);
-  return { ...base, proficiencyPicks: { [offer.id]: picked } };
+  // The starting skill grant of the Fighter record in this catalog, picked with two of the Fighter's skills.
+  const startingSkillId = `${catalogSource("classes", "Fighter")}/Fighter/Starting Proficiencies@1#skills:choice:from`;
+  return { ...base, proficiencyPicks: { [startingSkillId]: ["Acrobatics", "Athletics"] } };
 }
 
 // A finished level 3 Battle Master with its Fighting Style and three maneuvers picked and a claimed kit.
