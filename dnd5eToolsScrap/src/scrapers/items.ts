@@ -1,8 +1,8 @@
-import type { ToolsClient } from "../types/models.ts";
+import type { ItemModel, ToolsClient } from "../types/models.ts";
 import { resolveAllCopies } from "../parser/copy-resolver.ts";
 import { renderEntries } from "../parser/entry-renderer.ts";
 import { cleanTags } from "../parser/tag-cleaner.ts";
-import type { ItemModel } from "../types/models.ts";
+import { srdNameOf } from "../parser/srd-name.ts";
 
 const ITEM_TYPE_MAP: Record<string, string> = {
   M: "Melee Weapon",
@@ -126,6 +126,7 @@ export async function scrapeItems(client: ToolsClient): Promise<ItemModel[]> {
     if (seen.has(key)) continue;
     seen.add(key);
 
+    const srdName = srdNameOf(raw);
     const isBaseWeapon = itemCategory === "Weapon" && baseItemKeys.has(sourceKey(raw.name, raw.source));
     const rawWeaponCategory: unknown = raw.weaponCategory;
     const weaponCategory = isBaseWeapon && (rawWeaponCategory === "simple" || rawWeaponCategory === "martial") ? rawWeaponCategory : undefined;
@@ -220,6 +221,7 @@ export async function scrapeItems(client: ToolsClient): Promise<ItemModel[]> {
       ...(bonusWeapon != null && !isNaN(bonusWeapon) ? { bonusWeapon } : {}),
       ...(bonusAc != null && !isNaN(bonusAc) ? { bonusAc } : {}),
       ...(weaponCategory ? { weaponCategory } : {}),
+      ...(srdName ? { srdName } : {}),
     });
   }
 
