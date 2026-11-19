@@ -6,6 +6,7 @@ import { multiclassSlots as calculateMulticlassSpellSlots } from "./slots.ts";
 import {
   calculateWarlockPactSlots,
   isSpellAvailableForClass,
+  metamagicAllowance,
   profileSpellContext,
   type ClassSpellProfile,
 } from "./spellcasting.ts";
@@ -181,6 +182,22 @@ export function toggleMysticArcanumCast(
       [spellLevel]: !currentSpent,
     },
   };
+}
+
+/**
+ * Drops a chosen Metamagic option, or adds an unchosen one while the character is under its allowance. At the allowance
+ * an add returns the same character.
+ */
+export function toggleMetamagic(character: Character, name: string): Character {
+  const chosen = character.chosenMetamagic ?? [];
+  let next: string[];
+  if (chosen.includes(name)) {
+    next = chosen.filter((option) => option !== name);
+  } else {
+    if (chosen.length >= metamagicAllowance(character)) return character;
+    next = [...chosen, name];
+  }
+  return { ...character, chosenMetamagic: next };
 }
 
 /**

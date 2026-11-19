@@ -9,6 +9,7 @@ import {
   getClassSpellProfiles,
   calculateWarlockPactSlots,
   getMaxSpellLevel,
+  metamagicAllowance,
   isSpellAvailableForClass,
   getAvailableSpellsForClass,
 } from "../src/rules/spellcasting.ts";
@@ -375,12 +376,7 @@ test("calculateWarlockPactSlots returns correct slots and level or null", () => 
 });
 
 test("Metamagic option limits scale with Sorcerer level (2 at lvl 3, 3 at lvl 10, 4 at lvl 17)", () => {
-  const getMetamagicLimit = (level: number) => {
-    if (level < 3) return 0;
-    if (level >= 17) return 4;
-    if (level >= 10) return 3;
-    return 2;
-  };
+  const getMetamagicLimit = (level: number) => metamagicAllowance(makeChar({ classes: [cl("Sorcerer", level)] }));
 
   assert.equal(getMetamagicLimit(1), 0);
   assert.equal(getMetamagicLimit(2), 0);
@@ -390,18 +386,6 @@ test("Metamagic option limits scale with Sorcerer level (2 at lvl 3, 3 at lvl 10
   assert.equal(getMetamagicLimit(16), 3);
   assert.equal(getMetamagicLimit(17), 4);
   assert.equal(getMetamagicLimit(20), 4);
-});
-
-test("Character metamagicOptions and chosenMetamagic field compatibility", () => {
-  const char = makeChar({
-    classes: [cl("Sorcerer", 5)],
-    metamagicOptions: ["Quickened Spell", "Twinned Spell"],
-    chosenMetamagic: ["Quickened Spell", "Twinned Spell"],
-  });
-
-  assert.equal(char.metamagicOptions?.length, 2);
-  assert.deepEqual(char.metamagicOptions, ["Quickened Spell", "Twinned Spell"]);
-  assert.deepEqual(char.chosenMetamagic, ["Quickened Spell", "Twinned Spell"]);
 });
 
 // Spell mock data matching 5e rules & scraped format

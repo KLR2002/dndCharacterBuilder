@@ -21,6 +21,7 @@ import {
   togglePactSlot as togglePactSlotRule,
   spendSorceryPoints,
   toggleMysticArcanumCast as toggleMysticArcanumCastRule,
+  toggleMetamagic as toggleMetamagicRule,
   toggleInnateSpellUse as toggleInnateSpellUseRule,
   inscribeRitual as inscribeRitualRule,
   removeInscribedRitual as removeInscribedRitualRule,
@@ -527,20 +528,7 @@ export const SpellsTab: React.FC = () => {
   };
 
   const toggleMetamagic = (name: string) => {
-    const current = selectedMetamagic;
-    let updated: string[];
-    if (current.includes(name)) {
-      updated = current.filter((m) => m !== name);
-    } else {
-      if (current.length >= maxMetamagic) {
-        return;
-      }
-      updated = [...current, name];
-    }
-    updateCharacter(currentCharacter.id, {
-      metamagicOptions: updated,
-      chosenMetamagic: updated,
-    });
+    updateCharacter(currentCharacter.id, toggleMetamagicRule(currentCharacter, name));
   };
 
   // Known & Prepared Spell handlers

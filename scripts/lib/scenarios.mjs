@@ -998,7 +998,6 @@ function sorcererWarlockCharacter() {
     currentHp: 18,
     startingGrantsApplied: true,
     backgroundGrantsApplied: true,
-    metamagicOptions: ["Careful Spell"],
     chosenMetamagic: ["Careful Spell"],
   });
 }

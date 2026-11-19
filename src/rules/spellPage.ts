@@ -1,6 +1,6 @@
 import type { Character, RitualBookEntry } from "../types/character.ts";
 import type { SpellData } from "../types/dnd5e.ts";
-import type { ClassSpellProfile, LockedPreparedCard } from "./spellcasting.ts";
+import { metamagicAllowance, type ClassSpellProfile, type LockedPreparedCard } from "./spellcasting.ts";
 import type { CharacterCatalogs } from "./catalogs.ts";
 import type { ActiveBooks } from "../constants/books.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
@@ -228,16 +228,13 @@ function spellPageResources(
   const ledger = getSpellSlotLedger(character, evaluated);
   const warlock = evaluated.spellProfiles.find((p) => p.className === "Warlock");
   const warlockLevel = classLevel(character, "warlock");
-  const sorcererLevel = classLevel(character, "sorcerer");
+  const allowance = metamagicAllowance(character);
 
   return {
     slots: ledger.hasStandardSlots ? ledger.standardSlots : null,
     pactSlots: ledger.pactSlots,
     sorceryPoints: ledger.sorceryPoints,
-    metamagic:
-      sorcererLevel >= 3
-        ? { allowance: metamagicAllowance(sorcererLevel), chosen: chosenMetamagic(character) }
-        : null,
+    metamagic: allowance > 0 ? { allowance, chosen: character.chosenMetamagic } : null,
     mysticArcanum: ledger.mysticArcanum.map((tier) => ({
       ...tier,
       dc: warlock?.spellSaveDc ?? null,
@@ -312,15 +309,6 @@ export function spellDetailText(spell: SpellData, character: Character): SpellDe
 
 function classLevel(character: Character, className: string): number {
   return (character.classes || []).find((c) => c.className.toLowerCase() === className)?.level ?? 0;
-}
-
-/** Sorcerer 3 allows 2 Metamagic options, 10 allows 3 and 17 allows 4. */
-function metamagicAllowance(sorcererLevel: number): number {
-  return sorcererLevel >= 17 ? 4 : sorcererLevel >= 10 ? 3 : 2;
-}
-
-function chosenMetamagic(character: Character): string[] {
-  return character.chosenMetamagic?.length ? character.chosenMetamagic : (character.metamagicOptions ?? []);
 }
 
 /** The rituals a Book of Ancient Secrets can still take, from Warlock 2. */
