@@ -345,7 +345,10 @@ export function applyLevelUpPlan(
       sameName(p.className, plan.className)
     );
     if (profile) {
-      next = forgetSpell(next, profile, replaced.forget, compendium, activeBooks);
+      // The spell is forgotten under the key it is saved with, which may be another book's key for the class.
+      const forget = replaced.forget;
+      const stored = profile.knownSpells.find((k) => k.name === forget.name && k.source === forget.source);
+      next = forgetSpell(next, profile, { ...forget, ownerKey: stored?.ownerKey }, compendium, activeBooks);
       next = learnSpell(next, profile, replaced.learn, compendium, activeBooks);
     }
   }
