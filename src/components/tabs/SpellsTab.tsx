@@ -37,9 +37,14 @@ import { Card } from "../ui/Card";
 import { Modal } from "../ui/Modal";
 import { DetailModal } from "../DetailModal";
 import { SearchBar } from "../ui/SearchBar";
-import { SpellLearnList, LEVEL_NAMES } from "../spells/SpellLearnList";
+import { SpellLearnList } from "../spells/SpellLearnList";
 import { SpellLevelGroups } from "../spells/SpellLevelGroups";
 import type { SpellRowActions } from "../spells/SpellRow";
+import { SpellResourceCards, type SpellResourceActions } from "../spells/SpellResourceCards";
+import { RitualBookCard } from "../spells/RitualBookCard";
+import { AtWillSpellCard, GrantedSpellCard, LockedSpellCard } from "../spells/GrantedSpellCard";
+import { METAMAGIC_OPTIONS } from "../spells/metamagicOptions";
+import { formatOrdinal, type SpellDetailPayload } from "../spells/spellFormat";
 import {
   addSpellsOffer,
   spellDetailText,
@@ -48,68 +53,6 @@ import {
   type SpellPageGrantedCard,
   type SpellPageRow,
 } from "../../rules/spellPage";
-
-const METAMAGIC_OPTIONS = [
-  {
-    name: "Careful Spell",
-    cost: "1 Sorcery Point",
-    desc: "When you cast a spell that forces other creatures to make a saving throw, you can protect some of those creatures from the spell's full force. Spend 1 sorcery point and choose up to Cha mod creatures; they automatically succeed on their save.",
-  },
-  {
-    name: "Distant Spell",
-    cost: "1 Sorcery Point",
-    desc: "When you cast a spell that has a range of 5 feet or greater, you can spend 1 sorcery point to double the range of the spell. When you cast a spell that has a range of touch, you can spend 1 sorcery point to make the range 30 feet.",
-  },
-  {
-    name: "Empowered Spell",
-    cost: "1 Sorcery Point",
-    desc: "When you roll damage for a spell, you can spend 1 sorcery point to reroll a number of damage dice up to your Charisma modifier (minimum of one). You must use the new rolls.",
-  },
-  {
-    name: "Extended Spell",
-    cost: "1 Sorcery Point",
-    desc: "When you cast a spell that has a duration of 1 minute or longer, you can spend 1 sorcery point to double its duration, to a maximum duration of 24 hours.",
-  },
-  {
-    name: "Heightened Spell",
-    cost: "3 Sorcery Points",
-    desc: "When you cast a spell that forces a creature to make a saving throw to resist its effects, you can spend 3 sorcery points to give one target of the spell disadvantage on its first saving throw made against the spell.",
-  },
-  {
-    name: "Quickened Spell",
-    cost: "2 Sorcery Points",
-    desc: "When you cast a spell that has a casting time of 1 action, you can spend 2 sorcery points to change the casting time to 1 bonus action for this casting.",
-  },
-  {
-    name: "Subtle Spell",
-    cost: "1 Sorcery Point",
-    desc: "When you cast a spell, you can spend 1 sorcery point to cast it without somatic or verbal components.",
-  },
-  {
-    name: "Twinned Spell",
-    cost: "Spell Level (1 for Cantrip)",
-    desc: "When you cast a spell that targets only one creature and doesn't have a range of self, you can spend sorcery points equal to the spell's level (1 for cantrip) to target a second creature in range with the same spell.",
-  },
-];
-
-function formatOrdinal(n: number): string {
-  if (n === 1) return "1st";
-  if (n === 2) return "2nd";
-  if (n === 3) return "3rd";
-  return `${n}th`;
-}
-
-/** The copy of a race's Innate Magic card: its subtitle, and whether its rows show the Min Level. */
-const RACE_INNATE_COPY = {
-  subtitle: "Innate racial magic from your ancestry (Long Rest reset)",
-  showMinLevel: true,
-};
-
-/** The copy of a feat's Innate Magic card: its subtitle, and whether its rows show the Min Level. */
-const FEAT_INNATE_COPY = {
-  subtitle: "Spells from this feat (Long Rest reset)",
-  showMinLevel: false,
-};
 
 export const SpellsTab: React.FC = () => {
   const sheetScrollPad = useSheetScrollContentPadding();
@@ -147,7 +90,6 @@ export const SpellsTab: React.FC = () => {
   const atWillInvocations = page?.atWillCards ?? [];
 
   const ritual = page?.ritualBook ?? null;
-  const hasAncientSecrets = ritual !== null;
   const maxRitualLevel = ritual?.maxLevel ?? 0;
 
   // The offer from the Spell Page, narrowed by the modal's level filter and search.
@@ -201,231 +143,6 @@ export const SpellsTab: React.FC = () => {
     updateCharacter(currentCharacter.id, toggleInnateSpellUseRule(currentCharacter, spell));
   };
 
-  const renderInnateCard = (
-    profile: SpellPageGrantedCard,
-    copy: { subtitle: string; showMinLevel: boolean; key?: string }
-  ) => {
-    if ((profile.spells.length === 0 && !profile.notices?.length) || !currentCharacter) return null;
-
-    const sign = (profile.spellAttackBonus ?? 0) >= 0 ? "+" : "";
-    const ability = profile.ability;
-
-    return (
-      <Card key={copy.key} style={[styles.innateCard, { borderColor: theme.accentHover, backgroundColor: theme.surface }]}>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 8 }}>
-          <View style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
-            <Text style={[styles.sectionTitle, { color: theme.accentHover }]}>
-              {profile.title.toUpperCase()}
-            </Text>
-            <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }}>
-              {copy.subtitle}
-            </Text>
-          </View>
-          {ability && (
-            <Badge
-              label={`${ability.toUpperCase()} (DC ${profile.spellSaveDc} / ${sign}${profile.spellAttackBonus})`}
-              variant="accent"
-              size="sm"
-            />
-          )}
-        </View>
-
-        {profile.notices?.map((notice) => (
-          <Text key={notice} style={{ color: theme.warning, fontSize: 12, marginBottom: 6 }}>
-            {notice}
-          </Text>
-        ))}
-
-        {ability && (
-          <View style={[styles.innateStatsRow, { backgroundColor: theme.surfaceHighlight, borderColor: theme.border }]}>
-            <View style={styles.innateStatCol}>
-              <Text style={[styles.statLabel, { color: theme.textMuted }]}>ABILITY</Text>
-              <Text style={[styles.innateStatVal, { color: theme.accentHover }]}>
-                {ability.toUpperCase()}
-              </Text>
-            </View>
-            <View style={styles.innateStatCol}>
-              <Text style={[styles.statLabel, { color: theme.textMuted }]}>SAVE DC</Text>
-              <Text style={[styles.innateStatVal, { color: theme.text }]}>
-                {profile.spellSaveDc ?? "—"}
-              </Text>
-            </View>
-            <View style={styles.innateStatCol}>
-              <Text style={[styles.statLabel, { color: theme.textMuted }]}>ATTACK BONUS</Text>
-              <Text style={[styles.innateStatVal, { color: theme.text }]}>
-                {profile.spellAttackBonus === undefined ? "—" : formatModifier(profile.spellAttackBonus)}
-              </Text>
-            </View>
-          </View>
-        )}
-
-        {/* Spells List */}
-        <View style={{ marginTop: 8, gap: 6 }}>
-          {profile.spells.map((spell) => {
-            const max = spell.maxUses ?? 1;
-            const isUsed = spell.remaining === 0;
-
-            return (
-              <View
-                key={`innate_${spell.name}_${spell.level}`}
-                style={[
-                  styles.innateSpellRow,
-                  {
-                    borderBottomColor: theme.border,
-                    backgroundColor: isUsed ? theme.surfaceHighlight + "50" : "transparent",
-                  },
-                ]}>
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => showSpellDetail(spell.details)}
-                  style={{ flex: 1, gap: 2 }}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                    <Text
-                      style={[
-                        styles.spellTitle,
-                        {
-                          color: isUsed ? theme.textMuted : theme.text,
-                          textDecorationLine: isUsed ? "line-through" : "none",
-                          flexShrink: 1,
-                        },
-                      ]}>
-                      {spell.name}
-                      {spell.note !== undefined && (
-                        <Text style={{ fontWeight: "400", color: theme.textSecondary }}>{` (${spell.note.replace(/ /g, "\u00A0")})`}</Text>
-                      )}
-                    </Text>
-                    {spell.isCantrip ? (
-                      <Badge label="Cantrip" variant="surface" size="sm" />
-                    ) : (
-                      <Badge
-                        label={`${formatOrdinal(spell.level)} Level`}
-                        variant="surface"
-                        size="sm"
-                      />
-                    )}
-                    {spell.blast && <Badge label={spell.blast.badge.label} variant={spell.blast.badge.tone} size="sm" />}
-                    <Ionicons name="information-circle-outline" size={14} color={theme.textMuted} />
-                  </View>
-                  <Text style={{ color: theme.textSecondary, fontSize: 11 }}>
-                    {spell.castingTime}
-                    {copy.showMinLevel ? ` • Min Level ${spell.minCharacterLevel}` : ""}
-                    {spell.blast ? ` • ${spell.blast.damage}` : ""}
-                  </Text>
-                </TouchableOpacity>
-
-                {spell.resourceCounterId === undefined ? (
-                  <Badge label="At Will" variant="secondary" size="sm" />
-                ) : (
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                    <Text style={{ color: theme.textSecondary, fontSize: 11 }}>
-                      {isUsed ? `0/${max} (Used)` : `${max}/${max}`}
-                    </Text>
-                    <TouchableOpacity
-                      onPress={() => toggleInnateSpellUse(spell)}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      style={[
-                        styles.slotCheckbox,
-                        {
-                          borderColor: theme.accentHover,
-                          backgroundColor: isUsed ? theme.accentGlow : "transparent",
-                        },
-                      ]}>
-                      {isUsed && <Ionicons name="checkmark" size={14} color={theme.accentHover} />}
-                    </TouchableOpacity>
-                  </View>
-                )}
-              </View>
-            );
-          })}
-        </View>
-      </Card>
-    );
-  };
-
-  const renderGrantedCards = () =>
-    grantedProfiles.map((profile, index) =>
-      renderInnateCard(profile, {
-        ...(profile.origin === "race" ? RACE_INNATE_COPY : FEAT_INNATE_COPY),
-        key: `granted_${index}`,
-      })
-    );
-
-  /** The locked card of a source's plain prepared spells: each spell carries the lock, with no counter and no ability row. */
-  const renderLockedCards = () =>
-    lockedCards.map((card, index) => (
-      <Card key={`locked_${index}`} style={[styles.innateCard, { borderColor: theme.accentHover, backgroundColor: theme.surface }]}>
-        <Text style={[styles.sectionTitle, { color: theme.accentHover }]}>{card.title.toUpperCase()}</Text>
-        <View style={{ marginTop: 8, gap: 6 }}>
-          {card.spells.map((spell) => (
-            <View key={`locked_${card.title}_${spell.name}`} style={[styles.innateSpellRow, { borderBottomColor: theme.border }]}>
-              <Ionicons name="lock-closed" size={16} color={theme.accentHover} />
-              <TouchableOpacity
-                activeOpacity={0.7}
-                onPress={() => showSpellDetail(spell)}
-                style={{ flex: 1, gap: 2 }}>
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                  <Text style={[styles.spellTitle, { color: theme.text }]}>{spell.name}</Text>
-                  <Badge
-                    label={spell.level === 0 ? "Cantrip" : `${formatOrdinal(spell.level)} Level`}
-                    variant="surface"
-                    size="sm"
-                  />
-                  <Ionicons name="information-circle-outline" size={14} color={theme.textMuted} />
-                </View>
-                <Text style={{ color: theme.textSecondary, fontSize: 11 }}>{spell.castingTime}</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
-        </View>
-      </Card>
-    ));
-
-  const renderAtWillInvocationsCard = () => {
-    if (atWillInvocations.length === 0) return null;
-    return (
-      <Card style={[styles.innateCard, { borderColor: theme.accentHover, backgroundColor: theme.surface, marginBottom: 16 }]}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-          <View style={{ flex: 1, paddingRight: 8 }}>
-            <Text style={[styles.sectionTitle, { color: theme.accentHover }]}>
-              AT-WILL MAGIC (ELDRITCH INVOCATIONS)
-            </Text>
-            <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }}>
-              Cast at will without expending spell slots
-            </Text>
-          </View>
-          <Badge label="At Will" variant="accent" size="sm" />
-        </View>
-        <View style={{ marginTop: 8, gap: 6 }}>
-          {atWillInvocations.map(({ invocationName, spellName, details: spell, blast }) => {
-            return (
-              <View
-                key={`at_will_${invocationName}_${spellName}`}
-                style={[styles.innateSpellRow, { borderBottomColor: theme.border }]}>
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={() => showSpellDetail(spell)}
-                  style={{ flex: 1, gap: 2 }}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                    <Text style={[styles.spellTitle, { color: theme.text }]}>
-                      {spellName}
-                    </Text>
-                    <Badge label="At Will - Invocation" variant="accent" size="sm" />
-                    {blast && <Badge label={blast.badge.label} variant={blast.badge.tone} size="sm" />}
-                    <Ionicons name="information-circle-outline" size={14} color={theme.textMuted} />
-                  </View>
-                  <Text style={{ color: theme.textSecondary, fontSize: 11 }}>
-                    {spell?.castingTime || "1 action"} • {invocationName}
-                    {blast ? ` • ${blast.damage}` : ""}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            );
-          })}
-        </View>
-      </Card>
-    );
-  };
-
   // Early returns strictly AFTER all React hooks
   if (!currentCharacter) {
     return null;
@@ -435,9 +152,18 @@ export const SpellsTab: React.FC = () => {
     if (grantedProfiles.length > 0 || lockedCards.length > 0 || atWillInvocations.length > 0) {
       return (
         <ScrollView style={styles.container} contentContainerStyle={[styles.content, sheetScrollPad]}>
-          {renderGrantedCards()}
-          {renderLockedCards()}
-          {renderAtWillInvocationsCard()}
+          {grantedProfiles.map((profile, index) => (
+            <GrantedSpellCard
+              key={`granted_${index}`}
+              profile={profile}
+              onToggleUse={toggleInnateSpellUse}
+              onShowSpell={showSpellDetail}
+            />
+          ))}
+          {lockedCards.map((card, index) => (
+            <LockedSpellCard key={`locked_${index}`} card={card} onShowSpell={showSpellDetail} />
+          ))}
+          <AtWillSpellCard cards={atWillInvocations} onShowSpell={showSpellDetail} />
           <Card style={[styles.emptyCard, { backgroundColor: theme.surface, borderColor: theme.border, marginTop: 16 }]}>
             <Ionicons name="sparkles-outline" size={32} color={theme.textMuted} style={{ marginBottom: 8 }} />
             <Text style={[styles.emptyTitle, { color: theme.text, fontSize: 16 }]}>No Class Spellcasting</Text>
@@ -468,21 +194,9 @@ export const SpellsTab: React.FC = () => {
   const currentProfile = currentPage.profile!;
   const header = currentPage.header!;
 
-  // Sorcery points show from Sorcerer 2; Metamagic from Sorcerer 3.
-  const sorceryPoints = currentPage.sorceryPoints;
-  const metamagic = currentPage.metamagic;
-  const sorcererLevel = sorceryPoints?.max ?? 0;
-  const usedSorceryPoints = sorceryPoints?.used ?? 0;
-  const currentSorceryPoints = sorceryPoints?.remaining ?? 0;
-  const maxMetamagic = metamagic?.allowance ?? 0;
-  const selectedMetamagic = metamagic?.chosen ?? [];
-
-  const pact = currentPage.pactSlots;
-  const pactSlotsUsed = pact?.used ?? 0;
-  const remainingPactSlots = pact?.remaining ?? 0;
-
-  const arcanumTiers = currentPage.mysticArcanum;
-  const slots = currentPage.slots;
+  const sorcererLevel = currentPage.sorceryPoints?.max ?? 0;
+  const maxMetamagic = currentPage.metamagic?.allowance ?? 0;
+  const selectedMetamagic = currentPage.metamagic?.chosen ?? [];
 
   // Slot handlers
   const toggleSlot = (lvl: number, slotIndex: number, _currentUsed?: number) => {
@@ -575,6 +289,25 @@ export const SpellsTab: React.FC = () => {
     updateCharacter(currentCharacter.id, toggleMysticArcanumCastRule(currentCharacter, spellLevel));
   };
 
+  const showDetail = (detail: SpellDetailPayload) => setDetailModal({ visible: true, ...detail });
+
+  const openInscribeModal = () => {
+    setInscribeSearchQuery("");
+    setInscribeLevelFilter(null);
+    setInscribeModalVisible(true);
+  };
+
+  const resourceActions: SpellResourceActions = {
+    onSpendSorceryPoint: () => spendSorceryPoint(1),
+    onRegainSorceryPoint: () => regainSorceryPoint(1),
+    onOpenMetamagic: () => setMetamagicModalVisible(true),
+    onTogglePactSlot: (slotIndex) => togglePactSlot(slotIndex),
+    onToggleSlot: (lvl, slotIndex) => toggleSlot(lvl, slotIndex),
+    onToggleArcanumCast: toggleMysticArcanumCast,
+    onShowSpell: showSpellDetail,
+    onShowDetail: showDetail,
+  };
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={[styles.content, sheetScrollPad]}>
       {/* Multiclass Profile Selector Tabs/Pills */}
@@ -657,344 +390,32 @@ export const SpellsTab: React.FC = () => {
         </Card>
       )}
 
-      {/* Sorcery points (Sorcerer 2); the Metamagic button and list from Sorcerer 3 */}
-      {sorceryPoints && (
-        <Card style={[styles.sorceryCard, { borderColor: theme.accentHover }]}>
-          <View style={styles.cardHeaderRow}>
-            <View style={styles.cardTitleBlock}>
-              <Text style={[styles.sectionTitle, { color: theme.accentHover }]}>SORCERY POINTS</Text>
-              <Text style={{ color: theme.textSecondary, fontSize: 13, marginTop: 2 }}>
-                {currentSorceryPoints} / {sorcererLevel} Available (Long Rest reset)
-              </Text>
-            </View>
+      <SpellResourceCards
+        sorceryPoints={currentPage.sorceryPoints}
+        metamagic={currentPage.metamagic}
+        pactSlots={currentPage.pactSlots}
+        mysticArcanum={currentPage.mysticArcanum}
+        slots={currentPage.slots}
+        actions={resourceActions}
+      />
 
-            <View style={styles.sorceryButtons}>
-              <Button
-                title="-1"
-                size="sm"
-                variant="danger"
-                onPress={() => spendSorceryPoint(1)}
-                disabled={currentSorceryPoints <= 0}
-              />
-              <Button
-                title="+1"
-                size="sm"
-                variant="success"
-                onPress={() => regainSorceryPoint(1)}
-                disabled={usedSorceryPoints <= 0}
-              />
-              {metamagic && (
-                <Button
-                  title={`Metamagic (${selectedMetamagic.length}/${maxMetamagic})`}
-                  size="sm"
-                  variant="outline"
-                  onPress={() => setMetamagicModalVisible(true)}
-                />
-              )}
-            </View>
-          </View>
+      {grantedProfiles.map((profile, index) => (
+        <GrantedSpellCard
+          key={`granted_${index}`}
+          profile={profile}
+          onToggleUse={toggleInnateSpellUse}
+          onShowSpell={showSpellDetail}
+        />
+      ))}
 
-          {/* Chosen Metamagic list */}
-          {metamagic && selectedMetamagic.length > 0 && (
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
-              {selectedMetamagic.map((m: string) => {
-                const opt = METAMAGIC_OPTIONS.find((o) => o.name === m);
-                return (
-                  <TouchableOpacity
-                    key={m}
-                    onPress={() =>
-                      setDetailModal({
-                        visible: true,
-                        title: m,
-                        subtitle: opt?.cost,
-                        content: opt?.desc || "",
-                      })
-                    }
-                    style={[styles.metaChip, { backgroundColor: theme.surfaceHighlight, borderColor: theme.accentHover }]}>
-                    <Text style={{ color: theme.accentHover, fontSize: 12, fontWeight: "600" }}>{m}</Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          )}
-        </Card>
-      )}
-
-      {/* Warlock Pact Slots (Strictly Separate from Multiclass Slots) */}
-      {pact && (
-        <Card style={[styles.pactCard, { borderColor: theme.accentHover }]}>
-          <View style={styles.cardHeaderRow}>
-            <View style={styles.cardTitleBlock}>
-              <Text style={[styles.sectionTitle, { color: theme.accentHover }]}>WARLOCK PACT MAGIC</Text>
-              <Text style={{ color: theme.textSecondary, fontSize: 13, marginTop: 2 }}>
-                {pact.total} {pact.total === 1 ? "slot" : "slots"} of {formatOrdinal(pact.level)} level (Short Rest reset)
-              </Text>
-            </View>
-            <Badge label="Short Rest reset" variant="secondary" size="sm" />
-          </View>
-
-          <View style={styles.slotsTrackerRow}>
-            {Array.from({ length: pact.total }).map((_, slotIdx) => {
-              const isUsed = slotIdx < pactSlotsUsed;
-              return (
-                <TouchableOpacity
-                  key={`pact_slot_${slotIdx}`}
-                  onPress={() => togglePactSlot(slotIdx, pactSlotsUsed)}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  style={[
-                    styles.slotCheckbox,
-                    {
-                      borderColor: theme.accentHover,
-                      backgroundColor: isUsed ? theme.accentGlow : "transparent",
-                    },
-                  ]}>
-                  {isUsed && <Ionicons name="checkmark" size={14} color={theme.accentHover} />}
-                </TouchableOpacity>
-              );
-            })}
-            <Text style={{ color: theme.textMuted, fontSize: 12, marginLeft: 8 }}>
-              {remainingPactSlots} / {pact.total} remaining
-            </Text>
-          </View>
-        </Card>
-      )}
-
-      {/* Mystic Arcanum (Warlock Level >= 11) */}
-      {arcanumTiers.length > 0 && (
-        <Card style={{ marginBottom: 16, borderColor: theme.accentHover }}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-            <View style={{ flex: 1, marginRight: 8 }}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                <Text style={[styles.sectionTitle, { color: theme.accentHover }]}>
-                  MYSTIC ARCANUM
-                </Text>
-                <Badge label="1/Long Rest" variant="accent" size="sm" />
-              </View>
-              <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }}>
-                High-level patron magic (does not consume spell slots) • Long Rest reset
-              </Text>
-            </View>
-          </View>
-
-          <View style={{ gap: 8 }}>
-            {arcanumTiers.map((tier) => {
-              const spell = tier.spellData;
-              const isSpent = tier.isSpent;
-
-              return (
-                <View
-                  key={`arcanum_tier_${tier.level}`}
-                  style={[
-                    styles.pickerSpellRow,
-                    {
-                      borderBottomColor: theme.border,
-                      backgroundColor: isSpent ? theme.surfaceHighlight + "40" : "transparent",
-                      borderRadius: 8,
-                      padding: 8,
-                    },
-                  ]}>
-                  <View style={{ flex: 1, gap: 4 }}>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                      <Text style={{ color: theme.textSecondary, fontSize: 11, fontWeight: "700" }}>
-                        {formatOrdinal(tier.spellLevel).toUpperCase()} LEVEL (LVL {tier.level})
-                      </Text>
-                      {tier.chosenSpellName && (
-                        <Badge
-                          label={isSpent ? "Expended" : "Available"}
-                          variant={isSpent ? "secondary" : "accent"}
-                          size="sm"
-                        />
-                      )}
-                    </View>
-
-                    {tier.chosenSpellName ? (
-                      <TouchableOpacity
-                        onPress={() => {
-                          if (spell) {
-                            showSpellDetail(spell);
-                          } else {
-                            setDetailModal({
-                              visible: true,
-                              title: tier.chosenSpellName!,
-                              subtitle: `${formatOrdinal(tier.spellLevel)} Level Arcanum`,
-                              content: `Mystic Arcanum spell: ${tier.chosenSpellName}`,
-                            });
-                          }
-                        }}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                        <Text
-                          style={[
-                            styles.spellTitle,
-                            {
-                              color: isSpent ? theme.textMuted : theme.text,
-                              textDecorationLine: isSpent ? "line-through" : "none",
-                            },
-                          ]}>
-                          {tier.chosenSpellName}
-                        </Text>
-                        <Text style={{ color: theme.textMuted, fontSize: 11, marginTop: 2 }}>
-                          {spell?.castingTime || "1 action"} • {spell?.range || "Self"} • DC {tier.dc ?? "—"} • {tier.attackBonus === null ? "—" : formatModifier(tier.attackBonus)} Atk
-                        </Text>
-                      </TouchableOpacity>
-                    ) : null}
-                  </View>
-
-                  {tier.chosenSpellName && (
-                    <Button
-                      title={isSpent ? "Expended" : "Cast (1/Long Rest)"}
-                      size="sm"
-                      variant={isSpent ? "secondary" : "primary"}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      onPress={() => toggleMysticArcanumCast(tier.spellLevel)}
-                    />
-                  )}
-                </View>
-              );
-            })}
-          </View>
-        </Card>
-      )}
-
-      {/* Multiclass / Standard Spell Slots Table (Levels 1-9) */}
-      {slots && (
-        <Card style={{ marginBottom: 16 }}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>SPELL SLOTS</Text>
-            <Badge label="Long Rest reset" variant="secondary" size="sm" />
-          </View>
-          <View style={{ gap: 8 }}>
-            {slots.map(({ level: lvl, total: maxSlots, used, remaining }) => {
-              return (
-                <View key={`slot_row_${lvl}`} style={styles.slotRow}>
-                  <View style={{ width: 80 }}>
-                    <Text style={{ color: theme.text, fontSize: 13, fontWeight: "600" }}>
-                      {LEVEL_NAMES[lvl]}
-                    </Text>
-                  </View>
-
-                  <View style={styles.slotCheckboxesRow}>
-                    {Array.from({ length: maxSlots }).map((_, slotIdx) => {
-                      const isUsed = slotIdx < used;
-                      return (
-                        <TouchableOpacity
-                          key={`lvl_${lvl}_slot_${slotIdx}`}
-                          onPress={() => toggleSlot(lvl, slotIdx, used)}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                          style={[
-                            styles.slotCheckbox,
-                            {
-                              borderColor: theme.accentHover,
-                              backgroundColor: isUsed ? theme.accentGlow : "transparent",
-                            },
-                          ]}>
-                          {isUsed && <Ionicons name="checkmark" size={14} color={theme.accentHover} />}
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-
-                  <Text style={{ color: theme.textSecondary, fontSize: 12, width: 45, textAlign: "right" }}>
-                    {remaining}/{maxSlots}
-                  </Text>
-                </View>
-              );
-            })}
-          </View>
-        </Card>
-      )}
-
-      {renderGrantedCards()}
-
-      {/* Ritual Book (Book of Ancient Secrets) */}
-      {Boolean(hasAncientSecrets) && (
-        <Card style={{ marginBottom: 16 }}>
-          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-            <View style={{ flex: 1, marginRight: 8 }}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                <Text style={[styles.sectionTitle, { color: theme.text }]}>
-                  RITUAL BOOK (BOOK OF ANCIENT SECRETS)
-                </Text>
-                <Badge label="Ritual Casting" variant="accent" size="sm" />
-              </View>
-              <Text style={{ color: theme.textSecondary, fontSize: 12, marginTop: 2 }}>
-                {ritual?.entries.length ?? 0} inscribed rituals • Max level {maxRitualLevel} (half Warlock level rounded up)
-              </Text>
-            </View>
-            {hasAncientSecrets && (
-              <Button
-                title="Inscribe Ritual"
-                icon="add"
-                size="sm"
-                variant="secondary"
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                onPress={() => {
-                  setInscribeSearchQuery("");
-                  setInscribeLevelFilter(null);
-                  setInscribeModalVisible(true);
-                }}
-              />
-            )}
-          </View>
-
-          {(ritual?.entries.length ?? 0) === 0 ? (
-            <Text style={{ color: theme.textMuted, fontSize: 12, fontStyle: "italic", paddingVertical: 4 }}>
-              No rituals inscribed yet. Choose your 2 starting rituals in the builder or inscribe rituals found during adventures.
-            </Text>
-          ) : (
-            <View style={{ gap: 4 }}>
-              {(ritual?.entries ?? []).map((item, idx) => (
-                <View
-                  key={`ritual_${item.name}_${idx}`}
-                  style={[
-                    styles.spellRow,
-                    {
-                      borderBottomColor: theme.border,
-                      borderBottomWidth: idx === (ritual?.entries.length ?? 0) - 1 ? 0 : 1,
-                      paddingVertical: 6,
-                    },
-                  ]}>
-                  <TouchableOpacity
-                    onPress={() => {
-                      if (item.details) {
-                        showSpellDetail(item.details);
-                      } else {
-                        setDetailModal({
-                          visible: true,
-                          title: item.name,
-                          subtitle: `Level ${item.level} Ritual (${item.source})`,
-                          content: "Ritual spell inscribed in Book of Shadows.",
-                        });
-                      }
-                    }}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    style={{ flex: 1, paddingVertical: 4 }}>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                      <Text style={[styles.spellTitle, { color: theme.text }]}>
-                        {item.name}
-                      </Text>
-                      <Badge label="[Ritual Only]" variant="accent" size="sm" />
-                      <Badge label={`Level ${item.level}`} variant="secondary" size="sm" />
-                      {item.isStarting ? (
-                        <Badge label="Starting" variant="secondary" size="sm" />
-                      ) : (
-                        <Badge label="Inscribed" variant="secondary" size="sm" />
-                      )}
-                    </View>
-                  </TouchableOpacity>
-
-                  {!item.isStarting && (
-                    <TouchableOpacity
-                      onPress={() => removeInscribedRitual(item.name)}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      style={{ padding: 6 }}>
-                      <Ionicons name="trash-outline" size={18} color={theme.textMuted} />
-                    </TouchableOpacity>
-                  )}
-                </View>
-              ))}
-            </View>
-          )}
-        </Card>
+      {ritual && (
+        <RitualBookCard
+          ritual={ritual}
+          onInscribe={openInscribeModal}
+          onRemove={removeInscribedRitual}
+          onShowSpell={showSpellDetail}
+          onShowDetail={showDetail}
+        />
       )}
 
       {/* Known / Prepared Spells Header */}
