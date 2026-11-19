@@ -465,7 +465,9 @@ function listSubtitle(
   if (profile.preparedLimit !== undefined) {
     const count = countPrepared(character, profile, compendium);
     const always = alwaysPrepared > 0 ? ` (+ ${alwaysPrepared} always prepared)` : "";
-    const spellbook = profile.className.toLowerCase() === "wizard" ? ` • ${knownCount} in spellbook` : "";
+    // The spellbook holds levelled spells; cantrips are known apart from it.
+    const inSpellbook = profile.knownSpells.filter((k) => (compendium.findSpell(k.name, k.source)?.level ?? 0) > 0).length;
+    const spellbook = profile.className.toLowerCase() === "wizard" ? ` • ${inSpellbook} in spellbook` : "";
     return `${count} / ${profile.preparedLimit} prepared${always}${spellbook}`;
   }
   if (profile.className === "Monk") return `${knownCount + subclassKnownCount} Ki spells available`;
