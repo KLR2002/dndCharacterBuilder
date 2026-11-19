@@ -91,7 +91,7 @@ test("a feature whose options are all from inactive books keeps its description"
   assert.equal(describeClassFeature(hidden, "PHB", ["PHB"], FALLBACK), "Placeholder description.");
 });
 
-test("Dual-Mode: SRD features render unchanged, with no folded options", () => {
+test("Dual-Mode: SRD features without choices render unchanged, and every folded SRD option has source SRD", () => {
   const sources: [string, ClassData[]][] = [
     ["SRD Baseline", loadSrdCatalog<ClassData[]>("classes")],
     ["integrated catalog", loadTestCatalog<ClassData[]>("classes")],
@@ -112,5 +112,7 @@ test("Dual-Mode: SRD features render unchanged, with no folded options", () => {
   const srdClasses = loadSrdCatalog<ClassData[]>("classes");
   const srdFeatures = srdClasses.flatMap((c) => [...c.features, ...c.subclasses.flatMap((s) => s.features)]);
   assert.ok(srdFeatures.length > 0);
-  assert.ok(srdFeatures.every((f) => !f.choices));
+  const folded = srdFeatures.flatMap((f) => f.choices?.options ?? []);
+  assert.ok(folded.length > 0);
+  assert.ok(folded.every((option) => option.source === "SRD"));
 });

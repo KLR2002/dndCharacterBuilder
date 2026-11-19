@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { pruneClasses } from "./srdBaseline.ts";
 
 const scrapDataDir = path.resolve("dnd5eToolsScrap/data");
 const cacheDir = path.resolve("dnd5eToolsScrap/.cache");
@@ -9,34 +10,7 @@ console.log("Pruning data to strictly 2014 SRD 5.1 baseline...");
 
 // 1. Classes
 const classesRaw = JSON.parse(fs.readFileSync(path.join(scrapDataDir, "classes.json"), "utf8"));
-const srdArchetypes = {
-  Barbarian: ["Berserker", "Path of the Berserker"],
-  Bard: ["Lore", "College of Lore"],
-  Cleric: ["Life", "Life Domain"],
-  Druid: ["Land", "Circle of the Land"],
-  Fighter: ["Champion"],
-  Monk: ["Open Hand", "Way of the Open Hand"],
-  Paladin: ["Devotion", "Oath of Devotion"],
-  Ranger: ["Hunter"],
-  Rogue: ["Thief"],
-  Sorcerer: ["Draconic", "Draconic Bloodline"],
-  Warlock: ["Fiend", "The Fiend"],
-  Wizard: ["Evocation", "School of Evocation"],
-};
-
-const srdClasses = classesRaw
-  .filter((c) => srdArchetypes[c.name])
-  .map((c) => {
-    const allowed = srdArchetypes[c.name];
-    const filteredSubclasses = (c.subclasses || [])
-      .filter((sc) => allowed.some((a) => sc.name.toLowerCase().includes(a.toLowerCase())))
-      .map((sc) => ({ ...sc, source: "SRD" }));
-    return {
-      ...c,
-      source: "SRD",
-      subclasses: filteredSubclasses,
-    };
-  });
+const srdClasses = pruneClasses(classesRaw);
 
 fs.writeFileSync(path.join(srcDataDir, "classes.json"), JSON.stringify(srdClasses, null, 2), "utf8");
 console.log(`✓ Saved ${srdClasses.length} SRD classes with 1 archetype each`);
