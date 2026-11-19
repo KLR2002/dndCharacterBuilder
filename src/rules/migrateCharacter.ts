@@ -15,6 +15,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
+/** The option names saved under the legacy metamagicOptions field; anything else in it is dropped. */
+function legacyMetamagicOptions(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((option): option is string => typeof option === "string") : [];
+}
+
 /**
  * One entry per feat name. A save made before a feat was held once can carry the race's copy and the background's; the
  * background's is kept because the builder cannot remove it. A feat's picks and counters are keyed by the feat, so they
@@ -64,7 +69,9 @@ export function migrateCharacter(
       typeof raw.createdAt !== "number" || !Number.isFinite(raw.createdAt)) {
     throw new Error("Invalid character: expected an identified character record");
   }
-  const c = raw as unknown as Character;
+  // The legacy metamagicOptions list is folded into chosenMetamagic below and not kept on the character.
+  const { metamagicOptions: legacyMetamagic, ...stored } = raw;
+  const c = stored as unknown as Character;
   for (const key of ["classes", "knownSpells", "preparedSpells", "chosenSkills", "skillChoices", "racialChoiceBonus", "classChoices", "needsReview"]) {
     if (raw[key] !== undefined && !Array.isArray(raw[key])) throw new Error(`Invalid character: ${key} must be an array`);
   }
@@ -163,6 +170,7 @@ export function migrateCharacter(
     skillChoices,
     racialChoiceBonus: c.racialChoiceBonus ?? [],
     classChoices: c.classChoices ?? [],
+    chosenMetamagic: [...new Set([...(c.chosenMetamagic ?? []), ...legacyMetamagicOptions(legacyMetamagic)])],
     knownSpells,
     preparedSpells: prepared.map(key => key.split("__").length < 4 ? `${key}__${ownerKey}` : key),
     pactSlotsUsed: c.pactSlotsUsed ?? c.usedPactSlots ?? 0,
