@@ -1,14 +1,17 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { integratedTestCompendium, makeChar } from "./testUtils.ts";
+import { integratedTestCompendium, makeChar, srdBaselineCompendium } from "./testUtils.ts";
 import {
   artificerInfusionChoices,
   battleMasterManeuverChoices,
   fightingStyleRuleChoices,
+  isSpellEligibleForRitualBook,
   warlockInvocationChoices,
+  warlockMysticArcanumChoices,
   warlockPactBoonChoices,
 } from "../src/rules/ruleChoices.ts";
 import type { AvailableRuleChoice } from "../src/rules/choices/types.ts";
+import type { SpellData } from "../src/types/dnd5e.ts";
 
 const BOOKS = ["PHB", "XGE", "TCE"];
 const compendium = integratedTestCompendium();
@@ -120,4 +123,68 @@ test("characterization: Artificer infusions at level 6 offer the TCE infusions w
     "Returning Weapon",
     "Spell-Refueling Ring",
   ]);
+});
+
+test("an empty book list offers no Artificer infusion", () => {
+  assert.deepEqual(artificerInfusionChoices(artificer(6), [], compendium), []);
+});
+
+test("an empty book list offers no Pact Boon, Eldritch Invocation, Fighting Style or maneuver", () => {
+  const none: string[] = [];
+  assert.deepEqual(offeredNames(warlockPactBoonChoices(warlock(3), none, compendium)), []);
+  assert.deepEqual(offeredNames(warlockInvocationChoices(warlock(18), none, compendium)), []);
+  assert.deepEqual(offeredNames(fightingStyleRuleChoices(fighter(1), none, compendium)), []);
+  assert.deepEqual(offeredNames(battleMasterManeuverChoices(fighter(3, "Battle Master"), none, compendium)), []);
+});
+
+test("book codes compare without regard to case in every class option family", () => {
+  const lower = ["phb", "xge", "tce"];
+  const offers = (choices: AvailableRuleChoice[]) => choices.map((c) => [c.id, c.options.map((o) => o.name)]);
+
+  assert.deepEqual(
+    offers(warlockPactBoonChoices(warlock(3), lower, compendium)),
+    offers(warlockPactBoonChoices(warlock(3), BOOKS, compendium)),
+  );
+  assert.deepEqual(
+    offers(warlockInvocationChoices(warlock(18), lower, compendium)),
+    offers(warlockInvocationChoices(warlock(18), BOOKS, compendium)),
+  );
+  assert.deepEqual(
+    offers(warlockMysticArcanumChoices(warlock(11), lower, compendium)),
+    offers(warlockMysticArcanumChoices(warlock(11), BOOKS, compendium)),
+  );
+  assert.deepEqual(
+    offers(fightingStyleRuleChoices(fighter(1), lower, compendium)),
+    offers(fightingStyleRuleChoices(fighter(1), BOOKS, compendium)),
+  );
+  assert.deepEqual(
+    offers(battleMasterManeuverChoices(fighter(3, "Battle Master"), lower, compendium)),
+    offers(battleMasterManeuverChoices(fighter(3, "Battle Master"), BOOKS, compendium)),
+  );
+  assert.deepEqual(
+    offers(artificerInfusionChoices(artificer(6), lower, compendium)),
+    offers(artificerInfusionChoices(artificer(6), BOOKS, compendium)),
+  );
+});
+
+/** A ritual of the given book, invented from a full catalog record so it carries every spell field. */
+function bookRitual(source: string, level: number): SpellData {
+  const base = compendium.findSpell("Identify", "PHB");
+  if (!base) throw new Error("the integrated catalog holds Identify");
+  return { ...base, name: "Tiny Servant", level, source, ritual: true };
+}
+
+test("the Ritual Book admits an SRD spell with books PHB, and a book's spell in any case", () => {
+  const detectMagic = srdBaselineCompendium().findSpell("Detect Magic", "SRD");
+  assert.ok(detectMagic, "the SRD holds Detect Magic");
+  assert.equal(isSpellEligibleForRitualBook(detectMagic, 3, ["PHB"], compendium), true);
+  assert.equal(isSpellEligibleForRitualBook(bookRitual("XGE", 3), 5, ["xge"], compendium), true);
+  assert.equal(isSpellEligibleForRitualBook(bookRitual("XGE", 3), 5, ["phb"], compendium), false);
+});
+
+test("an empty book list refuses a book's ritual and still admits the SRD ritual", () => {
+  const detectMagic = srdBaselineCompendium().findSpell("Detect Magic", "SRD");
+  assert.ok(detectMagic, "the SRD holds Detect Magic");
+  assert.equal(isSpellEligibleForRitualBook(bookRitual("XGE", 3), 5, [], compendium), false);
+  assert.equal(isSpellEligibleForRitualBook(detectMagic, 3, [], compendium), true);
 });
