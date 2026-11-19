@@ -34,14 +34,11 @@ import {
   removeInscribedRitual as removeInscribedRitualRule,
   swapSubclassSpell,
   resetSubclassSpellSwap,
-  isPrepared as isSpellPrepared,
   togglePrepared as togglePreparedRule,
   learnSpell as learnSpellRule,
   forgetSpell as forgetSpellRule,
-  countPrepared,
 } from "../../rules/characterSpells";
 import {
-  isSubclassSpellReplaceable,
   getSubclassAllowedSwapSchools,
   getEligibleSubclassSpellSwaps,
 } from "../../rules/subclassSpells";
@@ -63,6 +60,7 @@ import { DetailModal } from "../DetailModal";
 import { SearchBar } from "../ui/SearchBar";
 import { SpellLearnList, LEVEL_NAMES } from "../spells/SpellLearnList";
 import { learnableSpells } from "../../rules/learnableSpells";
+import { spellPage } from "../../rules/spellPage";
 
 const METAMAGIC_OPTIONS = [
   {
@@ -114,23 +112,6 @@ function formatOrdinal(n: number): string {
   return `${n}th`;
 }
 
-function getSubclassPreparedBadgeLabel(className: string): string {
-  switch (className) {
-    case "Cleric":
-      return "Domain Spell";
-    case "Druid":
-      return "Circle Spell";
-    case "Paladin":
-      return "Oath Spell";
-    case "Artificer":
-      return "Specialist Spell";
-    case "Monk":
-      return "Ki Spell";
-    default:
-      return "Always Prepared";
-  }
-}
-
 /** The copy of a race's Innate Magic card: its subtitle, and whether its rows show the Min Level. */
 const RACE_INNATE_COPY = {
   subtitle: "Innate racial magic from your ancestry (Long Rest reset)",
@@ -143,23 +124,6 @@ const FEAT_INNATE_COPY = {
   showMinLevel: false,
 };
 
-function getSubclassPreparedCounterSuffix(className: string): string {
-  switch (className) {
-    case "Cleric":
-      return "domain";
-    case "Druid":
-      return "circle";
-    case "Paladin":
-      return "oath";
-    case "Artificer":
-      return "specialist";
-    case "Monk":
-      return "ki";
-    default:
-      return "always prepared";
-  }
-}
-
 export const SpellsTab: React.FC = () => {
   const sheetScrollPad = useSheetScrollContentPadding();
   const { currentCharacter, updateCharacter, activeBooks } = useCharacters();
@@ -167,7 +131,7 @@ export const SpellsTab: React.FC = () => {
   const { isCompact } = useResponsiveLayout();
 
   // State hooks
-  const [selectedProfileIndex, setSelectedProfileIndex] = useState(0);
+  const [selectedOwnerKey, setSelectedOwnerKey] = useState<string | null>(null);
   const [spellPickerVisible, setSpellPickerVisible] = useState(false);
   const [metamagicModalVisible, setMetamagicModalVisible] = useState(false);
   const [detailModal, setDetailModal] = useState<{
@@ -203,28 +167,14 @@ export const SpellsTab: React.FC = () => {
     return evaluated?.spellProfiles ?? [];
   }, [evaluated]);
 
-  const activeProfileIndex = useMemo(() => {
-    if (spellProfiles.length === 0) return 0;
-    return Math.min(selectedProfileIndex, spellProfiles.length - 1);
-  }, [selectedProfileIndex, spellProfiles.length]);
+  const page = useMemo(() => {
+    if (!currentCharacter) return null;
+    return spellPage(currentCharacter, { compendium: currentCompendium(), activeBooks }, selectedOwnerKey ?? undefined);
+  }, [currentCharacter, activeBooks, selectedOwnerKey]);
 
   const activeProfile: ClassSpellProfile | null = useMemo(() => {
-    return spellProfiles[activeProfileIndex] ?? null;
-  }, [spellProfiles, activeProfileIndex]);
-
-  const isEldritchKnight = useMemo(() => {
-    if (!activeProfile) return false;
-    const cls = activeProfile.className.toLowerCase();
-    const sub = (activeProfile.subclass || "").toLowerCase();
-    return cls === "eldritch knight" || (cls === "fighter" && sub.includes("eldritch knight"));
-  }, [activeProfile]);
-
-  const isArcaneTrickster = useMemo(() => {
-    if (!activeProfile) return false;
-    const cls = activeProfile.className.toLowerCase();
-    const sub = (activeProfile.subclass || "").toLowerCase();
-    return cls === "arcane trickster" || (cls === "rogue" && sub.includes("arcane trickster"));
-  }, [activeProfile]);
+    return spellProfiles.find((p) => p.ownerKey === page?.owner) ?? null;
+  }, [spellProfiles, page]);
 
   // 2. Warlock Pact Slots from evaluated model
   const warlockPactSlots = useMemo(() => {
@@ -248,137 +198,6 @@ export const SpellsTab: React.FC = () => {
   // Spells known by the active profile
   const activeKnownSpells = useMemo(() => {
     return activeProfile ? activeProfile.knownSpells : [];
-  }, [activeProfile]);
-
-  // Group active profile's known spells by spell level
-  const groupedSpells = useMemo(() => {
-    const map: Record<
-      number,
-      {
-        name: string;
-        source: string;
-        ownerKey: string;
-        className?: string;
-        details?: SpellData;
-        isAlwaysPrepared?: boolean;
-        /** The feat or race an always-prepared spell comes from, which its badge names. */
-        grantedSource?: string;
-        isSubclassGrant?: boolean;
-        isReplaced?: boolean;
-        originalName?: string;
-        isAtWillInvocation?: boolean;
-        invocationName?: string;
-      }[]
-    > = {};
-    for (let i = 0; i <= 9; i++) map[i] = [];
-
-    if (!activeProfile) return map;
-
-    const alwaysPrepMap = new Map<string, SpellData>();
-    for (const s of activeProfile.alwaysPreparedSpells || []) {
-      alwaysPrepMap.set(s.name.toLowerCase(), s);
-    }
-
-    const seenNames = new Set<string>();
-
-    for (const item of activeKnownSpells) {
-      const details = findSpell(item.name, item.source);
-      const lvl = details?.level ?? 0;
-      const isAlwaysPrep = alwaysPrepMap.has(item.name.toLowerCase());
-      seenNames.add(item.name.toLowerCase());
-      if (map[lvl]) {
-        map[lvl].push({
-          ...item,
-          details,
-          isAlwaysPrepared: isAlwaysPrep,
-          grantedSource: isAlwaysPrep ? activeProfile.grantedPreparedSources?.[item.name.toLowerCase()] : undefined,
-        });
-      }
-    }
-
-    const ownerKey = activeProfile.ownerKey;
-    for (const spell of activeProfile.alwaysPreparedSpells || []) {
-      const norm = spell.name.toLowerCase();
-      if (!seenNames.has(norm)) {
-        seenNames.add(norm);
-        const lvl = spell.level ?? 0;
-        if (map[lvl]) {
-          map[lvl].push({
-            name: spell.name,
-            source: spell.source,
-            ownerKey,
-            className: activeProfile.className,
-            details: spell,
-            isAlwaysPrepared: true,
-            grantedSource: activeProfile.grantedPreparedSources?.[norm],
-          });
-        }
-      }
-    }
-
-    for (const spell of activeProfile.subclassKnownSpells || []) {
-      const norm = spell.name.toLowerCase();
-      if (!seenNames.has(norm)) {
-        seenNames.add(norm);
-        const lvl = spell.level ?? 0;
-        if (map[lvl]) {
-          map[lvl].push({
-            name: spell.name,
-            source: spell.source,
-            ownerKey,
-            className: activeProfile.className,
-            details: spell,
-            isSubclassGrant: true,
-            isReplaced: spell.isReplaced,
-            originalName: spell.originalName,
-          });
-        }
-      }
-    }
-
-    // Include chosen at-will invocation spells in cantrip/at-will list
-    const atWillInvocations = currentCharacter ? getAtWillInvocationSpells(currentCharacter) : [];
-    const isWarlockOrPrimary =
-      activeProfile.className === "Warlock" ||
-      (!spellProfiles.some((p) => p.className === "Warlock") && activeProfileIndex === 0);
-
-    if (isWarlockOrPrimary && atWillInvocations.length > 0) {
-      for (const { invocationName, spellName } of atWillInvocations) {
-        const norm = spellName.toLowerCase();
-        if (!seenNames.has(norm)) {
-          seenNames.add(norm);
-          const details = findSpell(spellName);
-          map[0].push({
-            name: spellName,
-            source: details?.source || "PHB",
-            ownerKey: `${activeProfile.className}__Invocation`,
-            className: activeProfile.className,
-            details,
-            isAtWillInvocation: true,
-            invocationName,
-          });
-        }
-      }
-    }
-
-    for (let i = 0; i <= 9; i++) {
-      map[i].sort((a, b) => a.name.localeCompare(b.name));
-    }
-
-    return map;
-  }, [activeKnownSpells, activeProfile, currentCharacter, activeProfileIndex, spellProfiles]);
-
-  // Prepared non-cantrip spells count for the active profile (excluding always-prepared spells)
-  const preparedCount = useMemo(() => {
-    if (!activeProfile || !currentCharacter) return 0;
-    return countPrepared(currentCharacter, activeProfile, currentCompendium());
-  }, [activeProfile, currentCharacter]);
-
-  // The header's "+ N" names the subclass's free spells, so a feat's or race's are not counted here.
-  const alwaysPreparedCount = useMemo(() => {
-    if (!activeProfile || !activeProfile.alwaysPreparedSpells) return 0;
-    const granted = activeProfile.grantedPreparedSources ?? {};
-    return activeProfile.alwaysPreparedSpells.filter((s) => s.level > 0 && granted[s.name.toLowerCase()] === undefined).length;
   }, [activeProfile]);
 
   const hasAgonizingBlast = useMemo(() => {
@@ -792,6 +611,8 @@ export const SpellsTab: React.FC = () => {
 
   // Active profile is guaranteed to exist here
   const currentProfile = activeProfile!;
+  const currentPage = page!;
+  const header = currentPage.header!;
 
   // Sorcerer specifics
   const sorcererClass = currentCharacter.classes.find((c) => c.className === "Sorcerer");
@@ -918,21 +739,19 @@ export const SpellsTab: React.FC = () => {
   return (
     <ScrollView style={styles.container} contentContainerStyle={[styles.content, sheetScrollPad]}>
       {/* Multiclass Profile Selector Tabs/Pills */}
-      {spellProfiles.length > 1 && (
+      {currentPage.owners.length > 1 && (
         <ScrollView
           horizontal={!isCompact}
           showsHorizontalScrollIndicator={false}
           style={styles.profileSelectorScroll}
           contentContainerStyle={[styles.profileSelectorContent, isCompact && { flexDirection: "row", flexWrap: "wrap" }]}>
-          {spellProfiles.map((profile, idx) => {
-            const isSelected = idx === activeProfileIndex;
-            const sign = profile.spellAttackBonus >= 0 ? "+" : "";
-            const pillLabel = `${profile.className} (${profile.ability.toUpperCase()} DC ${profile.spellSaveDc} / ${sign}${profile.spellAttackBonus})`;
+          {currentPage.owners.map((owner) => {
+            const isSelected = owner.selected;
 
             return (
               <TouchableOpacity
-                key={`profile_${profile.className}_${profile.source}_${idx}`}
-                onPress={() => setSelectedProfileIndex(idx)}
+                key={owner.ownerKey}
+                onPress={() => setSelectedOwnerKey(owner.ownerKey)}
                 style={[
                   styles.profilePill,
                   {
@@ -949,7 +768,7 @@ export const SpellsTab: React.FC = () => {
                       fontWeight: isSelected ? "700" : "500",
                     },
                   ]}>
-                  {pillLabel}
+                  {owner.label}
                 </Text>
               </TouchableOpacity>
             );
@@ -961,70 +780,25 @@ export const SpellsTab: React.FC = () => {
       <View style={styles.statsHeaderRow}>
         <View style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Text style={[styles.statLabel, { color: theme.textMuted }]}>SPELLCASTING</Text>
-          <Text style={[styles.statValue, { color: theme.accentHover }]}>{currentProfile.ability.toUpperCase()}</Text>
-          <Text style={[styles.statSub, { color: theme.textSecondary }]}>{currentProfile.className}</Text>
+          <Text style={[styles.statValue, { color: theme.accentHover }]}>{header.ability}</Text>
+          <Text style={[styles.statSub, { color: theme.textSecondary }]}>{header.className}</Text>
         </View>
 
         <View style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Text style={[styles.statLabel, { color: theme.textMuted }]}>SAVE DC</Text>
-          <Text style={[styles.statValue, { color: theme.text }]}>{currentProfile.spellSaveDc}</Text>
+          <Text style={[styles.statValue, { color: theme.text }]}>{header.spellSaveDc}</Text>
           <Text style={[styles.statSub, { color: theme.textSecondary }]}>8 + Prof + Mod</Text>
         </View>
 
         <View style={[styles.statBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <Text style={[styles.statLabel, { color: theme.textMuted }]}>ATTACK BONUS</Text>
-          <Text style={[styles.statValue, { color: theme.text }]}>{formatModifier(currentProfile.spellAttackBonus)}</Text>
+          <Text style={[styles.statValue, { color: theme.text }]}>{formatModifier(header.spellAttackBonus)}</Text>
           <Text style={[styles.statSub, { color: theme.textSecondary }]}>Prof + Mod</Text>
         </View>
       </View>
 
-      {/* Eldritch Knight Rules Guidance Banner */}
-      {isEldritchKnight && (
-        <Card style={{ borderColor: theme.accentHover, backgroundColor: theme.surfaceHighlight, gap: 4, marginBottom: 12 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <Ionicons name="information-circle-outline" size={18} color={theme.accentHover} />
-            <Text style={{ color: theme.accentHover, fontWeight: "700", fontSize: 13 }}>
-              Eldritch Knight Spellcasting (PHB)
-            </Text>
-          </View>
-          <Text style={{ color: theme.textSecondary, fontSize: 12, lineHeight: 17 }}>
-            Most spells known must belong to the <Text style={{ fontWeight: "700", color: theme.text }}>Abjuration</Text> or <Text style={{ fontWeight: "700", color: theme.text }}>Evocation</Text> schools. Spells learned at 3rd, 8th, 14th, and 20th level can be from any school of magic.
-          </Text>
-        </Card>
-      )}
-
-      {/* Arcane Trickster Rules Guidance Banner */}
-      {isArcaneTrickster && (
-        <Card style={{ borderColor: theme.accentHover, backgroundColor: theme.surfaceHighlight, gap: 4, marginBottom: 12 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <Ionicons name="information-circle-outline" size={18} color={theme.accentHover} />
-            <Text style={{ color: theme.accentHover, fontWeight: "700", fontSize: 13 }}>
-              Arcane Trickster Spellcasting (PHB)
-            </Text>
-          </View>
-          <Text style={{ color: theme.textSecondary, fontSize: 12, lineHeight: 17 }}>
-            Most spells known must belong to the <Text style={{ fontWeight: "700", color: theme.text }}>Enchantment</Text> or <Text style={{ fontWeight: "700", color: theme.text }}>Illusion</Text> schools. Spells learned at 3rd, 8th, 14th, and 20th level can be from any school of magic.
-          </Text>
-        </Card>
-      )}
-
-      {/* Monk Ki Spellcasting Guidance Banner */}
-      {currentProfile.className === "Monk" && (
-        <Card style={{ borderColor: theme.accentHover, backgroundColor: theme.surfaceHighlight, gap: 4, marginBottom: 12 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-            <Ionicons name="sparkles" size={18} color={theme.accentHover} />
-            <Text style={{ color: theme.accentHover, fontWeight: "700", fontSize: 13 }}>
-              Monk Ki Spellcasting ({currentProfile.subclass || "Monastic Tradition"})
-            </Text>
-          </View>
-          <Text style={{ color: theme.textSecondary, fontSize: 12, lineHeight: 17 }}>
-            You cast spells by expending Ki points rather than traditional spell slots. Ki Save DC is 8 + PB + Wis mod ({currentProfile.spellSaveDc}). Ki points reset on a Short or Long Rest.
-          </Text>
-        </Card>
-      )}
-
       {/* Prepared Casters Counter Card */}
-      {currentProfile.preparedLimit !== undefined && (
+      {currentPage.prepared && (
         <Card style={[styles.preparedCard, { borderColor: theme.border, backgroundColor: theme.surface }]}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
             <View style={{ flex: 1, minWidth: 0 }}>
@@ -1036,12 +810,8 @@ export const SpellsTab: React.FC = () => {
               </Text>
             </View>
             <Badge
-              label={
-                alwaysPreparedCount > 0
-                  ? `${preparedCount} / ${currentProfile.preparedLimit} prepared (+ ${alwaysPreparedCount} ${getSubclassPreparedCounterSuffix(currentProfile.className)})`
-                  : `${preparedCount} / ${currentProfile.preparedLimit} Prepared`
-              }
-              variant={preparedCount > currentProfile.preparedLimit ? "danger" : "accent"}
+              label={currentPage.prepared.text}
+              variant={currentPage.prepared.overLimit ? "danger" : "accent"}
               size="md"
             />
           </View>
@@ -1398,28 +1168,10 @@ export const SpellsTab: React.FC = () => {
       {/* Known / Prepared Spells Header */}
       <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12, gap: 8 }}>
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={[styles.sectionTitle, { color: theme.text }]}>
-            {currentProfile.className === "Monk"
-              ? "MONK KI SPELLS"
-              : `${currentProfile.className.toUpperCase()} SPELLBOOK & CANTRIPS`}
-          </Text>
-          <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
-            {currentProfile.preparedLimit !== undefined
-              ? `${preparedCount} / ${currentProfile.preparedLimit} prepared${
-                  alwaysPreparedCount > 0
-                    ? ` (+ ${alwaysPreparedCount} ${getSubclassPreparedCounterSuffix(currentProfile.className)})`
-                    : ""
-                }${
-                  currentProfile.className.toLowerCase() === "wizard"
-                    ? ` • ${activeKnownSpells.length} in spellbook`
-                    : ""
-                }`
-              : currentProfile.className === "Monk"
-              ? `${activeKnownSpells.length + (activeProfile?.subclassKnownSpells?.length || 0)} Ki spells available`
-              : `${activeKnownSpells.length + (activeProfile?.subclassKnownSpells?.length || 0)} spells known`}
-          </Text>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>{currentPage.listTitle}</Text>
+          <Text style={{ color: theme.textSecondary, fontSize: 12 }}>{currentPage.listSubtitle}</Text>
         </View>
-        {currentProfile.className !== "Monk" && (
+        {currentPage.canAddSpells && (
           <Button
             title="Add Spells"
             icon="add"
@@ -1431,25 +1183,17 @@ export const SpellsTab: React.FC = () => {
       </View>
 
       {/* Spells List by Level */}
-      {LEVEL_NAMES.map((levelTitle, lvlIdx) => {
-        const spellsAtLevel = groupedSpells[lvlIdx] || [];
-        if (spellsAtLevel.length === 0) return null;
-
-        const displayTitle =
-          lvlIdx === 0 && spellsAtLevel.some((s) => s.isAtWillInvocation)
-            ? "CANTRIPS & AT-WILL"
-            : levelTitle.toUpperCase();
+      {currentPage.levels.map((group) => {
+        const spellsAtLevel = group.rows;
 
         return (
-          <View key={`level_group_${lvlIdx}`} style={{ marginBottom: 14 }}>
+          <View key={`level_group_${group.level}`} style={{ marginBottom: 14 }}>
             <Text style={[styles.levelHeader, { color: theme.textSecondary }]}>
-              {displayTitle} ({spellsAtLevel.length})
+              {group.title} ({spellsAtLevel.length})
             </Text>
 
             <Card style={{ padding: 4 }}>
               {spellsAtLevel.map((item, idx) => {
-                const isPrepared = isSpellPrepared(currentCharacter, currentProfile, item);
-
                 return (
                   <View
                     key={`${item.name}__${item.source}__${item.ownerKey || ""}`}
@@ -1461,8 +1205,8 @@ export const SpellsTab: React.FC = () => {
                       },
                     ]}>
                     {/* Prepared Checkbox (for non-cantrips) */}
-                    {lvlIdx > 0 && currentProfile.className !== "Monk" ? (
-                      item.isAlwaysPrepared ? (
+                    {item.prepare !== "none" ? (
+                      item.prepare === "locked" ? (
                         <View style={styles.prepToggle}>
                           <Ionicons
                             name="lock-closed"
@@ -1475,9 +1219,9 @@ export const SpellsTab: React.FC = () => {
                           onPress={() => togglePrepared(item)}
                           style={styles.prepToggle}>
                           <Ionicons
-                            name={isPrepared ? "radio-button-on" : "radio-button-off"}
+                            name={item.prepared ? "radio-button-on" : "radio-button-off"}
                             size={18}
-                            color={isPrepared ? theme.accentHover : theme.textMuted}
+                            color={item.prepared ? theme.accentHover : theme.textMuted}
                           />
                         </TouchableOpacity>
                       )
@@ -1493,116 +1237,22 @@ export const SpellsTab: React.FC = () => {
                         <Text style={[styles.spellTitle, { color: theme.text }]}>
                           {item.name}
                         </Text>
-                        {item.isAlwaysPrepared && (
-                          <Badge
-                            label={item.grantedSource ?? getSubclassPreparedBadgeLabel(currentProfile.className)}
-                            variant="secondary"
-                            size="sm"
-                          />
-                        )}
-                        {item.isSubclassGrant && !item.isAlwaysPrepared && (
-                          <Badge
-                            label={
-                              item.details?.level === 0
-                                ? "Subclass Cantrip"
-                                : currentProfile.className === "Monk"
-                                ? "Ki Spell"
-                                : "Subclass Grant"
-                            }
-                            variant="secondary"
-                            size="sm"
-                          />
-                        )}
-                        {item.ownerKey === "Warlock__Tome" && (
-                          <Badge
-                            label="[Pact of the Tome]"
-                            variant="accent"
-                            size="sm"
-                          />
-                        )}
-                        {item.details?.kiCost !== undefined && item.details.kiCost > 0 && (
-                          <Badge
-                            label={`${item.details.kiCost} Ki`}
-                            variant="accent"
-                            size="sm"
-                          />
-                        )}
-                        {item.isReplaced && item.originalName && (
-                          <Badge
-                            label={`Replaced: ${item.originalName}`}
-                            variant="accent"
-                            size="sm"
-                          />
-                        )}
-                        {isEldritchKnight && item.details && item.details.level > 0 && (
-                          <Badge
-                            label={
-                              item.details.school === "Abjuration" || item.details.school === "Evocation"
-                                ? "Abjuration/Evocation"
-                                : "Unrestricted Slot"
-                            }
-                            variant={
-                              item.details.school === "Abjuration" || item.details.school === "Evocation"
-                                ? "accent"
-                                : "secondary"
-                            }
-                            size="sm"
-                          />
-                        )}
-                        {isArcaneTrickster && item.details && item.details.level > 0 && (
-                          <Badge
-                            label={
-                              item.details.school === "Enchantment" || item.details.school === "Illusion"
-                                ? "Enchantment/Illusion"
-                                : "Unrestricted Slot"
-                            }
-                            variant={
-                              item.details.school === "Enchantment" || item.details.school === "Illusion"
-                                ? "accent"
-                                : "secondary"
-                            }
-                            size="sm"
-                          />
-                        )}
-                        {item.isAtWillInvocation && (
-                          <Badge
-                            label="At Will - Invocation"
-                            variant="accent"
-                            size="sm"
-                          />
-                        )}
-                        {item.name.toLowerCase() === "eldritch blast" && hasAgonizingBlast && (
-                          <Badge
-                            label={`[Agonizing Blast: +${chaModifier} dmg]`}
-                            variant="accent"
-                            size="sm"
-                          />
-                        )}
+                        {item.badges.map((badge) => (
+                          <Badge key={badge.label} label={badge.label} variant={badge.tone} size="sm" />
+                        ))}
                       </View>
-                      <Text style={{ color: theme.textMuted, fontSize: 11 }}>
-                        {item.details?.school || ""} • {item.details?.castingTime || "1 action"} • {item.source}
-                        {item.name.toLowerCase() === "eldritch blast" && hasAgonizingBlast
-                          ? ` • 1d10 + ${chaModifier} force`
-                          : ""}
-                      </Text>
+                      <Text style={{ color: theme.textMuted, fontSize: 11 }}>{item.subtitle}</Text>
                     </TouchableOpacity>
 
                     {/* Swap Actions for Subclass-Granted Known Spells */}
-                    {item.isSubclassGrant &&
-                      !item.isAlwaysPrepared &&
-                      (item.details?.level ?? 0) > 0 &&
-                      isSubclassSpellReplaceable(
-                        currentProfile.className,
-                        currentProfile.subclass,
-                        item.details?.level
-                      ) && (
+                    {item.swap && (
                         <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                          {item.isReplaced && (
+                          {item.swap.canReset && (
                             <Button
                               title="Reset to Default"
                               size="sm"
                               variant="ghost"
-                              onPress={() => handleResetSpellSwap(item.originalName || item.name)}
+                              onPress={() => handleResetSpellSwap(item.swap?.originalName ?? item.name)}
                             />
                           )}
                           <Button
@@ -1610,16 +1260,20 @@ export const SpellsTab: React.FC = () => {
                             icon="swap-horizontal-outline"
                             size="sm"
                             variant="outline"
-                            onPress={() => openSwapModal(item)}
+                            onPress={() =>
+                              openSwapModal({
+                                name: item.name,
+                                source: item.source,
+                                details: item.details,
+                                originalName: item.swap?.originalName,
+                              })
+                            }
                           />
                         </View>
                       )}
 
                     {/* Remove Spell */}
-                    {!item.isAlwaysPrepared &&
-                      !item.isSubclassGrant &&
-                      !item.isAtWillInvocation &&
-                      item.ownerKey !== "Warlock__Tome" && (
+                    {item.canForget && (
                       <TouchableOpacity
                         accessibilityRole="button"
                         accessibilityLabel={`Remove ${item.name}`}
@@ -1642,19 +1296,6 @@ export const SpellsTab: React.FC = () => {
         onClose={() => setSpellPickerVisible(false)}
         title={`Add Spells (${currentProfile.className})`}
       >
-        {(isEldritchKnight || isArcaneTrickster) && (
-          <View style={{ backgroundColor: theme.surfaceHighlight, padding: 8, borderRadius: 6, marginVertical: 6, borderLeftWidth: 3, borderLeftColor: theme.accentHover }}>
-            <Text style={{ color: theme.accentHover, fontSize: 11, fontWeight: "700" }}>
-              {isEldritchKnight ? "Eldritch Knight Spell Restrictions" : "Arcane Trickster Spell Restrictions"}
-            </Text>
-            <Text style={{ color: theme.textSecondary, fontSize: 11, marginTop: 2, lineHeight: 15 }}>
-              {isEldritchKnight
-                ? "Most spells known must be Abjuration or Evocation. Spells learned at levels 3, 8, 14, and 20 can be from any school."
-                : "Most spells known must be Enchantment or Illusion. Spells learned at levels 3, 8, 14, and 20 can be from any school."}
-            </Text>
-          </View>
-        )}
-
         <SpellLearnList
           spells={pickerSpells}
           restrictedSchools={pickerLearnable?.restrictedSchools ?? []}
