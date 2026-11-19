@@ -12,7 +12,8 @@
 
 **Blocked by:** None
 
-**Status:** needs-triage
+**Status:** ready-for-agent
 
-- [ ] After `npx tsx src/index.ts --only items` in `dnd5eToolsScrap/`, `git status src/data` is clean.
+- [ ] A scraper check (`dnd5eToolsScrap/checks/`) reads `dnd5eToolsScrap/src/index.ts` and fails if it names `src/data`, with a message pointing at `scripts/prune-to-srd.mjs`. Show it failing before the removal.
+- [ ] After `npx tsx src/index.ts --only items,books,conditions` in `dnd5eToolsScrap/` (from the cache), `git status src/data` is clean. Restore any tracked scraper data the run changed if the change is not yours to keep, and say what it was.
 - [ ] `npm run check:all` passes.
