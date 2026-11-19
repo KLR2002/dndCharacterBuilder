@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { ALL_BOOKS } from "../src/constants/books.ts";
-import { spellDetailText, spellPage, type SpellPageRow } from "../src/rules/spellPage.ts";
+import { addSpellsOffer, spellDetailText, spellPage, type SpellPageRow } from "../src/rules/spellPage.ts";
 import { getEldritchBlastDamage } from "../src/rules/attacks.ts";
 import { swapSubclassSpell } from "../src/rules/characterSpells.ts";
 import { integratedTestCompendium, makeChar } from "./testUtils.ts";
@@ -296,4 +296,29 @@ test("spellDetailText gives the Eldritch Blast damage line only with Agonizing B
 test("the Actions-tab Eldritch Blast damage reads the same formula", () => {
   assert.equal(getEldritchBlastDamage(eldritchWarlock(8, ["Agonizing Blast"])), "1d10 - 1 force");
   assert.equal(getEldritchBlastDamage(eldritchWarlock(16, ["Agonizing Blast"])), "1d10 + 3 force");
+});
+
+test("addSpellsOffer lists an Eldritch Knight's learnable spells with its known ones, its restricted schools and its known names", () => {
+  const knight = makeChar({
+    baseAbilityScores: { str: 15, dex: 14, con: 14, int: 16, wis: 10, cha: 10 },
+    classes: [{ className: "Fighter", source: "PHB", level: 3, subclassName: "Eldritch Knight", subclassSource: "PHB" }],
+    knownSpells: [
+      { name: "Magic Missile", source: "PHB", className: "Fighter", ability: "int" },
+      { name: "Identify", source: "PHB", className: "Fighter", ability: "int" },
+    ],
+  });
+  const ownerKey = spellPage(knight, catalogs).owner;
+  assert.ok(ownerKey, "the Knight has an owner");
+  const offer = addSpellsOffer(knight, ownerKey, catalogs);
+
+  assert.ok(offer.restrictedSchools.length > 0, "the Knight's learnable spells are school-restricted");
+  assert.deepEqual(offer.knownNames.sort(), ["Identify", "Magic Missile"]);
+  const names = offer.spells.map((s) => s.name);
+  assert.ok(names.includes("Magic Missile"), "a known spell is listed");
+  assert.ok(names.includes("Identify"), "a known spell is listed");
+  assert.equal(new Set(names).size, names.length, "no spell is listed twice");
+  const levels = offer.spells.map((s) => s.level);
+  assert.deepEqual(levels, [...levels].sort((a, b) => a - b), "sorted by level");
+
+  assert.deepEqual(addSpellsOffer(knight, "no such owner", catalogs), { spells: [], restrictedSchools: [], knownNames: [] });
 });

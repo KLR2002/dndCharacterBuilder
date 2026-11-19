@@ -11,7 +11,6 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
-import { findSpell, getSpells } from "../../services/dataService";
 import { formatModifier } from "../../services/dndRules";
 import { currentCompendium } from "../../services/compendium";
 import { type LockedPreparedCard } from "../../rules/spellcasting";
@@ -39,8 +38,8 @@ import { Modal } from "../ui/Modal";
 import { DetailModal } from "../DetailModal";
 import { SearchBar } from "../ui/SearchBar";
 import { SpellLearnList, LEVEL_NAMES } from "../spells/SpellLearnList";
-import { learnableSpells } from "../../rules/learnableSpells";
 import {
+  addSpellsOffer,
   spellDetailText,
   spellPage,
   subclassSwapOffer,
@@ -130,7 +129,6 @@ export const SpellsTab: React.FC = () => {
   const [swapTargetSpell, setSwapTargetSpell] = useState<{
     originalName: string;
     currentName: string;
-    spell: SpellData;
   } | null>(null);
   const [inscribeModalVisible, setInscribeModalVisible] = useState(false);
   const [inscribeSearchQuery, setInscribeSearchQuery] = useState("");
@@ -144,14 +142,6 @@ export const SpellsTab: React.FC = () => {
   const grantedProfiles: SpellPageGrantedCard[] = page?.grantedCards ?? [];
   const lockedCards: LockedPreparedCard[] = page?.lockedCards ?? [];
   const atWillInvocations = page?.atWillCards ?? [];
-
-  // Library spells
-  const allSpells = useMemo(() => getSpells(activeBooks), [activeBooks]);
-
-  // Spells known by the open owner
-  const activeKnownSpells = useMemo(() => {
-    return page?.profile ? page.profile.knownSpells : [];
-  }, [page]);
 
   const ritual = page?.ritualBook ?? null;
   const hasAncientSecrets = ritual !== null;
@@ -170,25 +160,16 @@ export const SpellsTab: React.FC = () => {
     });
   }, [ritual, inscribeLevelFilter, inscribeSearchQuery]);
 
-  const knownNames = useMemo(() => activeKnownSpells.map((k) => k.name), [activeKnownSpells]);
-
   // The Add Spells picker: the spells this owner may learn, plus the ones it knows (shown locked).
-  const pickerLearnable = useMemo(() => {
-    if (!page?.profile || !currentCharacter) return null;
-    return learnableSpells(currentCharacter, page.profile, { activeBooks });
+  const picker = useMemo(() => {
+    if (!page?.owner || !currentCharacter) return null;
+    return addSpellsOffer(currentCharacter, page.owner, { compendium: currentCompendium(), activeBooks });
   }, [page, currentCharacter, activeBooks]);
-
-  const pickerSpells = useMemo(() => {
-    if (!pickerLearnable) return [];
-    const known = activeKnownSpells
-      .map((k) => allSpells.find((s) => s.name === k.name && s.source === k.source))
-      .filter((s): s is SpellData => s !== undefined);
-    return [...pickerLearnable.spells, ...known].sort((a, b) => a.level - b.level || a.name.localeCompare(b.name));
-  }, [pickerLearnable, activeKnownSpells, allSpells]);
+  const knownNames = picker?.knownNames ?? [];
 
   // The swap offer for the spell being replaced; the modal is only open while a target is set.
   const swapOffer = useMemo(() => {
-    if (!swapTargetSpell || !currentCharacter || !page?.owner) return { allowedSchools: [], eligible: [] };
+    if (!swapTargetSpell || !currentCharacter || !page?.owner) return { original: null, allowedSchools: [], eligible: [] };
     return subclassSwapOffer(currentCharacter, page.owner, swapTargetSpell.originalName, {
       compendium: currentCompendium(),
       activeBooks,
@@ -207,8 +188,7 @@ export const SpellsTab: React.FC = () => {
   }, [swapOffer, swapSearchQuery]);
 
   // Helpers and event handlers
-  const showSpellDetail = (item: { name: string; source: string; details?: SpellData }) => {
-    const s = item.details || findSpell(item.name, item.source);
+  const showSpellDetail = (s: SpellData | undefined) => {
     if (!s || !currentCharacter) return;
     setDetailModal({ visible: true, ...spellDetailText(s, currentCharacter) });
   };
@@ -280,11 +260,7 @@ export const SpellsTab: React.FC = () => {
         <View style={{ marginTop: 8, gap: 6 }}>
           {profile.spells.map((spell) => {
             const max = spell.maxUses ?? 1;
-            const counter = spell.resourceCounterId
-              ? currentCharacter.resourceCounters?.[spell.resourceCounterId]
-              : undefined;
-            const remaining = counter !== undefined ? counter.current : max;
-            const isUsed = remaining === 0;
+            const isUsed = spell.remaining === 0;
 
             return (
               <View
@@ -298,7 +274,7 @@ export const SpellsTab: React.FC = () => {
                 ]}>
                 <TouchableOpacity
                   activeOpacity={0.7}
-                  onPress={() => showSpellDetail({ name: spell.name, source: spell.source })}
+                  onPress={() => showSpellDetail(spell.details)}
                   style={{ flex: 1, gap: 2 }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                     <Text
@@ -382,7 +358,7 @@ export const SpellsTab: React.FC = () => {
               <Ionicons name="lock-closed" size={16} color={theme.accentHover} />
               <TouchableOpacity
                 activeOpacity={0.7}
-                onPress={() => showSpellDetail({ name: spell.name, source: spell.source, details: spell })}
+                onPress={() => showSpellDetail(spell)}
                 style={{ flex: 1, gap: 2 }}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                   <Text style={[styles.spellTitle, { color: theme.text }]}>{spell.name}</Text>
@@ -424,7 +400,7 @@ export const SpellsTab: React.FC = () => {
                 style={[styles.innateSpellRow, { borderBottomColor: theme.border }]}>
                 <TouchableOpacity
                   activeOpacity={0.7}
-                  onPress={() => showSpellDetail({ name: spellName, source: spell?.source || "PHB", details: spell })}
+                  onPress={() => showSpellDetail(spell)}
                   style={{ flex: 1, gap: 2 }}>
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                     <Text style={[styles.spellTitle, { color: theme.text }]}>
@@ -547,21 +523,11 @@ export const SpellsTab: React.FC = () => {
     updateCharacter(currentCharacter.id, next);
   };
 
-  const openSwapModal = (item: {
-    name: string;
-    source: string;
-    details?: SpellData;
-    originalName?: string;
-    isReplaced?: boolean;
-  }) => {
-    const details = item.details || findSpell(item.name, item.source);
-    if (!details) return;
-    const origName = item.originalName || item.name;
-    const origSpell = findSpell(origName) || details;
+  const openSwapModal = (item: { name: string; details?: SpellData; originalName?: string }) => {
+    if (!item.details) return;
     setSwapTargetSpell({
-      originalName: origName,
+      originalName: item.originalName || item.name,
       currentName: item.name,
-      spell: origSpell,
     });
     setSwapSearchQuery("");
     setSwapModalVisible(true);
@@ -833,7 +799,7 @@ export const SpellsTab: React.FC = () => {
                       <TouchableOpacity
                         onPress={() => {
                           if (spell) {
-                            showSpellDetail({ name: spell.name, source: spell.source, details: spell });
+                            showSpellDetail(spell);
                           } else {
                             setDetailModal({
                               visible: true,
@@ -977,9 +943,8 @@ export const SpellsTab: React.FC = () => {
                   ]}>
                   <TouchableOpacity
                     onPress={() => {
-                      const spell = findSpell(item.name, item.source) || findSpell(item.name);
-                      if (spell) {
-                        showSpellDetail({ name: spell.name, source: spell.source, details: spell });
+                      if (item.details) {
+                        showSpellDetail(item.details);
                       } else {
                         setDetailModal({
                           visible: true,
@@ -1086,7 +1051,7 @@ export const SpellsTab: React.FC = () => {
 
                     {/* Spell Name & Info (opens detail modal) */}
                     <TouchableOpacity
-                      onPress={() => showSpellDetail(item)}
+                      onPress={() => showSpellDetail(item.details)}
                       style={{ flex: 1, paddingVertical: 4 }}>
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                         <Text style={[styles.spellTitle, { color: theme.text }]}>
@@ -1118,7 +1083,6 @@ export const SpellsTab: React.FC = () => {
                             onPress={() =>
                               openSwapModal({
                                 name: item.name,
-                                source: item.source,
                                 details: item.details,
                                 originalName: item.swap?.originalName,
                               })
@@ -1152,8 +1116,8 @@ export const SpellsTab: React.FC = () => {
         title={`Add Spells (${currentProfile.className})`}
       >
         <SpellLearnList
-          spells={pickerSpells}
-          restrictedSchools={pickerLearnable?.restrictedSchools ?? []}
+          spells={picker?.spells ?? []}
+          restrictedSchools={picker?.restrictedSchools ?? []}
           selectedNames={knownNames}
           lockedNames={knownNames}
           actionLabels={{ idle: "Add", selected: "Added" }}
@@ -1169,7 +1133,7 @@ export const SpellsTab: React.FC = () => {
         visible={swapModalVisible}
         onClose={() => setSwapModalVisible(false)}
         title="Swap Subclass Spell"
-        subtitle={swapTargetSpell ? `Replacing: ${swapTargetSpell.originalName} (${formatOrdinal(swapTargetSpell.spell.level || 1)} Level)` : undefined}
+        subtitle={swapTargetSpell ? `Replacing: ${swapTargetSpell.originalName} (${formatOrdinal(swapOffer.original?.level || 1)} Level)` : undefined}
       >
         <SearchBar
           value={swapSearchQuery}
