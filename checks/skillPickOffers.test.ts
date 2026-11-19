@@ -46,7 +46,8 @@ const lanternKeeper: SubclassData = {
   ],
 };
 
-const warden = wardenClass({ name: "Warden", source: GAMMA, subclasses: [lanternKeeper] });
+// No starting skill choice: these tests read the subclass's and the later classes' skill picks alone.
+const warden = wardenClass({ name: "Warden", source: GAMMA, subclasses: [lanternKeeper], skillProficiencies: { choose: 0, from: [] } });
 const keeperEntry: CharacterClass = { className: "Warden", source: GAMMA, level: 3, subclassName: "Lantern Keeper", subclassSource: GAMMA };
 const fighter: CharacterClass = { className: "Fighter", source: "PHB", level: 1 };
 
@@ -173,5 +174,5 @@ test("the Variant Human's skill pick is not on the Skills card, which keeps the 
     ],
   });
   const titles = skillPickOffers(variantKnowledgeRogue, { compendium: integratedTestCompendium(), activeBooks: ALL_BOOKS }).map((offer) => offer.traitName);
-  assert.deepEqual(titles, ["Blessings of Knowledge", "Rogue multiclass skill"]);
+  assert.deepEqual(titles, ["Blessings of Knowledge", "Cleric starting skills", "Rogue multiclass skill"]);
 });

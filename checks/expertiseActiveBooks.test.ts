@@ -87,7 +87,9 @@ test("a skill an active source also grants keeps its mark when the book is disab
   });
   const pruned = reconcile(char, catalog(), { activeBooks: PHB_ONLY });
   assert.deepEqual(pruned.chosenExpertise, ["Investigation"]);
-  assert.deepEqual(pruned.chosenSkills, ["Investigation", "Stealth"]);
+  // The class's saved skill moved into its starting skill choice, and the sheet still holds it.
+  assert.deepEqual(pruned.chosenSkills, ["Stealth"]);
+  assert.ok(proficiencySheet(pruned, { compendium: catalog(), activeBooks: PHB_ONLY }).skills.some((entry) => entry.name === "Investigation"));
   assert.equal(pruned.needsReview, undefined);
 });
 

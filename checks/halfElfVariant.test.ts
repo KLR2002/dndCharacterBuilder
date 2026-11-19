@@ -32,8 +32,11 @@ const halfElfVariant = (picked: string[]) => {
 };
 
 /** The race's skill Proficiency Choices the character is offered: the grant ids carry the category. */
+/** The race's skill picks: a class's starting skill pick is not one. */
 const skillOffersOf = (character: Character) =>
-  proficiencyChoiceOffers(character, { compendium: integratedTestCompendium(), activeBooks: ALL_BOOKS }).filter((offer) => offer.id.includes("#skills:"));
+  proficiencyChoiceOffers(character, { compendium: integratedTestCompendium(), activeBooks: ALL_BOOKS }).filter(
+    (offer) => offer.id.includes("#skills:") && offer.origin !== "class",
+  );
 
 const choiceId = (subrace: string) =>
   ruleChoiceId({ source: "SCAG", race: "Half-Elf", subrace: { name: subrace }, trait: "Variant Feature (Choose 1)" });

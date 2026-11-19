@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { makeChar, defaultSettings } from "../../checks/testUtils.ts";
 import { ALL_BOOKS } from "../../src/constants/books.ts";
 import { BREAKPOINTS } from "../../src/hooks/responsiveLayout.ts";
-import { skillChoiceOffers } from "../../src/rules/proficiencySheet.ts";
+import { skillPickOffers } from "../../src/rules/proficiencyChoiceOffers.ts";
 import { integratedCollections, makeCatalogReader } from "./app-driver.mjs";
 
 // The inputs of the buildScreens/buildSeed call in progress. The character builders and the scenario entries
@@ -1342,13 +1342,9 @@ function reviewDraftCharacter() {
     ],
     creationProgress: { currentStep: "review" },
   });
-  const offer = skillChoiceOffers(base, { activeBooks: ALL_BOOKS }).find((o) => o.source === "Class: Fighter");
-  const picked = offer.from.slice(0, offer.choose);
-  return {
-    ...base,
-    skillChoices: [{ id: offer.source, origin: "class", choose: offer.choose, from: offer.from, picked }],
-    chosenSkills: picked,
-  };
+  const offer = skillPickOffers(base, { activeBooks: ALL_BOOKS }).find((o) => o.traitName === "Fighter starting skills");
+  const picked = offer.options.slice(0, offer.choose).map((option) => option.name);
+  return { ...base, proficiencyPicks: { [offer.id]: picked } };
 }
 
 // A finished level 3 Battle Master with its Fighting Style and three maneuvers picked and a claimed kit.

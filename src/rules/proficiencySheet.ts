@@ -1,16 +1,17 @@
 import type { ActiveBooks } from "../constants/books.ts";
 import type { Character } from "../types/character.ts";
 import type { ClassData, ItemData, ProficiencyCategory } from "../types/dnd5e.ts";
-import { DND_SKILLS } from "../constants/rules.ts";
 import { allCatalogClasses, catalogListings, findClassData, type CharacterCatalogs } from "./catalogs.ts";
-import { currentCompendium, type CompendiumListings } from "../services/compendium.ts";
+import type { CompendiumListings } from "../services/compendium.ts";
 import { grantedFeatures } from "./grantedFeatures.ts";
 import { deduplicateWeaponProficiencies, normalizeArmorProficiency } from "./proficiencies.ts";
 import {
   classBaseProficiencies,
   classBaseSavingThrows,
+  isLegacyFirstClassSkillEntry,
   MULTICLASS_FEATURE,
   multiclassSkillGrantOf,
+  startingSkillGrantOf,
 } from "./proficiencySources/classBase.ts";
 import type { FeatureInstance, ResolvedAncestry } from "./types.ts";
 import { ALL_LANGUAGE_NAMES, ALL_TOOLS, normalizeToolName } from "./proficienciesAndLanguages.ts";
@@ -25,7 +26,7 @@ import {
   type ChoiceProficiencyGrant,
 } from "./proficiencyPools.ts";
 import { normalizeSkillName } from "./skills.ts";
-import { classSkillChoice, ruleChoiceSkills, traitTextSkills } from "./proficiencySources/skillGrants.ts";
+import { ruleChoiceSkills, traitTextSkills } from "./proficiencySources/skillGrants.ts";
 import { resolveCharacterAncestry } from "./characterAncestry.ts";
 import { customBackgroundFeature } from "./customBackground.ts";
 import { originCustomizationAvailable, type OriginCustomizationView } from "./originCustomization.ts";
@@ -46,9 +47,11 @@ import {
 export { classSkillChoice } from "./proficiencySources/skillGrants.ts";
 export { isSwapId, originalOfSwapId, swapLabelOf } from "./proficiencySources/swapIds.ts";
 export {
+  isLegacyFirstClassSkillEntry,
   multiclassGrantsOf,
   multiclassSkillGrantOf,
   MULTICLASS_FEATURE,
+  startingSkillGrantOf,
   type MulticlassGrants,
 } from "./proficiencySources/classBase.ts";
 
@@ -209,13 +212,16 @@ function grantExpertiseNames(features: FeatureInstance[], character: Character, 
 }
 
 /**
- * The starting proficiencies of the character's first class, as a feature: its level-1 Proficiency Grants
- * from the Catalog class it resolves to. Only the first class starts with them. Undefined when it has none.
+ * The starting proficiencies of the character's first class, as a feature: its level-1 Proficiency Grants from the
+ * Catalog class it resolves to, and its starting skill choice from the same record. Only the first class starts with
+ * them. Undefined when it has none.
  */
 function startingFeatureOf(character: Character, classes: readonly ClassData[]): FeatureInstance | undefined {
   const first = character.classes[0];
   const cls = first ? findClassData(classes, first) : undefined;
-  if (!cls?.grants?.length) return undefined;
+  const skillGrant = cls ? startingSkillGrantOf(cls) : undefined;
+  const grants = [...(cls?.grants ?? []), ...(skillGrant ? [skillGrant] : [])];
+  if (!cls || grants.length === 0) return undefined;
   return {
     id: JSON.stringify(["Class", cls.source, cls.name, STARTING_PROFICIENCIES, 1]),
     name: STARTING_PROFICIENCIES,
@@ -224,8 +230,18 @@ function startingFeatureOf(character: Character, classes: readonly ClassData[]):
     origin: "Class",
     className: cls.name,
     level: 1,
-    grants: cls.grants,
+    grants,
   };
+}
+
+/**
+ * The first class's starting skill picks saved before the starting skill was a Proficiency Choice. They count as picks of
+ * that choice until reconciling moves them into its own pick.
+ */
+function legacyClassSkillPicks(character: Character): string[] {
+  const first = character.classes[0];
+  if (!first) return [];
+  return (character.skillChoices ?? []).filter((entry) => isLegacyFirstClassSkillEntry(entry, first)).flatMap((entry) => entry.picked);
 }
 
 /**
@@ -272,10 +288,9 @@ export function featuresOf(character: Character, listings: CompendiumListings, a
 }
 
 /**
- * The skills a character holds from the rules alone, not from the starting skill picker: the fixed skill grants of
+ * The skills a character holds from the rules alone, not from a skill pick of its own: the fixed skill grants of
  * the features the character has now, the race, subrace and background skill picks, and the skill picks of every
- * feature (class, subclass and feat included, such as a subclass's pick or a later class's multiclass pick). The
- * starting skill picker lists these as already held, so a skill picked elsewhere cannot duplicate them.
+ * feature (class, subclass and feat included, such as a subclass's pick or a later class's multiclass pick).
  */
 export function ruleGrantedSkills(character: Character, catalogs?: CharacterCatalogs): string[] {
   const listings = catalogListings(catalogs);
@@ -495,36 +510,6 @@ export function sourceGrants(character: Character, catalogs: CharacterCatalogs):
   };
 }
 
-/** A skill choice the Builder offers: its source label, pick count and the skills to pick from. */
-export interface SkillChoiceOffer {
-  source: string;
-  choose: number;
-  from: string[];
-}
-
-/**
- * The skill choice the first class offers the Builder: its starting list, or every skill when the list is empty.
- * A race's, subrace's and background's skill picks are Proficiency Choices, offered through
- * `proficiencyChoiceOffers`, so no builder file reads a race or background skill field.
- */
-export function skillChoiceOffers(character: Character, catalogs: CharacterCatalogs): SkillChoiceOffer[] {
-  const first = character.classes[0];
-  if (!first) return [];
-  const classData = findClassData((catalogs.compendium ?? currentCompendium()).for().classes(), first);
-  const starting = classSkillChoice(classData);
-  if (!starting || starting.choose <= 0) return [];
-  return [
-    {
-      source: `Class: ${first.className}`,
-      choose: starting.choose,
-      from:
-        starting.from && starting.from.length > 0
-          ? starting.from.map(normalizeSkillName)
-          : DND_SKILLS.map((s) => normalizeSkillName(s.name)),
-    },
-  ];
-}
-
 /**
  * The Proficiency Sheet. The catalog bundle is required: a call site must say which Compendium it
  * reads, because a default that means "no catalog" silently empties the lists.
@@ -586,6 +571,7 @@ function sheetOver(
   const skillNames = [
     ...legacySkillNames(character, ancestry, listings, features, catalogs.activeBooks, replacedSkills),
     ...(character.chosenSkills ?? []).map(normalizeSkillName),
+    ...legacyClassSkillPicks(character).map(normalizeSkillName),
     ...choicePickNames(features, character, "skills", items),
   ];
   const expertiseKeys = new Set(grantExpertiseNames(features, character, items).map((name) => name.trim().toLowerCase()));
