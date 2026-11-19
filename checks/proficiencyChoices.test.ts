@@ -110,7 +110,7 @@ test("a pick the character already has from the pool stays selectable in its own
 
 test("the offer is absent below the feature's level and when its book is not active", () => {
   assert.equal(offerFor(lampWarden(2), LAMP_ID), undefined, "level 2 has no Lamp Craft yet");
-  const compendium = lampCompendium();
+  const compendium = inMemoryCompendium({ classes: [wardenClass({ subclasses: [lampwright] })] }, { integrated: true });
   const inactive = proficiencyChoiceOffers(lampWarden(3), { compendium, activeBooks: ["XGE"] });
   assert.equal(inactive.find((offer) => offer.id === LAMP_ID), undefined, "the Lampwright is printed in PHB");
 });

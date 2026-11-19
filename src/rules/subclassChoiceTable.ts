@@ -1,4 +1,4 @@
-import { SRD_SOURCE, type ActiveBooks } from "../constants/books.ts";
+import type { ActiveBooks } from "../constants/books.ts";
 import type { Character } from "../types/character.ts";
 import type { Compendium } from "../services/compendium.ts";
 import { formatCantripOptions, GIANT_POWER_CHOICE_ID, type ChoiceOwner } from "./choices/types.ts";
@@ -475,7 +475,7 @@ export function readPointerRow(
   if ("classSkills" in row.locator) return readClassSkillsRow(row, compendium, activeBooks, context);
   // A stale catalog's feature choices are hidden until re-sync; spell-choice rows stay, as an older catalog still holds what they derive from.
   if ("feature" in row.locator && compendium.stale) return undefined;
-  const active = activeBooks?.map((b) => b.toUpperCase());
+  const listings = compendium.for(activeBooks);
   const rowBook = row.source.toUpperCase();
 
   for (const cls of compendium.for().classes()) {
@@ -494,10 +494,7 @@ export function readPointerRow(
         choose: choice.pick,
         options: choice.options
           .filter((o) => !row.excludeOptions?.includes(o.name))
-          .filter((o) => {
-            const book = o.source?.toUpperCase();
-            return !book || book === rowBook || book === SRD_SOURCE || !active || active.includes(book);
-          })
+          .filter((o) => !o.source || o.source.toUpperCase() === rowBook || listings.admits(o.source))
           .map(({ name, description }) => ({ name, description })),
       };
     }
