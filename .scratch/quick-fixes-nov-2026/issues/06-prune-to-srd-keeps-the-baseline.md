@@ -10,4 +10,6 @@ Spell-counts ticket 01 avoided it by copying only the count fields (49c2645). Ma
 
 **Blocked by:** None
 
-**Status:** needs-triage
+**Status:** done
+
+**Landed:** moved to `.scratch/srd-baseline-stays-srd/` (2026-11-19), which also renames the SRD records the baseline carries under non-SRD names.
