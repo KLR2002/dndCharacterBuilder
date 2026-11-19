@@ -1,6 +1,6 @@
 # Spec: The SRD Baseline stays SRD
 
-**Status:** done (full layout gate pending, run with `.scratch/book-admission/`)
+**Status:** done (full layout suite green: SRD at 320, 393, 768, 1280; integrated at 320)
 
 Grown from quick fix 06 (`.scratch/quick-fixes-nov-2026/issues/06-prune-to-srd-keeps-the-baseline.md`). Decided with the user on 2026-11-19.
 
