@@ -1,6 +1,6 @@
 # Spec: The Spellbook Ledger's read side, one Spell Page
 
-**Status:** ready-for-agent
+**Status:** done (full layout suite: SRD green at 320, 393 and 768; at 1280 only `Dice off canvas` failed, under full-suite load, and every Dice check passed alone at 1280 twice; integrated green at 320)
 
 Decided with the user on 2026-11-19 (architecture review candidate 1). Builds on `.scratch/spell-sources/`.
 
