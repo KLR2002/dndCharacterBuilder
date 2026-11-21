@@ -5,6 +5,7 @@ import type { Character } from "../src/types/character.ts";
 import { proficiencySheet, type SheetEntry } from "../src/rules/proficiencySheet.ts";
 import { proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts";
 import { reconcile } from "../src/rules/characterReconciler.ts";
+import { migrateSavedPicks } from "../src/rules/savedPicksMigration.ts";
 import { pickRuleChoice } from "../src/rules/ruleChoices.ts";
 import { inMemoryCompendium, makeChar } from "./testUtils.ts";
 import { fixedGrant, wardenClass } from "./proficiencySheetFixture.ts";
@@ -66,12 +67,12 @@ test("the starting tool choice is a Proficiency Choice at level 1, and its pick 
   assert.ok(toolNames(sheet.tools).includes("Signal Mirror"), "the pick is on the sheet");
 });
 
-test("a saved class tool bucket still loads: its tools stay on the sheet, and reconciling moves them to the choice's pick", () => {
+test("a saved class tool bucket still loads: its tools stay on the sheet, and migrating moves them to the choice's pick", () => {
   const legacy = warden({ chosenTools: { class: ["Signal Mirror"] } });
   const before = proficiencySheet(legacy, { compendium: compendium(), activeBooks: ALL_BOOKS });
   assert.ok(toolNames(before.tools).includes("Signal Mirror"), "the bucket is read until it is migrated");
 
-  const migrated = reconcile(legacy, compendium(), { activeBooks: ALL_BOOKS });
+  const migrated = migrateSavedPicks(legacy, compendium(), ALL_BOOKS);
   assert.deepEqual(migrated.proficiencyPicks, { [CHOICE_ID]: ["Signal Mirror"] });
   assert.equal(migrated.chosenTools?.class, undefined, "the bucket is cleared once its picks are recorded");
   assert.deepEqual(proficiencySheet(migrated, { compendium: compendium(), activeBooks: ALL_BOOKS }).tools, before.tools, "the sheet does not change");

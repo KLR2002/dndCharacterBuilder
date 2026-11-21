@@ -632,9 +632,13 @@ export function removeClassLevel(
     updated = teardownSubclass(updated, className, oldSubclass || "", compendium, activeBooks);
     updatedClasses = updated.classes.filter((c) => c.className !== className);
 
+    // The removed class's saved skill entries go with it, including the names it could not place: left in place, the
+    // next first class's starting skill choice would take them.
     const classSourceKey = `Class: ${className}`;
     const isClassChoice = (sc: SkillChoiceEntry) =>
-      sc.id === classSourceKey || sc.id.startsWith(`multiclass_skill_${className.toLowerCase()}`);
+      sc.id === classSourceKey ||
+      sc.id.startsWith(`class__${className}__`) ||
+      sc.id.startsWith(`multiclass_skill_${className.toLowerCase()}`);
     const removedPicks = new Set(
       (updated.skillChoices || []).filter(isClassChoice).flatMap((sc) => sc.picked.map(normalizeSkillName))
     );

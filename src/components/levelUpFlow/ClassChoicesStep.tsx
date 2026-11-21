@@ -27,7 +27,7 @@ function classChoicePicksOf(plan: LevelUpPlan): ClassChoicePicks {
       });
     }
   }
-  return { ruleChoices, proficiencyPicks, skillChoices: [], chosenSkills: [] };
+  return { ruleChoices, proficiencyPicks };
 }
 
 /**
@@ -65,11 +65,8 @@ export function ClassChoicesStep({
       <ClassChoiceCards
         view={view}
         picks={picks}
-        autoGranted={[]}
-        primaryClass={plan.className}
         onToggleRuleChoice={(choice: AvailableRuleChoice, option: string) => onToggle(choice.id, option, choice.choose)}
         onClearChoice={(choice: AvailableRuleChoice) => onClear(choice.id)}
-        onToggleStartingSkill={() => {}}
         onToggleExpertise={onToggleExpertise}
         onPruneInvalidExpertise={() => {}}
         theme={theme}

@@ -1,7 +1,7 @@
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { ALL_BOOKS } from "../src/constants/books.ts";
-import { loadTestCatalog, makeChar } from "./testUtils.ts";
+import { loadTestCatalog, makeChar , startingSkillPickOf } from "./testUtils.ts";
 import { currentCompendium } from "../src/services/compendium.ts";
 import {
   applyStartingGrants,
@@ -14,7 +14,6 @@ import {
   startingEquipmentCard,
   startingEquipmentOffers,
 } from "../src/rules/startingEquipment.ts";
-import { skillChoiceOffers } from "../src/rules/proficiencySheet.ts";
 import { allCatalogRaces } from "../src/rules/catalogs.ts";
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
 import { rolledHitPointsKey } from "../src/rules/hp.ts";
@@ -71,14 +70,8 @@ function finishedFighterWizard(): Character {
       { id: "PHB__Fighter__Battle Master__Maneuver", trait: "Maneuvers", origin: "subclass", choose: 3, from: ["Riposte", "Parry", "Brace"], picked: ["Riposte", "Parry", "Brace"] },
     ],
   });
-  const skillOffer = skillChoiceOffers(base, flowOpts).find((offer) => offer.source === "Class: Fighter")!;
-  let equipped: Character = {
-    ...base,
-    skillChoices: [
-      { id: skillOffer.source, origin: "class", choose: skillOffer.choose, from: skillOffer.from, picked: skillOffer.from.slice(0, skillOffer.choose) },
-    ],
-    chosenSkills: skillOffer.from.slice(0, skillOffer.choose),
-  };
+  const skillOffer = startingSkillPickOf(base, flowOpts)!;
+  let equipped: Character = { ...base, proficiencyPicks: { [skillOffer.id]: skillOffer.from.slice(0, skillOffer.choose) } };
   for (const offer of startingEquipmentOffers(equipped, catalogs())) {
     equipped = setStartingEquipmentOption(equipped, offer.slot, offer.options[0], catalogs());
   }
@@ -303,12 +296,8 @@ function finishedFighter(): Character {
       { id: "PHB__Fighter__Fighting Style", trait: "Fighting Style", origin: "class", choose: 1, from: ["Defense"], picked: ["Defense"] },
     ],
   });
-  const offer = skillChoiceOffers(base, flowOpts).find((o) => o.source === "Class: Fighter")!;
-  let equipped: Character = {
-    ...base,
-    skillChoices: [{ id: offer.source, origin: "class", choose: offer.choose, from: offer.from, picked: offer.from.slice(0, offer.choose) }],
-    chosenSkills: offer.from.slice(0, offer.choose),
-  };
+  const offer = startingSkillPickOf(base, flowOpts)!;
+  let equipped: Character = { ...base, proficiencyPicks: { [offer.id]: offer.from.slice(0, offer.choose) } };
   for (const o of startingEquipmentOffers(equipped, catalogs())) {
     equipped = setStartingEquipmentOption(equipped, o.slot, o.options[0], catalogs());
   }

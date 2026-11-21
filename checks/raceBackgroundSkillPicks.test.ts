@@ -3,14 +3,15 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import type { Character } from "../src/types/character.ts";
 import type { SubraceData } from "../src/types/dnd5e.ts";
-import { proficiencySheet, skillChoiceOffers, type SheetEntry } from "../src/rules/proficiencySheet.ts";
+import { proficiencySheet, type SheetEntry } from "../src/rules/proficiencySheet.ts";
 import { picksOnlyLanguages, proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts";
 import { reconcile } from "../src/rules/characterReconciler.ts";
+import { migrateSavedPicks } from "../src/rules/savedPicksMigration.ts";
 import { clearBackground, setCustomBackground } from "../src/rules/builderTransitions.ts";
 import { ancestryRuleChoices, pickRuleChoice } from "../src/rules/ruleChoices.ts";
 import { ALL_LANGUAGE_NAMES, ALL_TOOLS } from "../src/rules/proficienciesAndLanguages.ts";
 import { anyLanguageChoice, vellariRace } from "./proficiencySheetFixture.ts";
-import { inMemoryCompendium, integratedTestCompendium, makeChar, srdBaselineCompendium } from "./testUtils.ts";
+import { inMemoryCompendium, integratedTestCompendium, makeChar, srdBaselineCompendium, startingSkillPickOf } from "./testUtils.ts";
 
 // Race, subrace and background skill picks are Proficiency Choices read from the Catalog's choice grants.
 // The integrated examples (Investigator, Cloistered Scholar, the Half-Elf descents, Orc and Tortle) run
@@ -27,8 +28,9 @@ const CUSTOM_LANGUAGES_ID = "Custom/Background/Custom Background@0#languages:cho
 const HALF_ELF_ID = "PHB/Race/Half-Elf@0#skills:choice:any";
 const DROW_SKILLS_ID = "SCAG/Subrace/Half-Elf (Drow Descent)@0#skills:choice:any";
 
+/** The race and background skill picks: a class's starting or multiclass skill pick is not one. */
 const skillOffers = (character: Character, compendium = integratedTestCompendium()) =>
-  proficiencyChoiceOffers(character, { compendium, activeBooks: ALL_BOOKS }).filter((offer) => offer.id.includes("#skills:"));
+  proficiencyChoiceOffers(character, { compendium, activeBooks: ALL_BOOKS }).filter((offer) => offer.id.includes("#skills:") && offer.origin !== "class");
 
 const sheetSkills = (character: Character, compendium = integratedTestCompendium()) =>
   names(proficiencySheet(character, { compendium, activeBooks: ALL_BOOKS }).skills);
@@ -114,7 +116,7 @@ test("a custom background saved with the old skill bucket moves its picks into i
     chosenSkills: ["Arcana", "Nature", "Athletics"],
     skillChoices: [{ id: "background_skills", origin: "background", choose: 2, from: ["Arcana", "Nature"], picked: ["Arcana", "Nature"] }],
   });
-  const after = reconcile(before, compendium, { activeBooks: ALL_BOOKS });
+  const after = migrateSavedPicks(before, compendium, ALL_BOOKS);
   assert.deepEqual(after.proficiencyPicks?.[CUSTOM_SKILLS_ID], ["Arcana", "Nature"]);
   assert.equal(after.skillChoices?.some((entry) => entry.origin === "background"), false);
   assert.deepEqual(after.chosenSkills, ["Athletics"], "only the unattributed skill stays in the old bucket");
@@ -273,7 +275,7 @@ test("the Builder's race skill offers come from choice grants, not from the text
     ],
   });
   const character = makeChar({ race: { name: "Sample Folk", source: "TST" } });
-  assert.deepEqual(skillChoiceOffers(character, { compendium: textOnly, activeBooks: ALL_BOOKS }).filter((offer) => offer.source.startsWith("Race")), []);
+  assert.deepEqual(proficiencyChoiceOffers(character, { compendium: textOnly, activeBooks: ALL_BOOKS }).filter((offer) => offer.origin === "race" && offer.categories?.includes("skills")), []);
 });
 
 test("a race skill pick saved in the old skill bucket moves into its Proficiency Choice on reconcile, and the sheet does not change", () => {
@@ -283,7 +285,7 @@ test("a race skill pick saved in the old skill bucket moves into its Proficiency
     chosenSkills: ["Insight", "Stealth"],
     skillChoices: [{ id: "Race: Skill Versatility", origin: "race", choose: 2, from: SKILLS, picked: ["Insight", "Stealth"] }],
   });
-  const after = reconcile(before, compendium, { activeBooks: ALL_BOOKS });
+  const after = migrateSavedPicks(before, compendium, ALL_BOOKS);
   assert.deepEqual(after.proficiencyPicks?.[HALF_ELF_ID], ["Insight", "Stealth"]);
   assert.equal(after.skillChoices?.some((entry) => entry.origin === "race"), false);
   assert.deepEqual(after.chosenSkills, []);
@@ -297,7 +299,7 @@ test("a background skill pick saved in the old bucket moves into its pick up to 
     chosenSkills: ["History", "Arcana", "Nature"],
     skillChoices: [{ id: "Background: Cloistered Scholar", origin: "background", choose: 1, from: ["Arcana", "Nature", "Religion"], picked: ["Arcana", "Nature"] }],
   });
-  const after = reconcile(before, compendium, { activeBooks: ALL_BOOKS });
+  const after = migrateSavedPicks(before, compendium, ALL_BOOKS);
   assert.deepEqual(after.proficiencyPicks?.[SCHOLAR_ID], ["Arcana"]);
   assert.deepEqual(after.chosenSkills, ["History", "Nature"]);
   assert.deepEqual(after.skillChoices, [{ id: "Background: Cloistered Scholar", origin: "background", choose: 1, from: ["Arcana", "Nature", "Religion"], picked: ["Nature"] }], "the pick no choice took stays in its entry");
@@ -311,13 +313,13 @@ test("a saved background pick outside the pool stays in the old bucket, and the 
     chosenSkills: ["Stealth"],
     skillChoices: [{ id: "Background: Cloistered Scholar", origin: "background", choose: 1, from: ["Stealth"], picked: ["Stealth"] }],
   });
-  const after = reconcile(before, compendium, { activeBooks: ALL_BOOKS });
+  const after = migrateSavedPicks(before, compendium, ALL_BOOKS);
   assert.equal(after.proficiencyPicks?.[SCHOLAR_ID], undefined);
   assert.deepEqual(after.chosenSkills, ["Stealth"]);
   assert.ok(sheetSkills(after, compendium).includes("Stealth"));
 });
 
-test("migrating a race or background pick twice changes nothing, and a class skill pick stays where it was", () => {
+test("migrating a race or background pick twice changes nothing, and a first-class skill pick moves into its starting choice", () => {
   const compendium = integratedTestCompendium();
   const before = makeChar({
     race: { name: "Half-Elf", source: "PHB" },
@@ -328,9 +330,13 @@ test("migrating a race or background pick twice changes nothing, and a class ski
       { id: "Class: Rogue", origin: "class", choose: 1, from: ["Athletics"], picked: ["Athletics"] },
     ],
   });
-  const once = reconcile(before, compendium, { activeBooks: ALL_BOOKS });
-  assert.deepEqual(once.skillChoices, [{ id: "Class: Rogue", origin: "class", choose: 1, from: ["Athletics"], picked: ["Athletics"] }]);
-  assert.deepEqual(reconcile(once, compendium, { activeBooks: ALL_BOOKS }), once);
+  const starting = startingSkillPickOf(before, { compendium, activeBooks: ALL_BOOKS })!.id;
+  const once = migrateSavedPicks(before, compendium, ALL_BOOKS);
+  assert.deepEqual(once.proficiencyPicks?.[HALF_ELF_ID], ["Insight"]);
+  assert.deepEqual(once.proficiencyPicks?.[starting], ["Athletics"]);
+  assert.deepEqual(once.skillChoices ?? [], []);
+  assert.deepEqual(once.chosenSkills, []);
+  assert.deepEqual(migrateSavedPicks(once, compendium, ALL_BOOKS), once);
 });
 
 // The Race tab shows a race's and its subrace's picks together, so each is titled by what it picks.

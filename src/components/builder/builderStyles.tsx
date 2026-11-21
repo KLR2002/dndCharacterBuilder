@@ -2,7 +2,6 @@ import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { AbilityKey } from "../../types/character";
-import { normalizeSkillName } from "../../rules/skills";
 
 export const ABILITY_KEYS: AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
 export const ABILITY_LABELS: Record<AbilityKey, string> = {
@@ -12,70 +11,6 @@ export const ABILITY_LABELS: Record<AbilityKey, string> = {
   int: "INT",
   wis: "WIS",
   cha: "CHA",
-};
-
-export interface SkillPickerProps {
-  label: string;
-  choose: number;
-  from: string[];
-  chosen: string[];
-  autoGranted: string[];
-  onToggle: (skill: string) => void;
-  theme: any;
-}
-
-export const SkillPicker: React.FC<SkillPickerProps> = ({
-  label,
-  choose,
-  from,
-  chosen,
-  autoGranted,
-  onToggle,
-  theme,
-}) => {
-  const normFrom = from.map(normalizeSkillName);
-  const normChosen = chosen.map(normalizeSkillName);
-  const normAuto = autoGranted.map(normalizeSkillName);
-  const pickerChosen = normChosen.filter((s) => normFrom.includes(s) && !normAuto.includes(s));
-  const remaining = choose - pickerChosen.length;
-
-  return (
-    <View style={{ gap: 6 }}>
-      <View style={pkStyles.headerRow}>
-        <Text style={[pkStyles.headerLabel, { color: theme.text }]}>{label}</Text>
-        <Text style={{ color: remaining === 0 ? theme.accentHover : theme.warning, fontSize: 12, fontWeight: "600" }}>
-          Picked {pickerChosen.length} / {choose}
-        </Text>
-      </View>
-      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 5 }}>
-        {normFrom.map((s) => {
-          const granted = normAuto.includes(s);
-          const isChosen = normChosen.includes(s);
-          const canPick = !granted && !isChosen && remaining > 0;
-          return (
-            <TouchableOpacity
-              key={s}
-              onPress={() => (!granted && (isChosen || canPick) ? onToggle(s) : undefined)}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              style={[
-                pkStyles.chip,
-                {
-                  backgroundColor: isChosen ? theme.accentGlow : theme.surfaceHighlight,
-                  borderColor: isChosen ? theme.accentHover : theme.border,
-                  opacity: !granted && !isChosen && !canPick ? 0.4 : 1,
-                },
-              ]}
-            >
-              {granted && <Ionicons name="lock-closed" size={10} color={theme.textMuted} style={{ marginRight: 3 }} />}
-              <Text style={{ color: granted ? theme.textMuted : isChosen ? theme.accentHover : theme.textSecondary, fontSize: 12, fontWeight: isChosen ? "700" : "500" }}>
-                {s}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    </View>
-  );
 };
 
 export interface RuleChoicePickerProps {

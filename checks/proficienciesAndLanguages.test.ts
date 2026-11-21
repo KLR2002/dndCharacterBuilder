@@ -2,7 +2,7 @@ import { ALL_BOOKS } from "../src/constants/books.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { ARTISAN_TOOLS, GAMING_SETS, MUSICAL_INSTRUMENTS } from "../src/rules/proficienciesAndLanguages.ts";
-import { POINT_BUY_COST } from "../src/constants/rules.ts";
+import { POINT_BUY_COST } from "../src/rules/pointBuy.ts";
 import { proficiencySheet, type SheetEntry } from "../src/rules/proficiencySheet.ts";
 import { proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts";
 import type { AvailableRuleChoice } from "../src/rules/choices/types.ts";
@@ -165,7 +165,9 @@ test("Criminal gives Thieves' Tools and one gaming set choice", () => {
 
 test("Bard starting tools are three Musical Instrument picks, offered as a Proficiency Choice", () => {
   const bard = makeChar({ classes: [{ className: "Bard", source: "SRD", level: 1 }] });
-  const offers = proficiencyChoiceOffers(bard, { compendium: srdBaselineCompendium(), activeBooks: ALL_BOOKS });
+  const offers = proficiencyChoiceOffers(bard, { compendium: srdBaselineCompendium(), activeBooks: ALL_BOOKS }).filter((offer) =>
+    offer.categories?.includes("tools"),
+  );
   assert.equal(offers.length, 1);
   assert.equal(offers[0].choose, 3);
   assert.deepEqual(offers[0].options.map((option) => option.name).sort(), [...MUSICAL_INSTRUMENTS].sort());

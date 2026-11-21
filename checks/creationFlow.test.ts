@@ -1,9 +1,8 @@
 import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { ALL_BOOKS } from "../src/constants/books.ts";
-import { makeChar, loadTestCatalog } from "./testUtils.ts";
+import { makeChar, loadTestCatalog, startingSkillPickOf } from "./testUtils.ts";
 import { migrateCharacter } from "../src/rules/migrateCharacter.ts";
-import { skillChoiceOffers } from "../src/rules/proficiencySheet.ts";
 import { allCatalogRaces } from "../src/rules/catalogs.ts";
 import { currentCompendium } from "../src/services/compendium.ts";
 import { maxHp } from "../src/rules/hp.ts";
@@ -150,22 +149,14 @@ describe("Later steps stay locked until the current step is valid", () => {
 describe("Class Choices holds the class's skill and proficiency picks", () => {
   test("a Wizard 1 with no skills picked reports Class Choices invalid; with both picked, valid", () => {
     const wizard1 = makeChar({ classes: [cl("Wizard", 1)] });
-    const skillOffer = skillChoiceOffers(wizard1, { activeBooks: ALL_BOOKS }).find((offer) => offer.source.startsWith("Class:"));
+    const skillOffer = startingSkillPickOf(wizard1, { activeBooks: ALL_BOOKS });
     assert.ok(skillOffer, "the class offers a starting skill pick at level 1");
 
     assert.equal(isCreationStepValid(wizard1, "classChoices"), false);
 
     const bothPicked = makeChar({
       classes: [cl("Wizard", 1)],
-      skillChoices: [
-        {
-          id: skillOffer.source,
-          origin: "class",
-          choose: skillOffer.choose,
-          from: skillOffer.from,
-          picked: skillOffer.from.slice(0, skillOffer.choose),
-        },
-      ],
+      proficiencyPicks: { [skillOffer.id]: skillOffer.from.slice(0, skillOffer.choose) },
     });
     assert.equal(isCreationStepValid(bothPicked, "classChoices"), true);
   });
@@ -286,16 +277,13 @@ describe("A draft that starts above level 1 opens at full HP", () => {
       (cur) => ({ ...cur, abilityMethod: "standardArray", standardArrayPicks: { ...scores }, baseAbilityScores: { ...scores } }),
       flowOpts,
     );
-    const skillOffer = skillChoiceOffers(c, flowOpts).find((o) => o.source === "Class: Fighter")!;
+    const skillOffer = startingSkillPickOf(c, flowOpts)!;
     c = applyCreationStepEdit(
       c,
       "classChoices",
       (cur) => ({
         ...cur,
-        skillChoices: [
-          { id: skillOffer.source, origin: "class", choose: skillOffer.choose, from: skillOffer.from, picked: skillOffer.from.slice(0, skillOffer.choose) },
-        ],
-        chosenSkills: skillOffer.from.slice(0, skillOffer.choose),
+        proficiencyPicks: { [skillOffer.id]: skillOffer.from.slice(0, skillOffer.choose) },
         ruleChoices: [
           { id: "PHB__Fighter__Fighting Style", trait: "Fighting Style", origin: "class", choose: 1, from: ["Defense"], picked: ["Defense"] },
         ],

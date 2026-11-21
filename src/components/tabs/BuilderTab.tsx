@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { ScrollView, Text, TouchableOpacity } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { POINT_BUY_COST, UNSET_ABILITY_SCORE, unsetAbilityScores } from "../../constants/rules";
-import { proficiencySheet, ruleGrantedSkills, skillChoiceOffers, sourceGrants } from "../../rules/proficiencySheet";
+import { UNSET_ABILITY_SCORE, unsetAbilityScores } from "../../constants/rules";
+import { POINT_BUY_BUDGET, canSetPointBuyScore, pointBuySpent } from "../../rules/pointBuy";
+import { proficiencySheet, sourceGrants } from "../../rules/proficiencySheet";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
 import { currentCompendium } from "../../services/compendium";
@@ -25,13 +26,11 @@ import {
   startingEquipmentCard,
   type StartingEquipmentAddress,
 } from "../../rules/startingEquipment";
-import { reconcile } from "../../rules/characterReconciler";
 import { SIDEKICK_CLASSES } from "../../rules/levelUpFlow";
 import { proficiencyChoiceOffers } from "../../rules/proficiencyChoiceOffers";
 import { getPendingLevelChoices } from "../../rules/leveling";
-import { normalizeSkillName } from "../../rules/skills";
 import { classChoicesStepView } from "../../rules/classChoices";
-import { AbilityKey, Character, CreationStepId, SkillChoiceEntry } from "../../types/character";
+import { AbilityKey, Character, CreationStepId } from "../../types/character";
 import { DetailModal } from "../DetailModal";
 import { useFlowStepScrollContentPadding } from "../creationFlow/FlowShell";
 import { AbilityScoresSection } from "../builder/AbilityScoresSection";
@@ -41,7 +40,6 @@ import { builderStyles as styles } from "../builder/builderStyles";
 import { classChoiceTransitions } from "../builder/classChoiceWiring";
 import { ClassSteps } from "../builder/ClassSteps";
 
-const ABILITY_KEYS: AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
 
 interface BuilderTabProps {
   character?: Character;
@@ -118,20 +116,13 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   // ─────────────────────────────────────────────────────────────────────────
   // ABILITY SCORES
   // ─────────────────────────────────────────────────────────────────────────
-  let pointBuySpent = 0;
-  for (const k of ABILITY_KEYS) {
-    const score = character.baseAbilityScores?.[k] ?? UNSET_ABILITY_SCORE;
-    pointBuySpent += POINT_BUY_COST[score] ?? 0;
-  }
-  const pointBuyRemaining = 27 - pointBuySpent;
+  const pointBuyRemaining = POINT_BUY_BUDGET - pointBuySpent(character.baseAbilityScores ?? {});
 
   const updateBaseScore = (key: AbilityKey, delta: number) => {
     const current = character.baseAbilityScores?.[key] ?? UNSET_ABILITY_SCORE;
     const next = current + delta;
-    if (character.abilityMethod === "pointBuy") {
-      if (next < 8 || next > 15) return;
-      const diff = (POINT_BUY_COST[next] ?? 0) - (POINT_BUY_COST[current] ?? 0);
-      if (pointBuySpent + diff > 27) return;
+    if (character.abilityMethod === "pointBuy" && !canSetPointBuyScore(character.baseAbilityScores ?? {}, key, next)) {
+      return;
     }
     onUpdate({
       baseAbilityScores: {
@@ -238,109 +229,6 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   // ─────────────────────────────────────────────────────────────────────────
   // SKILLS, LANGUAGES & TOOLS
   // ─────────────────────────────────────────────────────────────────────────
-  const autoGrantedBase = ruleGrantedSkills(character, catalogs);
-
-  // The class's skill choice is the only skill choice on this path. Race, subrace and background skill picks are
-  // Proficiency Choices, offered below.
-  type SkillChoice = { source: string; choose: number; from: string[] };
-  const skillChoices: SkillChoice[] = skillChoiceOffers(character, catalogs);
-
-  const getPickedSkillsForSource = (source: string): string[] => {
-    const entry = (character.skillChoices || []).find((sc) => sc.id === source);
-    if (entry) return entry.picked;
-    const sc = skillChoices.find((c) => c.source === source);
-    if (!sc) return [];
-    const normFrom = sc.from.map(normalizeSkillName);
-    const available = (character.chosenSkills || [])
-      .map(normalizeSkillName)
-      .filter((s) => !autoGrantedBase.includes(s));
-    return available.filter((s) => normFrom.includes(s)).slice(0, sc.choose);
-  };
-
-  const toggleSkill = (s: string, source?: string) => {
-    const norm = normalizeSkillName(s);
-    const targetSource =
-      source ||
-      skillChoices.find((sc) => sc.from.map(normalizeSkillName).includes(norm))?.source ||
-      "custom";
-    const targetSc = skillChoices.find((sc) => sc.source === targetSource);
-    const maxChoose = targetSc?.choose ?? 1;
-
-    const currentPicks = getPickedSkillsForSource(targetSource);
-    const normPicks = currentPicks.map(normalizeSkillName);
-    let nextPicks: string[];
-    if (normPicks.includes(norm)) {
-      nextPicks = currentPicks.filter((x) => normalizeSkillName(x) !== norm);
-    } else {
-      if (currentPicks.length < maxChoose) {
-        nextPicks = [...currentPicks, norm];
-      } else {
-        return;
-      }
-    }
-
-    const updatedSkillChoices: SkillChoiceEntry[] = [];
-    let updatedTarget = false;
-
-    for (const sc of skillChoices) {
-      if (sc.source === targetSource) {
-        updatedSkillChoices.push({
-          id: sc.source,
-          origin: "class",
-          choose: sc.choose,
-          from: sc.from,
-          picked: nextPicks,
-        });
-        updatedTarget = true;
-      } else {
-        updatedSkillChoices.push({
-          id: sc.source,
-          origin: "class",
-          choose: sc.choose,
-          from: sc.from,
-          picked: getPickedSkillsForSource(sc.source),
-        });
-      }
-    }
-
-    if (!updatedTarget) {
-      updatedSkillChoices.push({
-        id: targetSource,
-        origin: "class",
-        choose: maxChoose,
-        from: targetSc ? targetSc.from : [norm],
-        picked: nextPicks,
-      });
-    }
-
-    // The old skill bucket keeps every skill no class choice holds, so a name saved there is never dropped.
-    const previousClassPicks = new Set(
-      (character.skillChoices || [])
-        .filter((sc) => sc.origin === "class")
-        .flatMap((sc) => sc.picked.map(normalizeSkillName))
-    );
-    const classPicks = updatedSkillChoices.flatMap((sc) => sc.picked.map(normalizeSkillName));
-    const allPicked = Array.from(
-      new Set([
-        ...(character.chosenSkills || []).map(normalizeSkillName).filter((s) => !previousClassPicks.has(s)),
-        ...classPicks,
-      ])
-    );
-
-    onUpdate((cur) =>
-      reconcile(
-        {
-          ...cur,
-          chosenSkills: allPicked,
-          // A legacy race or background entry is kept as saved: it holds only the picks no choice took.
-          skillChoices: [...updatedSkillChoices, ...(cur.skillChoices || []).filter((sc) => sc.origin !== "class")],
-        },
-        currentCompendium(),
-        { activeBooks }
-      )
-    );
-  };
-
   const classChoiceActions = classChoiceTransitions(onUpdate, activeBooks);
 
   const { race: raceGranted, background: backgroundGranted, classTools } = sourceGrants(character, catalogs);
@@ -462,8 +350,6 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
           totalLevel={level}
           effectiveScores={effectiveScores}
           classChoices={classChoices}
-          autoGranted={autoGrantedBase}
-          onToggleStartingSkill={toggleSkill}
           onToggleRuleChoice={classChoiceActions.onToggleRuleChoice}
           onClearChoice={classChoiceActions.onClearChoice}
           onToggleExpertise={classChoiceActions.onToggleExpertise}

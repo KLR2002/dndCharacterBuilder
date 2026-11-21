@@ -26,9 +26,22 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Tests, `checks/classSkillChoice.test.ts`:
+**Landed:** merge e9bce38 (5f431ba, d8f236b); review fix 711ff5f.
+- **The grant:** `startingSkillGrantOf` in `classBase.ts` reads the record's `skillProficiencies` (the Catalog's name for the starting skills) and goes on the Starting Proficiencies feature. The pick is titled "<Class> starting skills".
+- **The old path is removed:** `toggleSkill`, `getPickedSkillsForSource`, `skillChoiceOffers`, `startingSkills`, `SkillPicker`, and the starting-skill props in ClassSteps, ClassChoiceCards and the level-up step. ReviewStep lists the sheet's skills.
+- **The move:** `moveLegacyClassSkillPicks` runs in `reconcile`. The sheet reads a legacy entry until it moves.
+- **Class removal:** the pruner releases the pick when the class is removed, with a review notice (that removal used to be silent). `removeClassLevel` keeps its prune of class entries not yet moved, including the `class__…` shape.
+- **Review fix (711ff5f):** the code-built grant ids named the record's source, so a Fighter made on the SRD Baseline lost its skills after a sync (probe: SRD `[Athletics, Perception]`, integrated `[]`). The multiclass skill grant had the same flaw since its move. Both now name `PHB` for an SRD or PHB class, with the SRD-named id as an alias that moves saved picks. Two tests were red without the fix; two book-admission allow-list entries were added.
+- **Deviations accepted:**
+  - A third pick replaces the oldest, the shared Proficiency Choice behaviour.
+  - The Fighter has no multiclass skill.
+  - The creation-flow signature reads class proficiency picks.
+- **Found:** the Bard's `{ any: 3 }` is scraped as `choose: 2`; filed as quick fix 08.
+- check:all, check:live, and `ONLY` Class Choices, Builder, Review and Level-Up at 393 passed, SRD and integrated.
+
+- [x] Tests, `checks/classSkillChoice.test.ts`:
   - A Fighter 1 (SRD) is offered one skill Proficiency Choice of 2 from the Fighter's 8 skills, with the grant id above. A Bard's pool is any skill, with id `…:any` and count 3.
   - Picking two through `pickRuleChoice` puts them on the sheet; a third is refused; the Class Choices step is complete with two and incomplete with one.
   - A Rogue 1 / Fighter 1: only the Rogue's starting choice, plus the Fighter's multiclass choice as today.
@@ -38,6 +51,6 @@
     - A legacy name outside the pool stays.
   - A migrateCharacter-shaped entry (`class__Fighter__PHB__skills`) moves the same way.
   - Removing the only Fighter level releases the pick.
-- [ ] Every existing test that reads `startingSkills`, `skillChoiceOffers` or class `skillChoices` is updated to the new path; list them and say what each now asserts.
-- [ ] `npm run check:all` and `npm run check:live` pass.
-- [ ] Scoped layout, `WIDTHS=393`, SRD and `-- --integrated`: `ONLY="Class Choices"`, `ONLY=Builder`, `ONLY=Review`, `ONLY="Level-Up"`. Scenarios that picked class skills through the old card must pick them through the new one. Open a Class Choices screenshot showing a Fighter's skill pick and describe it.
+- [x] Every existing test that reads `startingSkills`, `skillChoiceOffers` or class `skillChoices` is updated to the new path; list them and say what each now asserts.
+- [x] `npm run check:all` and `npm run check:live` pass.
+- [x] Scoped layout, `WIDTHS=393`, SRD and `-- --integrated`: `ONLY="Class Choices"`, `ONLY=Builder`, `ONLY=Review`, `ONLY="Level-Up"`. Scenarios that picked class skills through the old card must pick them through the new one. Open a Class Choices screenshot showing a Fighter's skill pick and describe it.

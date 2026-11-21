@@ -12,13 +12,19 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Tests in `checks/pointBuy.test.ts`:
+**Landed:** merge c0415ce (70510c8).
+- **Module:** `src/rules/pointBuy.ts` owns `POINT_BUY_BUDGET`, `POINT_BUY_COST` (moved from constants), `pointBuySpent`, `canSetPointBuyScore` and `pointBuyValid`. BuilderTab and the creation Abilities check read it; no `27` literal is left.
+- **Behaviour:** unchanged. Lowering a score is still refused when the set stays over budget (for example after switching from manual).
+- **Tests:** 5 in `checks/pointBuy.test.ts`.
+- check:all passed; `ONLY=Abilities` green at 393.
+
+- [x] Tests in `checks/pointBuy.test.ts`:
   - All 8s spend 0.
   - 15/15/15/8/8/8 spends 27, and raising an 8 to 9 is refused.
   - 16 is refused.
   - Lowering is always allowed down to 8.
-- [ ] `grep -rn "27" src/components/tabs/BuilderTab.tsx src/rules/creationFlow.ts`: no point-buy literal left.
-- [ ] `npm run check:all` passes.
-- [ ] Scoped layout: `ONLY=Abilities WIDTHS=393 npm run layout:check` green, SRD.
+- [x] `grep -rn "27" src/components/tabs/BuilderTab.tsx src/rules/creationFlow.ts`: no point-buy literal left.
+- [x] `npm run check:all` passes.
+- [x] Scoped layout: `ONLY=Abilities WIDTHS=393 npm run layout:check` green, SRD.

@@ -13,6 +13,7 @@ import {
   isPickableCategory,
   pickCategories,
   poolNames,
+  STARTING_PROFICIENCIES,
   validPicks,
   weaponHeld,
   type ChoiceProficiencyGrant,
@@ -225,6 +226,7 @@ function isMulticlassFeature(feature: FeatureInstance): boolean {
 /** The title of a skill pick: its source, numbered when its feature carries more than one skill pick. */
 function skillPickTitle(feature: FeatureInstance, grant: ChoiceProficiencyGrant): string {
   if (isMulticlassFeature(feature)) return `${feature.className} multiclass skill`;
+  if (feature.origin === "Class" && feature.name === STARTING_PROFICIENCIES) return `${feature.className} starting skills`;
   const skillPicks = (feature.grants ?? []).filter(
     (other): other is ChoiceProficiencyGrant => other.kind === "choice" && other.category === "skills",
   );
