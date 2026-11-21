@@ -156,6 +156,25 @@ function rangerCharacter() {
   });
 }
 
+// A level 3 Hunter with no picks yet. Its Hunter's Prey pick is the one Class Choices step card the SRD Hunter offers.
+const RANGER_HUNTER_ID = "char_ranger_hunter";
+function rangerHunterCharacter() {
+  return makeChar({
+    id: RANGER_HUNTER_ID,
+    name: "Corin",
+    createdAt: 6,
+    updatedAt: 6,
+    startingOption: "equipment",
+    baseAbilityScores: { str: 12, dex: 16, con: 13, int: 10, wis: 14, cha: 8 },
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [{ className: "Ranger", source: catalogSource("classes", "Ranger"), level: 3, subclassName: "Hunter" }],
+    currentHp: 26,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+  });
+}
+
 // A level 2 Fighter with an invented name long enough that the header has to shorten it with an ellipsis.
 const LONG_NAME_ID = "char_longname";
 const LONG_NAME = "Ysolde Marrowbrook-Vantesk the Unbroken Wanderer";
@@ -1424,6 +1443,7 @@ export function buildSeed({ root, integrated }) {
       halfElfCharacter(),
       ...(INTEGRATED ? [tieflingCharacter()] : []),
       rangerCharacter(),
+      rangerHunterCharacter(),
       longNameCharacter(),
       noticesCharacter(),
       noticesManyCharacter(),
@@ -1583,6 +1603,7 @@ export function buildScreens({ integrated }) {
       },
       { shot: true, name: "Builder Class", route: buildRoute(CHARACTER_ID, "class"), ready: /total level/i, scrollTo: "Total Level:" },
       { name: "Builder Class proficiency choices", route: buildRoute(RANGER_ID, "classChoices"), ready: "Class & Subclass Choices", scrollTo: "Class & Subclass Choices" },
+      { shot: true, name: "Class Choices SRD Hunter", route: buildRoute(RANGER_HUNTER_ID, "classChoices"), ready: "Hunter's Prey", scrollTo: "Hunter's Prey", expect: { texts: ["Hunter's Prey", "Colossus Slayer", "Giant Killer", "Horde Breaker"], fitsWidth: true } },
       // Kensei weapons (integrated mode only): the Path of the Kensei choices, and the weapon rows they add to the sheet.
       ...(INTEGRATED
         ? [

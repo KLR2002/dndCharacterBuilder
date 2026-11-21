@@ -4724,7 +4724,8 @@
           ]
         ]
       }
-    ]
+    ],
+    "srdName": "Apparatus of the Crab"
   },
   {
     "name": "Aquamarine",
@@ -10318,7 +10319,8 @@
     "description": "This poison must be harvested from a dead or incapacitated carrion crawler. A creature subjected to this poison must succeed on a DC 13 Constitution saving throw or be poisoned for 1 minute. The poisoned creature is paralyzed. The creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success.",
     "rawEntries": [
       "This poison must be harvested from a dead or {@condition incapacitated} {@creature carrion crawler}. A creature subjected to this poison must succeed on a {@dc 13} Constitution saving throw or be {@condition poisoned} for 1 minute. The {@condition poisoned} creature is {@condition paralyzed}. The creature can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success."
-    ]
+    ],
+    "srdName": "Crawler Mucus (Contact)"
   },
   {
     "name": "Cart",
@@ -12858,7 +12860,8 @@
       "The fortress is a square tower, 20 feet on a side and 30 feet high, with arrow slits on all sides and a battlement atop it. Its interior is divided into two floors. with a ladder running along one wall to connect them. The ladder ends at a trapdoor leading to the roof. When activated, the tower has a small door on the side facing you. The door opens only at your command, which you can speak as a bonus action. It is immune to the {@spell knock} spell and similar magic, such as that of a {@item chime of opening}.",
       "Each creature in the area where the fortress appears must make a {@dc 15} Dexterity saving throw, taking {@damage 10d10} bludgeoning damage on a failed save, or half as much damage on a successful one. In either case, the creature is pushed to an unoccupied space outside but next to the fortress. Objects in the area that aren't being worn or carried take this damage and are pushed automatically.",
       "The tower is made of adamantine, and its magic prevents it from being tipped over. The roof, the door, and the walls each have 100 hit points, immunity to damage from nonmagical weapons excluding siege weapons, and resistance to all other damage. Only a {@spell wish} spell can repair the fortress (this use of the spell counts as replicating a spell of 8th level or lower). Each casting of {@spell wish} causes the roof, the door, or one wall to regain 50 hit points."
-    ]
+    ],
+    "srdName": "Instant Fortress"
   },
   {
     "name": "Dagger of Blindsight",
@@ -24266,7 +24269,8 @@
       "Placing an object in the haversack follows the normal rules for interacting with objects. Retrieving an item from the haversack requires you to use an action. When you reach into the haversack for a specific item, the item is always magically on top.",
       "The haversack has a few limitations. If it is overloaded, or if a sharp object pierces it or tears it, the haversack ruptures and is destroyed. If the haversack is destroyed, its contents are lost forever, although an artifact always turns up again somewhere. If the haversack is turned inside out, its contents spill forth, unharmed, and the haversack must be put right before it can be used again. If a breathing creature is placed within the haversack, the creature can survive for up to 10 minutes, after which time it begins to suffocate.",
       "Placing the haversack inside an extradimensional space created by a {@item bag of holding}, {@item portable hole}, or similar item instantly destroys both items and opens a gate to the Astral Plane. The gate originates where the one item was placed inside the other. Any creature within 10-feet of the gate is sucked through it and deposited in a random location on the Astral Plane. The gate then closes. The gate is one-way only and can't be reopened."
-    ]
+    ],
+    "srdName": "Handy Haversack"
   },
   {
     "name": "Heward's Handy Spice Pouch",
@@ -26976,7 +26980,8 @@
       "Make a ranged attack roll with an attack bonus equal to your Dexterity modifier plus your proficiency bonus. On a hit, the target is {@condition restrained} until you take a bonus action to speak the command word again to release it. Doing so, or missing with the attack, causes the bands to contract and become a sphere once more.",
       "A creature, including the one {@condition restrained}, can use an action to make a {@dc 20} Strength check to break the iron bands. On a success, the item is destroyed, and the {@condition restrained} creature is freed. If the check fails, any further attempts made by that creature automatically fail until 24 hours have elapsed.",
       "Once the bands are used, they can't be used again until the next dawn."
-    ]
+    ],
+    "srdName": "Iron Bands of Binding"
   },
   {
     "name": "Iron Flask",
@@ -28013,7 +28018,8 @@
     "rawEntries": [
       "This glass jar, 3 inches in diameter, contains {@dice 1d4 + 1} doses of a thick mixture that smells faintly of aloe. The jar and its contents weigh ½ pound.",
       "As an action, one dose of the ointment can be swallowed or applied to the skin. The creature that receives it regains {@dice 2d8 + 2} hit points, ceases to be {@condition poisoned}, and is cured of any disease."
-    ]
+    ],
+    "srdName": "Restorative Ointment"
   },
   {
     "name": "Key Card",
@@ -33322,7 +33328,8 @@
       "When you complete the painting, the object or terrain feature depicted becomes a real, nonmagical object. Thus, painting a door on a wall creates an actual door that can be opened to whatever is beyond. Painting a pit on a floor creates a real pit, and its depth counts against the total area of objects you create.",
       "Nothing created by the pigments can have a value greater than 25 gp. If you paint an object of greater value (such as a diamond or a pile of gold), the object looks authentic, but close inspection reveals it is made from paste, bone, or some other worthless material.",
       "If you paint a form of energy such as fire or lightning, the energy appears but dissipates as soon as you complete the painting, doing no harm to anything."
-    ]
+    ],
+    "srdName": "Marvelous Pigments"
   },
   {
     "name": "Oathbow",
@@ -38010,7 +38017,8 @@
           "You can use an action to touch the token to a boat or ship. For the next 24 hours, the vessel can't be moved by any means. Touching the token to the vessel again ends the effect. When the effect ends, the token disappears."
         ]
       }
-    ]
+    ],
+    "srdName": "Feather Token, Anchor"
   },
   {
     "name": "Quaal's Feather Token, Bird",
@@ -38038,7 +38046,8 @@
           "You can use an action to toss the token 5 feet into the air. The token disappears and an enormous, multicolored bird takes its place. The bird has the statistics of a {@creature roc}, but it obeys your simple commands and can't attack. It can carry up to 500 pounds while flying at its maximum speed (16 miles an hour for a maximum of 144 miles per day. with a one-hour rest for every 3 hours of flying), or 1,000 pounds at half that speed. The bird disappears after flying its maximum distance for a day or if it drops to 0 hit points. You can dismiss the bird as an action."
         ]
       }
-    ]
+    ],
+    "srdName": "Feather Token, Bird"
   },
   {
     "name": "Quaal's Feather Token, Fan",
@@ -38066,7 +38075,8 @@
           "If you are on a boat or ship, you can use an action to toss the token up to 10 feet in the air. The token disappears, and a giant flapping fan takes its place. The fan floats and creates a wind strong enough to fill the sails of one ship, increasing its speed by 5 miles per hour for 8 hours. You can dismiss the fan as an action."
         ]
       }
-    ]
+    ],
+    "srdName": "Feather Token, Fan"
   },
   {
     "name": "Quaal's Feather Token, Swan Boat",
@@ -38094,7 +38104,8 @@
           "You can use an action to touch the token to a body of water at least 60 feet in diameter. The token disappears, and a 50-foot-long, 20-foot-wide boat shaped like a swan takes its place. The boat is self-propelled and moves across water at a speed of 6 miles per hour. You can use an action while on the boat to command it to move or to turn up to 90 degrees. The boat can carry up to thirty-two Medium or smaller creatures. A Large creature counts as four Medium creatures, while a Huge creature counts as nine. The boat remains for 24 hours and then disappears. You can dismiss the boat as an action."
         ]
       }
-    ]
+    ],
+    "srdName": "Feather Token, Swan Boat"
   },
   {
     "name": "Quaal's Feather Token, Tree",
@@ -38122,7 +38133,8 @@
           "You must be outdoors to use this token. You can use an action to touch it to an unoccupied space on the ground. The token disappears, and in its place a nonmagical oak tree springs into existence. The tree is 60 feet tall and has a 5-foot-diameter trunk, and its branches at the top spread out in a 20-foot radius."
         ]
       }
-    ]
+    ],
+    "srdName": "Feather Token, Tree"
   },
   {
     "name": "Quaal's Feather Token, Whip",
@@ -38151,7 +38163,8 @@
           "As a bonus action on your turn, you can direct the whip to fly up to 20 feet and repeat the attack against a creature within 10 feet of it. The whip disappears after 1 hour, when you use an action to dismiss it, or when you are {@condition incapacitated} or die."
         ]
       }
-    ]
+    ],
+    "srdName": "Feather Token, Whip"
   },
   {
     "name": "Quandrix Primer",
@@ -38296,7 +38309,8 @@
     "rawEntries": [
       "Each of the quiver's three compartments connects to an extradimensional space that allows the quiver to hold numerous items while never weighing more than 2 pounds. The shortest compartment can hold up to sixty {@item arrow|phb|arrows}, {@item crossbow bolt|phb|bolts}, or similar objects. The midsize compartment holds up to eighteen {@item javelin|phb|javelins} or similar objects. The longest compartment holds up to six long objects, such as bows, {@item quarterstaff|phb|quarterstaffs}, or {@item spear|phb|spears}.",
       "You can draw any item the quiver contains as if doing so from a regular quiver or scabbard."
-    ]
+    ],
+    "srdName": "Efficient Quiver"
   },
   {
     "name": "Radiance",
@@ -54107,12 +54121,12 @@
     "ac": null,
     "strengthRequirement": null,
     "stealthDisadvantage": false,
-    "description": "Crafted by the drow, this slim black wand has 7 charges. While holding it, you can use an action to expend 1 of its charges to cause a small glob of viscous material to launch from the tip at one creature within 60 feet of you. Make a ranged attack roll against the target, with a bonus equal to your spellcasting modifier (or your Intelligence modifier, if you don't have a spellcasting modifier) plus your proficiency bonus. On a hit, the glob expands and dries on the target, which is restrained for 1 hour. After that time, the viscous material cracks and falls away.\n\nApplying a pint or more of alcohol to the restrained creature dissolves the glob instantly, as does the application of oil of etherealness or universal solvent. The glob also dissolves instantly if exposed to sunlight. No other nonmagical process can remove the viscous material until it deteriorates on its own.\n\nThe wand regains 1d6 + 1 expended charges daily at midnight. If you expend the wands last charge, roll a d20. On a 1, the wand melts into harmless slime and is destroyed.\n\nA wand of viscid globs is destroyed if exposed to sunlight for 1 hour without interruption.",
+    "description": "Crafted by the drow, this slim black wand has 7 charges. While holding it, you can use an action to expend 1 of its charges to cause a small glob of viscous material to launch from the tip at one creature within 60 feet of you. Make a ranged attack roll against the target, with a bonus equal to your spellcasting modifier (or your Intelligence modifier, if you don't have a spellcasting modifier) plus your proficiency bonus. On a hit, the glob expands and dries on the target, which is restrained for 1 hour. After that time, the viscous material cracks and falls away.\n\nApplying a pint or more of alcohol to the restrained creature dissolves the glob instantly, as does the application of oil of etherealness or universal solvent. The glob also dissolves instantly if exposed to sunlight. No other nonmagical process can remove the viscous material until it deteriorates on its own.\n\nThe wand regains 1d6 + 1 expended charges daily at midnight. If you expend the wands last charge, roll a d20. On a 1, the wand melts into harmless slime and is destroyed.\n\nA wand of viscous globs is destroyed if exposed to sunlight for 1 hour without interruption.",
     "rawEntries": [
       "Crafted by the {@creature drow}, this slim black wand has 7 charges. While holding it, you can use an action to expend 1 of its charges to cause a small glob of viscous material to launch from the tip at one creature within 60 feet of you. Make a ranged attack roll against the target, with a bonus equal to your spellcasting modifier (or your Intelligence modifier, if you don't have a spellcasting modifier) plus your proficiency bonus. On a hit, the glob expands and dries on the target, which is {@condition restrained} for 1 hour. After that time, the viscous material cracks and falls away.",
       "Applying a pint or more of alcohol to the {@condition restrained} creature dissolves the glob instantly, as does the application of {@item oil of etherealness} or {@item universal solvent}. The glob also dissolves instantly if exposed to sunlight. No other nonmagical process can remove the viscous material until it deteriorates on its own.",
       "The wand regains {@dice 1d6 + 1} expended charges daily at midnight. If you expend the wands last charge, roll a {@dice d20}. On a 1, the wand melts into harmless slime and is destroyed.",
-      "A wand of viscid globs is destroyed if exposed to sunlight for 1 hour without interruption."
+      "A wand of viscous globs is destroyed if exposed to sunlight for 1 hour without interruption."
     ]
   },
   {
