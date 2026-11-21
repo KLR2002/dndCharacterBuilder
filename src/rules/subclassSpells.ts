@@ -4,6 +4,7 @@ import type { Character, RuleChoiceEntry } from "../types/character.ts";
 import type { SpellData, SubclassData, AdditionalSpells } from "../types/dnd5e.ts";
 import { resolveOptionName } from "./choices/types.ts";
 import { findClassData } from "./catalogs.ts";
+import { THIRD_CASTERS } from "./classData.ts";
 import { SRD_SOURCE } from "../constants/books.ts";
 
 export interface SubclassSpellsResult {
@@ -580,6 +581,20 @@ export function getSubclassAllowedSwapSchools(subclassName: string): string[] {
   if (lower.includes("clockwork")) return ["Abjuration", "Transmutation"];
   if (lower.includes("aberrant")) return ["Divination", "Enchantment"];
   return [];
+}
+
+const THIRD_CASTER_RESTRICTED_SCHOOLS: Record<string, string[]> = {
+  "Eldritch Knight": ["Abjuration", "Evocation"],
+  "Arcane Trickster": ["Enchantment", "Illusion"],
+};
+
+/**
+ * The schools a third caster's learnable spells are restricted to, outside cantrips. Empty for every
+ * other class and subclass pair (see THIRD_CASTERS).
+ */
+export function getThirdCasterRestrictedSchools(className: string, subclassName: string | undefined): string[] {
+  if (!subclassName || THIRD_CASTERS[className] !== subclassName) return [];
+  return THIRD_CASTER_RESTRICTED_SCHOOLS[subclassName] ?? [];
 }
 
 export function getBaselineSubclassSpellNames(

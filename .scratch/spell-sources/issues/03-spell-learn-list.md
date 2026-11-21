@@ -1,0 +1,13 @@
+# 03: One spell list component for the builder and the Level-Up Flow
+
+**What to build:** Create `src/components/spells/SpellLearnList.tsx`: search, spell-level filter, the restricted-schools toggle (shown only when `learnableSpells` reports restricted schools; on by default: cantrips and the restricted schools shown; off: all), and the spell rows with their selected state; props are the learnable list, the selected names, `onToggle(spell)`, and optional `onViewDetail`. The builder's Add Spells modal (`src/components/tabs/SpellsTab.tsx` ~1688, list from `filteredPickerSpells` ~451-490 and its level/school filter state) and the Level-Up Spells step (`src/components/levelUpFlow/SpellsStep.tsx`) render it; each keeps its frame and its action (learn now; add to the plan). `SpellsTab` gets the list from `learnableSpells` (ticket 02), and its `isEldritchKnight` / `isArcaneTrickster` checks (~231-240) and the Fighter/Rogue → Wizard swap go if nothing else uses them. Keep existing labels, testIDs and accessibility labels; the Level-Up rows keep `Learn ${spell.name}`.
+
+**Blocked by:** 02
+
+**Status:** done
+
+**Landed:** merge of cf82f71, 3b2a9b9, with a follow-up drawing the first 100 rows at once and the rest after the opening animation (the old picker silently capped at 100 rows sorted by level, so high-level spells were unreachable without a filter). `SpellLearnList` (`src/components/spells/`) serves the builder's Add Spells modal and the Level-Up Spells step; `levelUpLearnableSpells` exposes the restricted schools. Behaviour changes: the restricted filter is on by default (was All Schools); rows show `Lvl N • school • source` without the In-School badges; a row tap adds, a separate info button opens the detail; level pills only for levels present; known spells show dimmed "Added". `isEldritchKnight`/`isArcaneTrickster` stay in `SpellsTab` only for the Spells-tab banners and known-spell badges. New scenario `Spells add spells picker`; builder and Level-Up spell scenarios green at 320, 393, 1280. Not checked on native: render cost of a long list in the modal. check:all and check:live passed.
+
+- [x] `grep -n "isEldritchKnight\|isArcaneTrickster\|\"Abjuration\"\|\"Evocation\"" src/components/tabs/SpellsTab.tsx` lists nothing, or only uses unrelated to learning (say which).
+- [x] Layout: the builder's spell picker scenarios and `ONLY="Level-Up"` (including `Level-Up Flow subclass picks spells`) at 320, 393 and 1280 with `-- --integrated`; open the Eldritch Knight Spells step screenshot and describe the filter.
+- [x] `npm run check:all` passes. Last ticket: `npm run check:live` too; the main session runs the full layout gate.
