@@ -11,7 +11,9 @@ import { applyAsiSelection, asiLevels, getPendingLevelChoices, removeAsiSelectio
 import { getSubclassName } from "./ruleChoices.ts";
 import { classChoicesStepView } from "./classChoices.ts";
 import { findHeldRace } from "./raceLookup.ts";
-import { isCastingClass } from "./spellcasting.ts";
+import { isCastingClass, spellOwnerKey } from "./spellcasting.ts";
+import { spellCounts } from "./spellCounts.ts";
+import { evaluateCharacter } from "./characterEvaluation.ts";
 import { hasStartingEquipmentChoices } from "./startingEquipment.ts";
 import { picksOfFirstClass } from "./startingEquipmentPicks.ts";
 import {
@@ -204,7 +206,7 @@ export function isCreationStepValid(
     case "asiFeats":
       return !offersAsiFeats(entries) || getPendingLevelChoices(character, [...classes]).pendingAsi.length === 0;
     case "spells":
-      return true;
+      return creationSpellCountsMet(character, catalogs);
     case "equipment":
       return character.startingOption === "gold" || !hasStartingEquipmentChoices(character, catalogs) ||
         picksOfFirstClass(character) !== undefined;
@@ -220,6 +222,19 @@ export function isCreationStepValid(
 /** The one class a creation builds: the first entry, while the character holds at most one. */
 function classEntryOf(character: Character): CharacterClass | undefined {
   return character.classes?.[0];
+}
+
+/**
+ * Whether the creation's class owner has every count it is due exactly. A class with no counts, or a stale Catalog,
+ * requires nothing.
+ */
+function creationSpellCountsMet(character: Character, catalogs: CharacterCatalogs): boolean {
+  const entry = classEntryOf(character);
+  if (!entry) return true;
+  const profile = evaluateCharacter(character, catalogs).spellProfiles.find((p) => p.ownerKey === spellOwnerKey(entry));
+  if (!profile) return true;
+  const counts = spellCounts(character, profile, catalogs);
+  return [counts.cantrips, counts.spells].every((part) => part === null || part.known === part.due);
 }
 
 /**

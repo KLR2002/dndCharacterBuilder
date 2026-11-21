@@ -20,6 +20,8 @@ export interface SpellLearnListProps {
   lockedNames?: string[];
   /** Action text on each row: `idle` before the spell is picked, `selected` after. Without it, a checkmark. */
   actionLabels?: { idle: string; selected: string };
+  /** Unpicked rows that cannot be picked now are dimmed and not tappable. Picked rows always stay tappable. */
+  isSpellDisabled?: (spell: SpellData) => boolean;
   searchPlaceholder: string;
   rowDetail?: (spell: SpellData) => string;
   onToggle: (spell: SpellData) => void;
@@ -35,6 +37,7 @@ export function SpellLearnList({
   selectedNames,
   lockedNames = [],
   actionLabels,
+  isSpellDisabled,
   searchPlaceholder,
   rowDetail = levelDetail,
   onToggle,
@@ -89,6 +92,7 @@ export function SpellLearnList({
             detail={rowDetail(spell)}
             selected={selected.has(name) || locked.has(name)}
             locked={locked.has(name)}
+            unavailable={!selected.has(name) && !locked.has(name) && (isSpellDisabled?.(spell) ?? false)}
             actionLabels={actionLabels}
             onToggle={onToggle}
             onViewDetail={onViewDetail}
@@ -124,6 +128,7 @@ function SpellRow({
   detail,
   selected,
   locked,
+  unavailable,
   actionLabels,
   onToggle,
   onViewDetail,
@@ -132,12 +137,14 @@ function SpellRow({
   detail: string;
   selected: boolean;
   locked: boolean;
+  unavailable: boolean;
   actionLabels?: { idle: string; selected: string };
   onToggle: (spell: SpellData) => void;
   onViewDetail?: (spell: SpellData) => void;
 }) {
   const { theme } = useAppTheme();
   const action = actionLabels ? (selected ? actionLabels.selected : actionLabels.idle) : null;
+  const inert = locked || unavailable;
   return (
     <View
       style={[
@@ -145,15 +152,15 @@ function SpellRow({
         {
           borderColor: selected ? theme.accentBorder : theme.border,
           backgroundColor: selected ? theme.accentGlow : theme.surface,
-          opacity: locked ? 0.6 : 1,
+          opacity: inert ? 0.6 : 1,
         },
       ]}
     >
       <TouchableOpacity
         accessibilityRole="button"
         accessibilityLabel={`${actionLabels?.idle ?? "Learn"} ${spell.name}`}
-        accessibilityState={{ disabled: locked, selected }}
-        disabled={locked}
+        accessibilityState={{ disabled: inert, selected }}
+        disabled={inert}
         onPress={() => onToggle(spell)}
         activeOpacity={0.7}
         style={styles.pressable}

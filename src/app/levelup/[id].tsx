@@ -25,10 +25,12 @@ import {
   chooseAverageHitPoints,
   classStepOptions,
   clearPlanClassChoicePick,
+  clearPlanReplacedSpell,
   flowSteps,
   levelUpStepComplete,
   levelUpSummary,
   levelUpLearnableSpells,
+  levelUpReplacementOptions,
   planLevelUp,
   rollPlanHitPoints,
   setPlanAsi,
@@ -36,6 +38,8 @@ import {
   setPlanExpertisePick,
   setPlanFeatPick,
   setPlanOptionalFeature,
+  setPlanReplacedForget,
+  setPlanReplacedLearn,
   setPlanSubclass,
   subclassOptionsForPlan,
   togglePlanSpell,
@@ -242,7 +246,11 @@ export default function LevelUpScreen() {
           <SpellsStep
             plan={plan}
             learnable={levelUpLearnableSpells(character, plan, flowOpts)}
+            replacement={levelUpReplacementOptions(character, plan, flowOpts)}
             onToggle={(spell) => commitPlan(togglePlanSpell(plan, spell))}
+            onForget={(spell) => commitPlan(setPlanReplacedForget(plan, spell))}
+            onLearn={(spell) => commitPlan(setPlanReplacedLearn(plan, spell))}
+            onClearReplacement={() => commitPlan(clearPlanReplacedSpell(plan))}
           />
         );
       case "review":
