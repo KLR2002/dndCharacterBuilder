@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { ScrollView, Text, TouchableOpacity } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import Ionicons from "@expo/vector-icons/Ionicons";
 import { POINT_BUY_COST, UNSET_ABILITY_SCORE, unsetAbilityScores } from "../../constants/rules";
 import { proficiencySheet, ruleGrantedSkills, skillChoiceOffers, sourceGrants } from "../../rules/proficiencySheet";
 import { useCharacters } from "../../context/CharacterContext";

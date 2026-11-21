@@ -173,6 +173,26 @@ function settleProbe({ probeSel, maxMs }) {
 // a stable layout, defaulting to the body. A failed read is logged once per run: the check goes on with
 // an unsettled page rather than stopping, but the cause stays visible.
 let settleErrorLogged = false;
+// Waits until the saved settings hold the dice animation `mode`. The Options screen shows a choice at once but saves it
+// through an async write queue; a reload, or closing the page, before that write lands starts the next page from the old
+// setting. Resolves false when the setting is not saved within the timeout.
+function waitForSavedDiceAnimation(page, mode) {
+  return page
+    .waitForFunction(
+      (m) => {
+        try {
+          return JSON.parse(localStorage.getItem("@dnd5e_app_settings") ?? "null")?.diceAnimation === m;
+        } catch {
+          return false;
+        }
+      },
+      mode,
+      { timeout: 10000, polling: 50 },
+    )
+    .then(() => true)
+    .catch(() => false);
+}
+
 async function settle(page, probe, maxMs = 4000) {
   await page.evaluate(settleProbe, { probeSel: probe ?? "body", maxMs }).catch((error) => {
     if (settleErrorLogged) return;
@@ -290,6 +310,25 @@ function findLayoutViolations(root) {
     if (pr.width > 0 && r.right > pr.right + 1) out.push(`sticks out of its parent by ${Math.round(r.right - pr.right)}px: "${label.slice(0, 40)}"`);
   }
   return [...new Set(out)];
+}
+
+// Runs in the browser. Returns the words of the text leaf `name` that the browser lays out across more than
+// one line (a word split by a wrap), or null when no visible leaf shows the name.
+function attackNameSplitWords(name) {
+  const leaf = [...document.querySelectorAll("*")].find((e) => e.children.length === 0 && e.textContent.trim() === name && e.getBoundingClientRect().height > 0);
+  if (!leaf) return null;
+  const node = [...leaf.childNodes].find((n) => n.nodeType === Node.TEXT_NODE);
+  if (!node) return null;
+  const out = [];
+  for (const m of node.textContent.matchAll(/\S+/g)) {
+    const range = document.createRange();
+    range.setStart(node, m.index);
+    range.setEnd(node, m.index + m[0].length);
+    const tops = [...range.getClientRects()].map((r) => r.top);
+    // Fragments of one line share a top edge; a line below sits at least a line height lower.
+    if (tops.length > 0 && Math.max(...tops) - Math.min(...tops) > 4) out.push(m[0]);
+  }
+  return out;
 }
 
 // Runs in the browser. No <button> or [role="button"] may contain another one: React logs "cannot contain
@@ -1975,6 +2014,7 @@ async function checkDiceAnimation(ctx, width, meta) {
     if ((await segmentBorder(page, "off")) === accentBorderRgb) fail("Off is selected by default");
     await page.locator(offSel).first().click();
     await settle(page);
+    if (!(await waitForSavedDiceAnimation(page, "off"))) fail("choosing Off was not saved");
     if ((await segmentBorder(page, "off")) !== accentBorderRgb) fail(`tapping Off did not select it (border ${await segmentBorder(page, "off")}, expected ${accentBorderRgb})`);
     if ((await segmentBorder(page, "tumble")) === accentBorderRgb) fail("Tumble stayed selected after tapping Off");
     await maybeShot(page, shot("options-off"), meta);
@@ -2001,6 +2041,7 @@ async function checkDiceAnimation(ctx, width, meta) {
   await page.locator(tumbleSel).first().click();
   await settle(page);
   if ((await segmentBorder(page, "tumble")) !== accentBorderRgb) fail(`tapping Tumble did not select it (border ${await segmentBorder(page, "tumble")}, expected ${accentBorderRgb})`);
+  if (!(await waitForSavedDiceAnimation(page, "tumble"))) fail("choosing Tumble was not saved");
   await gotoApp(page, `${BASE}/character/${CHARACTER_ID}`);
   await rollTrayPool(page);
   if (!(await page.waitForSelector(diceSel, { state: "visible", timeout: 10000 }).catch(() => null))) fail("with Tumble chosen again, no animated die mounted in a new Roll");
@@ -2108,6 +2149,15 @@ async function checkActionRolls(ctx, width, meta) {
   const before = await storedCharacter(ACTIONS_ID);
   if (!before) fail("the seeded character is not in storage");
   for (const v of await page.evaluate(findLayoutViolations, null)) fail(v);
+  // The attack name keeps each word whole, and from 380 px to below the 600 px phone breakpoint the damage
+  // badge sits under the to-hit badge instead of beside it.
+  const splitWords = await page.evaluate(attackNameSplitWords, "Longsword");
+  if (splitWords === null) fail('no "Longsword" title on the weapon row');
+  else for (const w of splitWords) fail(`the attack name breaks inside the word "${w}" at ${width}px`);
+  const toHitBox = await toHit.boundingBox();
+  const damageBox = await damageBadge.boundingBox();
+  if (width >= 380 && width < 600 && toHitBox && damageBox && damageBox.y < toHitBox.y + toHitBox.height - 1)
+    fail(`the damage badge (top ${Math.round(damageBox.y)}px) sits beside the to-hit badge (bottom ${Math.round(toHitBox.y + toHitBox.height)}px) at ${width}px, expected it below`);
   await maybeShot(page, shot("tab"), meta);
 
   // Tap the "to hit" badge: a d20 +5, fixed to 15, so total 20, with "Roll damage" on the card and no details modal.
@@ -3600,11 +3650,24 @@ async function checkDiceThrow(ctx, width, meta) {
         .waitForFunction((n) => document.querySelectorAll('[data-testid^="throw-die-"]').length === n, count, { timeout, polling: 50 })
         .then(() => true)
         .catch(() => false);
+    // Page errors and console errors, and what the page shows just after a Roll tap, for the failure message.
+    const pageErrors = [];
+    page.on("pageerror", (error) => pageErrors.push(error.message.split("\n")[0].slice(0, 200)));
+    page.on("console", (message) => {
+      if (message.type() === "error") pageErrors.push(message.text().split("\n")[0].slice(0, 200));
+    });
+    let shownAfterTap = null;
     const rollThrow = async (expression) => {
       await page.getByLabel("Dice tray").first().click();
       await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("the tray did not open"));
       await page.getByLabel("Roll Expression", { exact: true }).fill(expression);
       await page.getByText(`Roll ${expression}`, { exact: true }).first().click();
+      shownAfterTap = await page.evaluate(() => ({
+        trayOpen: !!document.querySelector('[role="dialog"]'),
+        throwLayer: !!document.querySelector('[data-testid="throw-layer"]'),
+        dice: document.querySelectorAll('[data-testid^="throw-die-"]').length,
+        resultCard: !!document.querySelector('[data-testid="result-card"]'),
+      }));
     };
 
     await gotoApp(page, `${BASE}/options`);
@@ -3616,6 +3679,7 @@ async function checkDiceThrow(ctx, width, meta) {
     }
     await page.locator(throwSel).first().click();
     await settle(page);
+    if (!(await waitForSavedDiceAnimation(page, "throw"))) fail("choosing Throw was not saved");
     const borders = await page.evaluate(() => ({
       throw: getComputedStyle(document.querySelector('[data-testid="dice-animation-throw"]')).borderColor,
       off: getComputedStyle(document.querySelector('[data-testid="dice-animation-off"]')).borderColor,
@@ -3654,7 +3718,27 @@ async function checkDiceThrow(ctx, width, meta) {
       return count;
     };
     await rollThrow("d6,d8");
-    if (!(await waitForDiceCount(2, 10000))) fail(`expected two thrown dice, saw ${JSON.stringify(await throwDiceLabels())}`);
+    // The first Throw mounts ThrowLayer, a lazy chunk (about 540 modules) that a fresh dev server bundles on first
+    // request. In CI that request comes while the server still bundles the app for four widths, and it can take
+    // longer than ten seconds; the wait ends as soon as the two dice fly.
+    if (!(await waitForDiceCount(2, 60000))) {
+      // What the page shows instead, so a failure says whether the Roll ran at all.
+      const seen = await page.evaluate(() => ({
+        trayOpen: !!document.querySelector('[role="dialog"]'),
+        resultCard: !!document.querySelector('[data-testid="result-card"]'),
+        throwLayer: !!document.querySelector('[data-testid="throw-layer"]'),
+        savedAnimation: (() => {
+          try {
+            return JSON.parse(localStorage.getItem("@dnd5e_app_settings") ?? "null")?.diceAnimation ?? null;
+          } catch {
+            return "unreadable";
+          }
+        })(),
+      }));
+      fail(
+        `expected two thrown dice, saw ${JSON.stringify(await throwDiceLabels())} (${JSON.stringify(seen)}; just after the tap ${JSON.stringify(shownAfterTap)}; errors ${JSON.stringify(pageErrors.slice(-5))})`,
+      );
+    }
     else {
       const flight = await page.evaluate(() => {
         const dice = [...document.querySelectorAll('[data-testid^="throw-die-"]')];
@@ -3815,6 +3899,7 @@ async function checkDiceFreshPage(ctx, width, meta, animation) {
       }
       await setup.locator(throwSel).first().click();
       await settle(setup);
+      if (!(await waitForSavedDiceAnimation(setup, "throw"))) fail("choosing Throw was not saved");
       await closePage(setup);
     }
 
@@ -3882,6 +3967,7 @@ async function checkDiceOffCanvas(ctx, width, meta) {
     }
     await setup.locator(offSel).first().click();
     await settle(setup);
+    if (!(await waitForSavedDiceAnimation(setup, "off"))) fail("choosing Off was not saved");
     await closePage(setup);
 
     const page = await tctx.newPage();
@@ -4145,7 +4231,12 @@ async function runChecks(browser) {
   const queue = [...WIDTHS];
   let failures = 0;
   const worker = async () => {
-    while (queue.length > 0) failures += await checkWidth(browser, seed, queue.shift());
+    while (queue.length > 0) {
+      // Await first: `failures += await ...` reads the total before the await and a parallel worker's
+      // count added meanwhile is lost.
+      const widthFailures = await checkWidth(browser, seed, queue.shift());
+      failures += widthFailures;
+    }
   };
   await Promise.all(Array.from({ length: Math.min(MAX_PARALLEL, WIDTHS.length) }, worker));
   return failures;
