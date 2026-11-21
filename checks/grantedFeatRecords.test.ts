@@ -216,7 +216,7 @@ test("setting a custom background keeps the counter of a background-claimed feat
     feats: customBackgroundCatalog(),
     spells: grantedSpellSpells(),
     backgrounds: grantedSpellBackgrounds(),
-  });
+  }, { integrated: true });
   const changed = setCustomBackground(claimedWithMageCounter(), "Sample Custom", [], {}, compendium, TWO_ACTIVE_BOOKS);
   assert.equal(changed.background?.source, "Custom", "the background is custom");
   assert.ok(changed.resourceCounters?.[MAGE_COUNTER], "the counter of the list held is kept");

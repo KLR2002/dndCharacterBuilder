@@ -7,7 +7,6 @@ import { currentCompendium } from "../services/compendium";
 import { applyLongRest, applyShortRest } from "../rules/rest";
 import { spendHitDie } from "../rules/hitDice";
 import { CHANGEABLE_AT_LONG_REST, offeredRuleChoices, pickRuleChoice } from "../rules/ruleChoices";
-import { getRaces } from "../services/dataService";
 import { Character } from "../types/character";
 import { Button } from "./ui/Button";
 import { Card } from "./ui/Card";
@@ -84,7 +83,7 @@ export const RestModal: React.FC<RestModalProps> = ({
   // Choices the player may change because they finish a long rest: the eladrin's
   // season, per MToF. Long rest clears them, so they are offered here.
   const changeableChoices = offeredRuleChoices(characterWithPending ?? character, {
-    raceCatalog: getRaces(activeBooks),
+    raceCatalog: currentCompendium().for(activeBooks).races(),
     activeBooks,
     origins: ["race"],
   }).filter((choice) => CHANGEABLE_AT_LONG_REST.has(choice.traitName));

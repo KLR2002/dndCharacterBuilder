@@ -49,7 +49,7 @@ import {
 } from "../../rules/levelUpFlow";
 import { maxHp } from "../../rules/hp";
 import { totalLevel } from "../../rules/proficiencies";
-import { getFeats } from "../../services/dataService";
+import { currentCompendium } from "../../services/compendium";
 
 /**
  * The Level-Up Flow screen. It opens from the character header's Level up. The flow is driven by the
@@ -130,7 +130,7 @@ export default function LevelUpScreen() {
   }
 
   const classOptions = classStepOptions(character, flowOpts);
-  const allFeats = getFeats(activeBooks);
+  const allFeats = currentCompendium().for(activeBooks).feats();
 
   const classKey = (name: string) => name.trim().toLowerCase();
   const commitPlan = (next: LevelUpPlan | null) => {

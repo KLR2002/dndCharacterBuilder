@@ -1,5 +1,6 @@
 import type { ActiveBooks } from "../constants/books.ts";
 import type { RaceData, SubraceData } from "../types/dnd5e.ts";
+import { isActiveBookRecord } from "./bookAdmission.ts";
 
 /** A race and subrace as a character holds them: the names and the books they were saved from. */
 export interface HeldRace {
@@ -77,7 +78,7 @@ function pickRecord<T extends { name: string; source: string }>(
   const named = records.filter((record) => record.name === name);
   const saved = source ? named.find((record) => record.source === source) : undefined;
   if (saved) return saved;
-  const isActive = (record: T) => activeBooks?.includes(record.source) ?? false;
+  const isActive = (record: T) => isActiveBookRecord(activeBooks, record.source);
   const tests = prefers ? [(record: T) => isActive(record) && prefers(record), prefers, isActive] : [isActive];
   for (const test of tests) {
     const found = named.find(test);

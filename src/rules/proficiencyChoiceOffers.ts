@@ -1,12 +1,12 @@
 import type { ActiveBooks } from "../constants/books.ts";
 import type { Character } from "../types/character.ts";
-import { ALL_RESOURCE_BOOKS } from "../constants/books.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { catalogListings } from "./catalogs.ts";
 import type { AvailableRuleChoice, RuleChoiceOrigin } from "./choices/types.ts";
 import type { ProficiencyCategory } from "../types/dnd5e.ts";
 import type { FeatureInstance } from "./types.ts";
 import { featuresOf, MULTICLASS_FEATURE, proficiencySheet } from "./proficiencySheet.ts";
+import { customBackgroundFeature } from "./customBackground.ts";
 import { weaponPickMarksMonkWeapon } from "./kenseiWeapons.ts";
 import {
   clearProficiencyPick,
@@ -28,7 +28,7 @@ import {
 export interface ProficiencyChoiceQuery {
   /** Defaults to the process-wide current Compendium. */
   compendium?: Compendium;
-  /** Scopes the offers to these books. An empty list means every book. */
+  /** Scopes the offers to these books. An empty list admits no book. */
   activeBooks: ActiveBooks;
 }
 
@@ -40,8 +40,6 @@ const ORIGIN_OF: Partial<Record<FeatureInstance["origin"], RuleChoiceOrigin>> = 
   Subclass: "subclass",
   Feat: "feat",
 };
-
-const KNOWN_BOOKS = new Set(ALL_RESOURCE_BOOKS.map((book) => book.code.toUpperCase()));
 
 const DESCRIPTOR_OF_CATEGORY: Record<ProficiencyCategory, string> = {
   skills: "Skill",
@@ -100,7 +98,7 @@ export function heldByOtherSources(
   query: ProficiencyChoiceQuery,
 ): (name: string) => boolean {
   const compendium = query.compendium ?? currentCompendium();
-  const activeBooks = query.activeBooks?.length ? query.activeBooks : undefined;
+  const activeBooks = query.activeBooks;
   const sheet = proficiencySheet(clearProficiencyPick(character, grant.id), { compendium, activeBooks });
   const held = new Set(pickCategories(grant).flatMap((category) => sheet[category]).map((entry) => entry.name.toLowerCase()));
   const heldWeapons = sheet.weapons.map((entry) => entry.name);
@@ -116,17 +114,17 @@ interface ChoiceOfferEntry {
 
 function choiceOfferEntries(character: Character, query: ProficiencyChoiceQuery): ChoiceOfferEntry[] {
   const compendium = query.compendium ?? currentCompendium();
-  const activeBooks = query.activeBooks?.length ? query.activeBooks : undefined;
-  const active = activeBooks ? new Set(activeBooks.map((book) => book.toUpperCase())) : undefined;
+  const activeBooks = query.activeBooks;
   const listings = catalogListings({ compendium, activeBooks });
   const items = listings.items();
   const features = featuresOf(character, listings, activeBooks);
+  // A custom background's feature is the player's own, not a catalog record, so no book admits or refuses it.
+  const customId = customBackgroundFeature(character)?.id;
 
   const offered = features.flatMap((feature) => {
     const origin = ORIGIN_OF[feature.origin];
     if (!origin) return [];
-    const source = feature.source.toUpperCase();
-    if (active && KNOWN_BOOKS.has(source) && !active.has(source)) return [];
+    if (feature.id !== customId && !listings.admits(feature.source)) return [];
     return [{ feature, origin, choices: pickableChoicesOf(feature) }];
   });
 

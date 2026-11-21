@@ -11,7 +11,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
 import { currentCompendium } from "../../services/compendium";
-import { formatModifier } from "../../services/dndRules";
+import { formatModifier } from "../../rules/abilities";
 import { evaluateCharacter } from "../../rules/characterEvaluation";
 import {
   getTacticalActionLedger,

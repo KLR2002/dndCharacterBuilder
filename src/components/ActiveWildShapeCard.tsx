@@ -4,7 +4,7 @@ import { useCharacters } from "../context/CharacterContext";
 import { useAppTheme } from "../context/ThemeContext";
 import { useHpQuickEdit } from "../hooks/useHpQuickEdit";
 import { revertWildShape } from "../rules/wildShapeHp";
-import { findBeast } from "../services/dataService";
+import { currentCompendium } from "../services/compendium";
 import type { Character } from "../types/character";
 import { DetailModal } from "./DetailModal";
 import { HitPointBlock } from "./HitPointBlock";
@@ -45,7 +45,7 @@ export const ActiveWildShapeCard: React.FC<ActiveWildShapeCardProps> = ({
   const amount = () => parseInt(hpAmount, 10) || 1;
 
   const openStatblock = () => {
-    const b = findBeast(shape.name, shape.source);
+    const b = currentCompendium().findBeast(shape.name, shape.source);
     if (!b) return;
     setStatblock({
       visible: true,

@@ -1,4 +1,5 @@
 import { ALL_BOOKS } from "../src/constants/books.ts";
+import { currentCompendium } from "../src/services/compendium.ts";
 import test from "node:test";
 import assert from "node:assert/strict";
 import { evaluateCharacter } from "../src/rules/characterEvaluation.ts";
@@ -6,7 +7,6 @@ import { isSpellAvailableForClass, profileSpellContext, type ClassSpellProfile }
 import { clearBackground } from "../src/rules/builderTransitions.ts";
 import { resolveCharacterBackground } from "../src/rules/spellGrants.ts";
 import { isKnown, learnSpell } from "../src/rules/characterSpells.ts";
-import { findSpell } from "../src/services/dataService.ts";
 import type { CharacterClass } from "../src/types/character.ts";
 import type { ClassData, SpellData } from "../src/types/dnd5e.ts";
 import { inMemoryCompendium, loadSrdCatalog, makeChar } from "./testUtils.ts";
@@ -115,7 +115,7 @@ test("a background's expanded list stacks with a Warlock patron's expanded list"
     catalogs,
   );
   const fiendWarlock = profileOf(fiend.spellProfiles, "Warlock");
-  const fireball = findSpell("Fireball");
+  const fireball = currentCompendium().findSpell("Fireball");
   assert.ok(fireball, "Fireball must exist in the catalog");
   const fireballOnPatron = isSpellAvailableForClass(fireball, "Warlock", undefined, profileSpellContext(fiendWarlock));
   assert.equal(fireballOnPatron, true, "the patron's list still applies");

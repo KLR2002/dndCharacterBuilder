@@ -8,7 +8,7 @@ import {
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { useCharacters } from "../context/CharacterContext";
 import { useAppTheme } from "../context/ThemeContext";
-import { getItems } from "../services/dataService";
+import { currentCompendium } from "../services/compendium";
 import { armorCategoryOfType } from "../rules/ac";
 import {
   findArtificerInfusion,
@@ -33,7 +33,7 @@ export const ActiveInfusionsSection: React.FC = () => {
     infusionName: string;
   }>({ visible: false, infusionName: "" });
 
-  const allLibraryItems = useMemo(() => getItems(activeBooks), [activeBooks]);
+  const allLibraryItems = useMemo(() => currentCompendium().for(activeBooks).items(), [activeBooks]);
 
   if (!currentCharacter) return null;
 

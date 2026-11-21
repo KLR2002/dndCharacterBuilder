@@ -1,9 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { REQUIRED_CATALOG_FORMAT, type CompendiumCollections } from "../src/services/compendiumStorage.ts";
-import type { RaceData, SpellData, ItemData, ConditionData } from "../src/types/dnd5e.ts";
+import type { RaceData, SpellData, ItemData, ConditionData, FeatData, OptionFeatureData } from "../src/types/dnd5e.ts";
 import { createCompendium, currentCompendium, integrate, revertToSrd } from "../src/services/compendium.ts";
-import { getSpells, findSpell, isCompendiumIntegrated } from "../src/services/dataService.ts";
+import { ALL_BOOKS } from "../src/constants/books.ts";
+import { fightingStyleRuleChoices } from "../src/rules/choices/fightingStyles.ts";
+import { battleMasterManeuverChoices } from "../src/rules/choices/maneuvers.ts";
+import { warlockPactBoonChoices } from "../src/rules/choices/warlockChoices.ts";
+import { makeChar, srdBaselineCompendium } from "./testUtils.ts";
 
 // In-memory collections only: the Compendium is a plain value, so these tests never touch the process default.
 function bundle(overrides: Partial<CompendiumCollections> = {}): CompendiumCollections {
@@ -87,22 +91,22 @@ test("per-collection SRD fallback fills collections missing from an integrated c
   assert.deepEqual(names(compendium.for(["XGE"]).spells()), ["Toll the Dead"], "present collection is not replaced");
 });
 
-test("integrate and revertToSrd move the process default that dataService reads", () => {
+test("integrate and revertToSrd move the process default that currentCompendium reads", () => {
   try {
     integrate(bundle({ spells: [spell("Toll the Dead", "XGE")] }));
 
     assert.equal(currentCompendium().integrated, true);
-    assert.equal(isCompendiumIntegrated(), true);
-    assert.deepEqual(names(getSpells(["XGE"])), ["Toll the Dead"]);
-    assert.equal(findSpell("Toll the Dead")?.source, "XGE");
+    assert.equal(currentCompendium().integrated, true);
+    assert.deepEqual(names(currentCompendium().for(["XGE"]).spells()), ["Toll the Dead"]);
+    assert.equal(currentCompendium().findSpell("Toll the Dead")?.source, "XGE");
   } finally {
     revertToSrd();
   }
 
-  assert.equal(isCompendiumIntegrated(), false);
-  assert.ok(getSpells().length > 1, "SRD Baseline spells are back after revertToSrd");
-  assert.ok(getSpells().every((s) => s.source === "SRD"), "only SRD records after revertToSrd");
-  assert.equal(findSpell("Toll the Dead"), undefined);
+  assert.equal(currentCompendium().integrated, false);
+  assert.ok(currentCompendium().for().spells().length > 1, "SRD Baseline spells are back after revertToSrd");
+  assert.ok(currentCompendium().for().spells().every((s) => s.source === "SRD"), "only SRD records after revertToSrd");
+  assert.equal(currentCompendium().findSpell("Toll the Dead"), undefined);
 });
 
 test("the Compendium reports stale only for an integrated catalog below the required format", () => {
@@ -147,4 +151,83 @@ test("scoped listings are computed once per book list, frozen, and owned by thei
     "a new Compendium over the same bundle starts with an empty cache",
   );
   assert.equal(first.races()[0].subraces.length, 1, "scoping still filters subraces");
+});
+
+const feat = (name: string, source: string) => ({ name, source }) as unknown as FeatData;
+const option = (name: string, source: string, featureType: string[]) =>
+  ({ name, source, category: "", featureType, prerequisite: null, description: `${name} text` }) as unknown as OptionFeatureData;
+
+test("admits: a book is admitted by its code in any case", () => {
+  const compendium = createCompendium(bundle());
+
+  assert.equal(compendium.for(["phb"]).admits("PHB"), true);
+  assert.equal(compendium.for(["SATO"]).admits("SatO"), true);
+  assert.equal(compendium.for(["PHB"]).admits("XGE"), false, "an inactive book is not admitted");
+});
+
+test("admits: SRD and sourceless records are admitted under any book list, including an empty one", () => {
+  const compendium = createCompendium(bundle());
+
+  assert.equal(compendium.for(["PHB"]).admits("SRD"), true);
+  assert.equal(compendium.for([]).admits("SRD"), true);
+  assert.equal(compendium.for([]).admits(undefined), true);
+  assert.equal(compendium.for([]).admits(""), true);
+  assert.equal(compendium.for(["PHB"]).admits(undefined), true);
+  assert.equal(compendium.for([]).admits("PHB"), false, "an empty book list admits no book");
+});
+
+test("admits: ALL_BOOKS and the SRD Baseline's listings admit every source", () => {
+  const compendium = createCompendium(bundle());
+
+  assert.equal(compendium.for(ALL_BOOKS).admits("XGE"), true);
+  assert.equal(srdBaselineCompendium().for(["PHB"]).admits("XGE"), true);
+  assert.equal(srdBaselineCompendium().for([]).admits("XGE"), true);
+});
+
+test("scoping admits a mixed-case book's feat when the book is active in any case", () => {
+  const compendium = createCompendium(bundle({ feats: [feat("Invented Feat", "SatO")] }));
+
+  assert.deepEqual(names(compendium.for(["SATO"]).feats()), ["Invented Feat"]);
+  assert.deepEqual(names(compendium.for(["satO"]).feats()), ["Invented Feat"]);
+  assert.deepEqual(names(compendium.for(["PHB"]).feats()), []);
+});
+
+test("an empty book list lists no book records but keeps the SRD fallback", () => {
+  const compendium = createCompendium(
+    bundle({ spells: [spell("Toll the Dead", "XGE")] }),
+    bundle({ hasIntegratedCatalog: false, feats: [feat("Alert", "SRD")] }),
+  );
+
+  assert.deepEqual(names(compendium.for([]).spells()), [], "the integrated book record is not listed");
+  assert.deepEqual(names(compendium.for([]).feats()), ["Alert"], "the baseline-fallback SRD feat is listed");
+});
+
+test("differently cased book lists share one scoped listing", () => {
+  const compendium = createCompendium(bundle({ spells: [spell("Toll the Dead", "SatO")] }));
+
+  assert.equal(compendium.for(["sato"]), compendium.for(["SatO"]), "the same listing object");
+  assert.equal(compendium.for(["SATO"]).spells(), compendium.for(["sato"]).spells(), "the same array");
+  assert.deepEqual(names(compendium.for(["sato"]).spells()), ["Toll the Dead"]);
+});
+
+test("Fighting Style, maneuver and Pact Boon offers list a mixed-case book's options when the book is active in any case", () => {
+  const compendium = createCompendium(
+    bundle({
+      optionsAndFeatures: [
+        option("Invented Style", "SatO", ["FS:F"]),
+        option("Invented Maneuver", "SatO", ["MV:B"]),
+        option("Invented Boon", "SatO", ["PB"]),
+      ],
+    }),
+  );
+  const fighter = makeChar({ classes: [{ className: "Fighter", source: "PHB", level: 3, subclassName: "Battle Master" }] });
+  const warlock = makeChar({ classes: [{ className: "Warlock", source: "PHB", level: 3 }] });
+  const offered = (choices: { options: { name: string }[] }[]) => choices.flatMap((choice) => names(choice.options));
+
+  for (const books of [["SatO"], ["SATO"], ["sato"]]) {
+    assert.ok(offered(fightingStyleRuleChoices(fighter, books, compendium)).includes("Invented Style"), `Fighting Style with ${books}`);
+    assert.ok(offered(battleMasterManeuverChoices(fighter, books, compendium)).includes("Invented Maneuver"), `maneuver with ${books}`);
+    assert.ok(offered(warlockPactBoonChoices(warlock, books, compendium)).includes("Invented Boon"), `Pact Boon with ${books}`);
+  }
+  assert.deepEqual(offered(fightingStyleRuleChoices(fighter, ["PHB"], compendium)), [], "an inactive book offers nothing");
 });

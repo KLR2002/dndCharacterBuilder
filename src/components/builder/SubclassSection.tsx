@@ -3,7 +3,7 @@ import React, { useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import type { ActiveBooks } from "../../constants/books";
 import { changeSubclass } from "../../rules/builderTransitions";
-import { findClassData } from "../../rules/catalogs";
+import { catalogListings, findClassData } from "../../rules/catalogs";
 import { subclassLevel } from "../../rules/leveling";
 import { getOrphanedSubclassSpells } from "../../rules/subclassSpells";
 import { currentCompendium } from "../../services/compendium";
@@ -97,6 +97,7 @@ export const SubclassSection: React.FC<SubclassSectionProps> = ({
     setOrphanWarning(null);
   };
 
+  const { admits } = catalogListings({ activeBooks });
   return (
     <>
       {character.classes.map((c) => {
@@ -150,13 +151,7 @@ export const SubclassSection: React.FC<SubclassSectionProps> = ({
               </View>
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
                 {cd.subclasses
-                  .filter((sub: any) => {
-                    if (!activeBooks || activeBooks.length === 0) return true;
-                    if (!sub.source) return true;
-                    return activeBooks
-                      .map((b) => b.toUpperCase())
-                      .includes(sub.source.toUpperCase());
-                  })
+                  .filter((sub: any) => admits(sub.source))
                   .map((sub: any) => {
                     const isCurrent = c.subclassName === sub.name;
                     return (

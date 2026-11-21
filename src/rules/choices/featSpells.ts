@@ -398,7 +398,7 @@ function spellsMatching(filter: string, compendium: Compendium, activeBooks: Act
   const offered: SpellData[] = [];
   for (const spell of compendium.for(activeBooks).spells()) {
     if (parsed.level !== undefined && spell.level !== parsed.level) continue;
-    if (parsed.classes.length > 0 && !parsed.classes.some((cls) => isSpellAvailableForClass(spell, cls, activeBooks as string[] | undefined))) continue;
+    if (parsed.classes.length > 0 && !parsed.classes.some((cls) => isSpellAvailableForClass(spell, cls, activeBooks as string[] | undefined, undefined, compendium))) continue;
     if (parsed.schools.length > 0 && !parsed.schools.includes(spell.school)) continue;
     if (parsed.attacks.length > 0 && !(spell.spellAttack ?? []).some((kind) => parsed.attacks.includes(kind.toLowerCase()))) continue;
     if (seen.has(spell.name)) continue;
@@ -716,8 +716,8 @@ const BOOK_SWITCHED_OFF = "book switched off";
  * Whether a feat record the catalog holds is switched off: its book is one the active books leave out, so the feat is switched
  * off rather than removed. Without active books nothing is switched off, and an absent record (undefined) is not.
  */
-function featSwitchedOff(feat: { source: string } | undefined, activeBooks: ActiveBooks): boolean {
-  return feat !== undefined && activeBooks !== undefined && !activeBooks.includes(feat.source);
+function featSwitchedOff(feat: { source: string } | undefined, listings: CompendiumListings): boolean {
+  return feat !== undefined && !listings.admits(feat.source);
 }
 
 /** The race or subrace a held list holds, when the character holds one. */
@@ -847,7 +847,7 @@ export function pruneReleasedFeatCounters(character: Character, compendium: Comp
       if (book !== undefined && !bookLoadedFor(book, listings)) continue;
       const catalogName = listings.feats().find((feat) => slugOf(feat.name) === featSlug)?.name;
       const bookFeat = book === undefined ? undefined : listings.feats().find((feat) => slugOf(feat.name) === featSlug && feat.source === book);
-      const reason = featSwitchedOff(bookFeat, activeBooks) ? BOOK_SWITCHED_OFF : "feat no longer held";
+      const reason = featSwitchedOff(bookFeat, compendium.for(activeBooks)) ? BOOK_SWITCHED_OFF : "feat no longer held";
       notices.push(catalogName
         ? `${counterName} removed from ${catalogName}: ${reason}`
         : `${counterName} removed: ${reason}`);

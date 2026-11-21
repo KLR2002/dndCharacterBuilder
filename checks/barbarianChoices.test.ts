@@ -7,7 +7,7 @@ import {
   subclassRuleChoices,
   pickRuleChoice,
 } from "../src/rules/ruleChoices.ts";
-import { createCompendium } from "../src/services/compendium.ts";
+import { currentCompendium, createCompendium } from "../src/services/compendium.ts";
 import { choiceCatalogBundle, choiceCatalogClasses } from "./choiceCatalogFixture.ts";
 import { skills } from "../src/rules/skills.ts";
 import {
@@ -16,7 +16,6 @@ import {
   isGiantBarbarian,
   isSpellAvailableForClass,
 } from "../src/rules/spellcasting.ts";
-import { findSpell } from "../src/services/dataService.ts";
 
 test("Primal Knowledge (TCoE): level gating and optional feature activation", () => {
   // Barbarian level 2 with optional feature enabled -> 0 choices offered (level < 3)
@@ -177,7 +176,7 @@ test("Path of the Giant: level gating, cantrip choice, and Wisdom spellcasting p
   assert.ok(prof.subclassKnownSpells?.some((k) => k.name === "Druidcraft"));
 
   // Check spell availability helper
-  const druidcraftSpell = findSpell("Druidcraft")!;
+  const druidcraftSpell = currentCompendium().findSpell("Druidcraft")!;
   assert.equal(
     isSpellAvailableForClass(druidcraftSpell, "Barbarian", ["PHB", "BGG"], { subclassName: "Path of the Giant" }),
     true

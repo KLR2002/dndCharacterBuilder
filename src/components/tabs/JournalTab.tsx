@@ -13,7 +13,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import * as ImagePicker from "expo-image-picker";
 import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
-import { findRace } from "../../services/dataService";
+import { currentCompendium } from "../../services/compendium";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
 import { Modal } from "../ui/Modal";
@@ -67,7 +67,7 @@ export const JournalTab: React.FC = () => {
   const [loreExpanded, setLoreExpanded] = useState(false);
 
   // Find auto-populated race info
-  const raceData = currentCharacter?.race ? findRace(currentCharacter.race, activeBooks) : null;
+  const raceData = currentCharacter?.race ? currentCompendium().findRace(currentCharacter.race, activeBooks) : null;
 
   const raceLore = useMemo(() => {
     if (!raceData) return null;

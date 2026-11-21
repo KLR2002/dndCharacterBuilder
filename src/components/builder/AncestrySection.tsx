@@ -7,6 +7,7 @@ import { featSpellChoicesOf, raceSpellRuleChoices, type AvailableRuleChoice } fr
 import { changeLineage, changeRace, setChoiceRacialBonus, setSizeChoice, toggleRacialPick, type LineageChoice } from "../../rules/builderTransitions";
 import { increasePoolOf, type IncreaseChoiceOffer } from "../../rules/originCustomization";
 import { currentCompendium, srdBaselineRaces } from "../../services/compendium";
+import { catalogListings } from "../../rules/catalogs";
 import { findHeldRace } from "../../rules/raceLookup";
 import {
   resolveAncestryState,
@@ -99,19 +100,21 @@ export const AncestrySection: React.FC<AncestrySectionProps> = ({
 
   const availableLineages = useMemo(() => {
     if (!isIntegrated) return [];
+    const { admits } = catalogListings({ activeBooks });
     const list: ("None" | "Dhampir" | "Hexblood" | "Reborn" | "Custom Lineage")[] = ["None"];
-    if (activeBooks.includes("VRGR")) {
+    if (admits("VRGR")) {
       list.push("Dhampir", "Hexblood", "Reborn");
     }
-    if (activeBooks.includes("TCE")) {
+    if (admits("TCE")) {
       list.push("Custom Lineage");
     }
     return list.length > 1 ? list : [];
   }, [isIntegrated, activeBooks]);
 
   const lineageHeading = useMemo(() => {
-    const hasVRGR = activeBooks.includes("VRGR");
-    const hasTCE = activeBooks.includes("TCE");
+    const { admits } = catalogListings({ activeBooks });
+    const hasVRGR = admits("VRGR");
+    const hasTCE = admits("TCE");
     if (hasVRGR && hasTCE) return "Lineage Replacement (VRGtR) & Custom Lineage (TCoE)";
     if (hasVRGR) return "Lineage Replacement (VRGtR)";
     return "Custom Lineage (TCoE)";
