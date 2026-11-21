@@ -35,7 +35,7 @@ import { builderStyles as styles, pkStyles } from "./builderStyles";
 import { ProficiencyChoicePicker } from "./ProficiencyChoicePicker";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import { applyOriginFeat, getBackgroundFeatGrant, removeOriginFeat } from "../../rules/feats";
-import { applyFeatSlotPick, featIncreaseOptions, findFeat, takenFeatRuleChoices } from "../../rules/featSlot";
+import { applyFeatSlotPick, featIncreaseOptions, findFeat, takenFeatProficiencyChoices, takenFeatRuleChoices } from "../../rules/featSlot";
 import { FeatPickDetails } from "../feats/FeatPicker";
 
 export interface BackgroundSectionProps {
@@ -330,6 +330,12 @@ export const BackgroundSection: React.FC<BackgroundSectionProps> = ({
                                   )
                                 )
                               }
+                              proficiency={{
+                                choices: takenFeatProficiencyChoices(character, bgOriginFeat, catalogs.activeBooks, catalogs.compendium ?? currentCompendium()),
+                                character,
+                                onUpdate,
+                                activeBooks: catalogs.activeBooks,
+                              }}
                               onToggleSubChoice={(choice, option) =>
                                 onUpdate((cur) =>
                                   pickRuleChoice(cur, choice, option, catalogs.compendium ?? currentCompendium(), catalogs.activeBooks)

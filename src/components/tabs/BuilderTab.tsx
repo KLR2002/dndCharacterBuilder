@@ -31,7 +31,7 @@ import { SIDEKICK_CLASSES } from "../../rules/levelUpFlow";
 import { proficiencyChoiceOffers } from "../../rules/proficiencyChoiceOffers";
 import { getPendingLevelChoices } from "../../rules/leveling";
 import { normalizeSkillName } from "../../rules/skills";
-import { getAvailableOptionalFeatures } from "../../rules/optionalFeatures";
+import { classChoicesStepView } from "../../rules/classChoices";
 import { AbilityKey, Character, CreationStepId, SkillChoiceEntry } from "../../types/character";
 import { DetailModal } from "../DetailModal";
 import { useFlowStepScrollContentPadding } from "../creationFlow/FlowShell";
@@ -39,7 +39,8 @@ import { AbilityScoresSection } from "../builder/AbilityScoresSection";
 import { AncestrySection } from "../builder/AncestrySection";
 import { BackgroundSection } from "../builder/BackgroundSection";
 import { builderStyles as styles } from "../builder/builderStyles";
-import { ClassProgressionSection } from "../builder/ClassProgressionSection";
+import { classChoiceTransitions } from "../builder/classChoiceWiring";
+import { ClassSteps } from "../builder/ClassSteps";
 
 const ABILITY_KEYS: AbilityKey[] = ["str", "dex", "con", "int", "wis", "cha"];
 
@@ -113,7 +114,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   const primaryClass = character.classes[0]?.className;
 
   const { pendingAsi } = getPendingLevelChoices(character, allClasses);
-  const availableOptionalFeatures = getAvailableOptionalFeatures(character, allClasses);
+  const classChoices = classChoicesStepView(character, { compendium: currentCompendium(), activeBooks });
 
   // ─────────────────────────────────────────────────────────────────────────
   // ABILITY SCORES
@@ -341,6 +342,8 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
     );
   };
 
+  const classChoiceActions = classChoiceTransitions(onUpdate, activeBooks);
+
   const { race: raceGranted, background: backgroundGranted, classTools } = sourceGrants(character, catalogs);
   const proficiencyOffers = proficiencyChoiceOffers(character, { activeBooks });
   const raceProficiencyChoices = proficiencyOffers.filter((choice) => choice.origin === "race");
@@ -450,7 +453,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
       )}
 
       {(hostedSection ?? activeSection) === "class" && (
-        <ClassProgressionSection
+        <ClassSteps
           character={character}
           onUpdate={onUpdate}
           step={step}
@@ -459,11 +462,15 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
           allFeats={allFeats}
           totalLevel={totalLevel}
           effectiveScores={effectiveScores}
-          skillChoices={skillChoices}
+          classChoices={classChoices}
           autoGranted={autoGrantedBase}
-          toggleSkill={toggleSkill}
+          onToggleStartingSkill={toggleSkill}
+          onToggleRuleChoice={classChoiceActions.onToggleRuleChoice}
+          onClearChoice={classChoiceActions.onClearChoice}
+          onToggleExpertise={classChoiceActions.onToggleExpertise}
+          onPruneInvalidExpertise={classChoiceActions.onPruneInvalidExpertise}
+          onToggleOptionalFeature={classChoiceActions.onToggleOptionalFeature}
           classTools={classTools}
-          availableOptionalFeatures={availableOptionalFeatures}
           pendingAsiSlots={pendingAsi}
           primaryClass={primaryClass}
           startingCard={startingCard}

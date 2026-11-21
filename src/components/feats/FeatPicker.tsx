@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View, type StyleProp, type TextStyle, type ViewStyle } from "react-native";
-import type { AbilityKey } from "../../types/character";
+import type { ActiveBooks } from "../../constants/books";
+import type { AbilityKey, Character } from "../../types/character";
 import type { FeatData } from "../../types/dnd5e";
 import type { FeatSlotOffer } from "../../rules/featSlot";
 import type { FeatAbilityBonusOptions } from "../../rules/featIncrease";
@@ -8,6 +9,7 @@ import type { AvailableRuleChoice } from "../../rules/choices/types";
 import { useAppTheme } from "../../context/ThemeContext";
 import type { AppTheme } from "../../constants/theme";
 import { builderStyles as styles } from "../builder/builderStyles";
+import { ProficiencyChoicePicker } from "../builder/ProficiencyChoicePicker";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { SearchBar } from "../ui/SearchBar";
@@ -114,9 +116,38 @@ export function FeatList({
   );
 }
 
+/** The Proficiency Choices of a saved feat, each picked into the character's proficiency picks. */
+export function FeatProficiencyPickers({
+  choices,
+  character,
+  onUpdate,
+  activeBooks,
+}: {
+  choices: AvailableRuleChoice[];
+  character: Character;
+  onUpdate: (patchOrUpdater: Partial<Character> | ((prev: Character) => Character)) => void;
+  activeBooks: ActiveBooks;
+}) {
+  const { theme } = useAppTheme();
+  return (
+    <>
+      {choices.map((choice) => (
+        <ProficiencyChoicePicker
+          key={choice.id}
+          choice={choice}
+          character={character}
+          onUpdate={onUpdate}
+          theme={theme}
+          activeBooks={activeBooks}
+        />
+      ))}
+    </>
+  );
+}
+
 /**
- * The picked feat's Increase Choice and the Rule Choices it opens, with the descriptions of the options picked.
- * Renders nothing for a feat with no increase and no Rule Choice.
+ * The picked feat's Increase Choice and the Rule Choices it opens, with the descriptions of the options picked, and
+ * its Proficiency Choices when `proficiency` is given. Renders nothing for a feat with no increase and no choice.
  */
 export function FeatPickDetails({
   increase,
@@ -125,6 +156,7 @@ export function FeatPickDetails({
   subChoicePicks,
   onSelectAbility,
   onToggleSubChoice,
+  proficiency,
 }: {
   increase: FeatAbilityBonusOptions;
   featAbility: AbilityKey | null;
@@ -132,6 +164,13 @@ export function FeatPickDetails({
   subChoicePicks: Record<string, string[]>;
   onSelectAbility: (ability: AbilityKey) => void;
   onToggleSubChoice: (choice: AvailableRuleChoice, option: string) => void;
+  /** Given for a saved feat only: a pending pick has no Proficiency Choice picks until it is applied. */
+  proficiency?: {
+    choices: AvailableRuleChoice[];
+    character: Character;
+    onUpdate: (patchOrUpdater: Partial<Character> | ((prev: Character) => Character)) => void;
+    activeBooks: ActiveBooks;
+  };
 }) {
   const { theme } = useAppTheme();
 
@@ -203,6 +242,14 @@ export function FeatPickDetails({
           </View>
         );
       })}
+      {proficiency && (
+        <FeatProficiencyPickers
+          choices={proficiency.choices}
+          character={proficiency.character}
+          onUpdate={proficiency.onUpdate}
+          activeBooks={proficiency.activeBooks}
+        />
+      )}
     </>
   );
 }

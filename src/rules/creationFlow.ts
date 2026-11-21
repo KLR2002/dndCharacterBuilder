@@ -9,7 +9,7 @@ import { heldClass } from "./classData.ts";
 import { ABILITIES } from "./abilities.ts";
 import { applyAsiSelection, asiLevels, getPendingLevelChoices, removeAsiSelection, subclassLevel } from "./leveling.ts";
 import { getSubclassName } from "./ruleChoices.ts";
-import { classChoicesAtLevel, hasClassChoices, type ClassLevelChoices } from "./classChoices.ts";
+import { classChoicesStepView } from "./classChoices.ts";
 import { findHeldRace } from "./raceLookup.ts";
 import { isCastingClass } from "./spellcasting.ts";
 import { hasStartingEquipmentChoices } from "./startingEquipment.ts";
@@ -199,11 +199,8 @@ export function isCreationStepValid(
       return character.background != null;
     case "abilities":
       return abilitiesValid(character);
-    case "classChoices": {
-      const choices = classChoicesOf(character, opts);
-      if (!hasClassChoices(choices)) return true;
-      return choices.allPicked;
-    }
+    case "classChoices":
+      return classChoicesStepView(character, opts).complete;
     case "asiFeats":
       return !offersAsiFeats(entries) || getPendingLevelChoices(character, [...classes]).pendingAsi.length === 0;
     case "spells":
@@ -246,25 +243,6 @@ function offersSubrace(character: Character, races: readonly RaceData[], activeB
   return Boolean(race && (race.subraces?.length ?? 0) > 1);
 }
 
-/**
- * The choices every held class brings at its level, read from the one shared module the Level-Up Flow
- * reads too. Creation builds from level 0, so every choice each class brings up to its held level is
- * listed; every class offers skill picks at level 1, so the step applies to every new character.
- * Ancestry, background and feat picks belong to their own steps, so they are left out.
- */
-function classChoicesOf(character: Character, opts: CreationFlowOptions): ClassLevelChoices {
-  const entries = character.classes ?? [];
-  if (entries.length === 0) return { skillChoices: [], proficiencyChoices: [], ruleChoices: [], allPicked: true };
-  const query = { compendium: opts.compendium ?? currentCompendium(), activeBooks: opts.activeBooks };
-  const combined = entries.map((entry) => classChoicesAtLevel(character, entry, 0, query));
-  return {
-    skillChoices: combined.flatMap((choices) => choices.skillChoices),
-    proficiencyChoices: combined.flatMap((choices) => choices.proficiencyChoices),
-    ruleChoices: combined.flatMap((choices) => choices.ruleChoices),
-    allPicked: combined.every((choices) => choices.allPicked),
-  };
-}
-
 /** Whether the ASI/Feats step applies: any held class's level has reached one of its ASI levels. */
 function offersAsiFeats(entries: readonly CharacterClass[]): boolean {
   return entries.some((entry) => asiLevels(entry.className).some((level) => entry.level >= level));
@@ -290,7 +268,7 @@ export function applicableCreationSteps(character: Character, opts: CreationFlow
   steps.push("race");
   if (offersSubrace(character, races, activeBooks)) steps.push("subrace");
   steps.push("background", "abilities");
-  if (hasClassChoices(classChoicesOf(character, opts))) steps.push("classChoices");
+  if (classChoicesStepView(character, opts).applies) steps.push("classChoices");
   if (offersAsiFeats(entries)) steps.push("asiFeats");
   if (offersSpells(entries, classes)) steps.push("spells");
   steps.push("equipment", "details", "review");
