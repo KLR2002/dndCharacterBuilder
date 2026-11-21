@@ -40,7 +40,6 @@ const weapon = (name: string): InventoryItem => ({
   source: "PHB",
   quantity: 1,
   isEquipped: true,
-  section: "equipped",
 });
 
 const DISADVANTAGE = "Disadvantage";

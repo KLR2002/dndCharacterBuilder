@@ -151,11 +151,11 @@ test("a pick saved in another casing still excludes its infusion from the other 
 
 test("active infusions and infused items match their picks whatever the casing", () => {
   const boots = {
-    id: "boots_1", name: "Leather Boots", source: "PHB", quantity: 1, isEquipped: true, section: "equipped" as const,
+    id: "boots_1", name: "Leather Boots", source: "PHB", quantity: 1, isEquipped: true,
     infusedWith: "placeholder alpha", isInfused: true,
   };
   const jug = {
-    id: "jug_1", name: "Jug", source: "TCE", quantity: 1, isEquipped: false, section: "carried" as const,
+    id: "jug_1", name: "Jug", source: "TCE", quantity: 1, isEquipped: false,
     infusedWith: "replicate magic item: PLACEHOLDER JUG", isInfused: true,
   };
   const saved: Character = {

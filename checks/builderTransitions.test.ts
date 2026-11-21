@@ -327,7 +327,6 @@ test("applyStartingGrants grants gold or equipment and is idempotent", () => {
     source: "PHB",
     quantity: 1,
     isEquipped: true,
-    section: "equipped",
   };
 
   const withGear = applyStartingGrants(char, "equipment", { equipmentItems: [gearItem], catalogs: { activeBooks: ALL_BOOKS } });
@@ -346,7 +345,7 @@ test("applyStartingGrants reconciles cleanly when switching between gold and equ
     classes: [{ className: "Fighter", source: "PHB", level: 1 }],
     pouch: { cp: 0, sp: 0, ep: 0, gp: 10, pp: 0 },
     items: [
-      { id: "custom_torch", name: "Torch", source: "PHB", quantity: 2, isEquipped: false, section: "carried" },
+      { id: "custom_torch", name: "Torch", source: "PHB", quantity: 2, isEquipped: false },
     ],
   });
 
@@ -356,7 +355,6 @@ test("applyStartingGrants reconciles cleanly when switching between gold and equ
     source: "PHB",
     quantity: 1,
     isEquipped: true,
-    section: "equipped",
   };
 
   // 1. Claim equipment
@@ -439,8 +437,8 @@ test("applyBackgroundGrants grants coins and equipment items, and writes no skil
 });
 
 test("reclaimStartingGrants adds equipment on top of an earlier claim and keeps unique item ids", () => {
-  const longsword: InventoryItem = { id: "start_fighter_0", name: "Longsword", source: "PHB", quantity: 1, isEquipped: true, section: "equipped" };
-  const shield: InventoryItem = { id: "start_fighter_1", name: "Shield", source: "PHB", quantity: 1, isEquipped: true, section: "equipped" };
+  const longsword: InventoryItem = { id: "start_fighter_0", name: "Longsword", source: "PHB", quantity: 1, isEquipped: true };
+  const shield: InventoryItem = { id: "start_fighter_1", name: "Shield", source: "PHB", quantity: 1, isEquipped: true };
   const claimed = makeChar({
     classes: [{ className: "Fighter", source: "PHB", level: 1 }],
     startingOption: "equipment",
@@ -481,7 +479,7 @@ test("reclaimStartingGrants from gold to equipment is a plain add that keeps the
     "gold",
     { goldAmount: 125, catalogs: { activeBooks: ALL_BOOKS } },
   );
-  const gear: InventoryItem = { id: "start_fighter_0", name: "Longsword", source: "PHB", quantity: 1, isEquipped: true, section: "equipped" };
+  const gear: InventoryItem = { id: "start_fighter_0", name: "Longsword", source: "PHB", quantity: 1, isEquipped: true };
 
   const reclaimed = reclaimStartingGrants(goldClaim, "equipment", { equipmentItems: [gear], catalogs: { activeBooks: ALL_BOOKS } });
   assert.equal(reclaimed.pouch.gp, 125);
@@ -518,7 +516,7 @@ test("equipment, then gold, then equipment leaves the pouch as it was and swaps 
     pouch: { cp: 0, sp: 0, ep: 0, gp: 10, pp: 0 },
     items: [],
   });
-  const longsword: InventoryItem = { id: "start_fighter_0", name: "Longsword", source: "PHB", quantity: 1, isEquipped: true, section: "equipped" };
+  const longsword: InventoryItem = { id: "start_fighter_0", name: "Longsword", source: "PHB", quantity: 1, isEquipped: true };
 
   const equipmentFirst = applyStartingGrants(initial, "equipment", { equipmentItems: [longsword], catalogs: { activeBooks: ALL_BOOKS } });
   const goldSecond = applyStartingGrants(equipmentFirst, "gold", { goldAmount: 125, catalogs: { activeBooks: ALL_BOOKS } });

@@ -22,20 +22,18 @@ export const DRUID_ID = "char_druid";
 export const WIZARD_ID = "char_wizard";
 const WIZARD_SPELLS = ["Fire Bolt", "Light", "Mage Hand", "Magic Missile", "Shield", "Mage Armor", "Detect Magic", "Misty Step"];
 const WIZARD_PREPARED = ["Magic Missile", "Shield", "Mage Armor", "Detect Magic", "Misty Step"];
-// `equipped` items are worn or held. The custom item has a long name, so it exercises wrapping. The Shield is
-// an older save's record: its section says "equipped" but the isEquipped flag is missing, so its row in the
-// Equipped list must still show the equipped state. The cloak and the ring carry attunement, one attuned and
-// one not, so both attune button states show.
+// `equipped` items are worn or held; the rest are carried. The custom item has a long name, so it exercises wrapping.
+// The cloak and the ring carry attunement, one attuned and one not, so both attune button states show.
 const WIZARD_ITEMS = [
-  { name: "Quarterstaff", section: "equipped" },
-  { name: "Cloak of Protection", section: "equipped", attunement: true, isAttuned: true },
-  { name: "Shield", section: "equipped", isEquipped: false },
-  { name: "Ring of Protection", section: "carried", attunement: true },
-  { name: "Spellbook", section: "carried" },
-  { name: "Component Pouch", section: "carried" },
-  { name: "Dagger", section: "carried" },
-  { name: "Arrows (20)", section: "carried", quantity: 20 },
-  { name: "Potion of Healing", section: "carried", quantity: 2 },
+  { name: "Quarterstaff", equipped: true },
+  { name: "Cloak of Protection", equipped: true, attunement: true, isAttuned: true },
+  { name: "Shield", equipped: true },
+  { name: "Ring of Protection", attunement: true },
+  { name: "Spellbook" },
+  { name: "Component Pouch" },
+  { name: "Dagger" },
+  { name: "Arrows (20)", quantity: 20 },
+  { name: "Potion of Healing", quantity: 2 },
 ];
 
 function wizardCharacter() {
@@ -47,8 +45,7 @@ function wizardCharacter() {
     name: item.name,
     source: catalogSource("items", item.name),
     quantity: item.quantity ?? 1,
-    isEquipped: item.isEquipped ?? item.section === "equipped",
-    section: item.section,
+    isEquipped: item.equipped === true,
     ...(item.attunement !== undefined ? { attunement: item.attunement, isAttuned: item.isAttuned ?? false } : {}),
   }));
   items.push({
@@ -57,7 +54,6 @@ function wizardCharacter() {
     source: "Custom",
     quantity: 1,
     isEquipped: false,
-    section: "carried",
     isCustom: true,
   });
   return makeChar({
@@ -1168,7 +1164,6 @@ function actionsCharacter() {
         source: catalogSource("items", "Longsword"),
         quantity: 1,
         isEquipped: true,
-        section: "equipped",
         damage: "1d8",
         damageType: "slashing",
       },
@@ -1178,7 +1173,6 @@ function actionsCharacter() {
         source: catalogSource("items", "Arrows (20)"),
         quantity: 20,
         isEquipped: false,
-        section: "carried",
       },
     ],
     resourceCounters: {
@@ -1505,6 +1499,7 @@ export function buildScreens({ integrated }) {
   // (scripts/lib/scenario-override.mjs, applyWideOverride) when the page width is at or above `minWidth`, so one
   // scenario can assert a different path at wide widths (the Android runner never applies it).
   const RENDAR_ROUTE = `/character/${CHARACTER_ID}`;
+  const DRUID_ROUTE = `/character/${DRUID_ID}`;
   const WIZARD_ROUTE = `/character/${WIZARD_ID}`;
   const ARTIFICER_ROUTE = `/character/${ARTIFICER_ID}`;
   const LONG_NAME_ROUTE = `/character/${LONG_NAME_ID}`;
@@ -1718,6 +1713,8 @@ export function buildScreens({ integrated }) {
       { name: "Builder Background picks card collapsed", route: buildRoute(CHARACTER_ID, "background"), ready: "Languages", open: [{ tap: { text: "Languages", exact: true } }], scrollTo: "Languages", expect: { texts: ["Languages"], absent: ["Dwarvish"], fitsWidth: true } },
       { shot: true, name: "Stats", route: RENDAR_ROUTE, tabs: ["Stats"], ready: /hit points/i },
       { name: "Stats long header name", route: LONG_NAME_ROUTE, tabs: ["Stats"], ready: /hit points/i, headerName: LONG_NAME },
+      // While the form is active the Hit Points card shows normal HP (14 in the seed) read-only, and the Wild Shape card has the temp HP field.
+      { shot: true, name: "Stats Wild Shape HP", route: DRUID_ROUTE, tabs: ["Stats"], ready: /wild shape hp/i, expect: { texts: ["HIT POINTS", "WILD SHAPE HP", "14", "Temp HP:", "Apply"], placeholders: ["New Temp"], absent: ["Wild Shape Temp HP:"], fitsWidth: true } },
       { name: "Stats add tool modal", route: RENDAR_ROUTE, tabs: ["Stats"], open: [{ tap: { label: "Add tool proficiency" } }], modal: "Add Tool Proficiency" },
       { name: "Stats add language modal", route: RENDAR_ROUTE, tabs: ["Stats"], open: [{ tap: { label: "Add language" } }], modal: "Add Language" },
       // The Initiative box opens its breakdown (integrated mode only, where the Rogue's and the Wizard's Initiative Bonuses exist).
@@ -1873,7 +1870,7 @@ export function buildScreens({ integrated }) {
             },
           ]
         : []),
-      // The legacy Shield row (section "equipped", isEquipped missing) shows the equipped circle in the Equipped list.
+      // The Shield row shows the equipped circle in the Equipped list.
       { shot: true, name: "Inventory", route: WIZARD_ROUTE, tabs: ["Inventory"], ready: /total wealth/i, expect: { labels: ["Equipped: Shield"], absentLabels: ["Equip Shield"] } },
       { name: "Inventory item picker modal", route: WIZARD_ROUTE, tabs: ["Inventory"], open: [{ tap: { text: "Add from Compendium", exact: true } }], modal: "Add Item from Compendium" },
       { shot: true, name: "Features", route: RENDAR_ROUTE, tabs: ["Features"], ready: /resource trackers/i },

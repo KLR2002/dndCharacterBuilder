@@ -131,7 +131,6 @@ function proficientWith(item: ItemData, sheet: ProficiencySheet): boolean {
       source: item.source,
       quantity: 1,
       isEquipped: false,
-      section: "carried",
       description: category,
     };
     return isProficientWithWeapon(asItem, sheet.weapons.map((w) => w.name));
@@ -417,7 +416,6 @@ export function resolveStartingEquipment(character: Character, catalogs: Charact
       source: grant.source,
       quantity: grant.quantity,
       isEquipped,
-      section: isEquipped ? "equipped" : "carried",
       weight: record?.weight ?? null,
       cost: record?.cost ?? null,
       damage: record?.damage ?? null,
