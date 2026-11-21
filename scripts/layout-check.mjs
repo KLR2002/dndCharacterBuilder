@@ -173,6 +173,26 @@ function settleProbe({ probeSel, maxMs }) {
 // a stable layout, defaulting to the body. A failed read is logged once per run: the check goes on with
 // an unsettled page rather than stopping, but the cause stays visible.
 let settleErrorLogged = false;
+// Waits until the saved settings hold the dice animation `mode`. The Options screen shows a choice at once but saves it
+// through an async write queue; a reload, or closing the page, before that write lands starts the next page from the old
+// setting. Resolves false when the setting is not saved within the timeout.
+function waitForSavedDiceAnimation(page, mode) {
+  return page
+    .waitForFunction(
+      (m) => {
+        try {
+          return JSON.parse(localStorage.getItem("@dnd5e_app_settings") ?? "null")?.diceAnimation === m;
+        } catch {
+          return false;
+        }
+      },
+      mode,
+      { timeout: 10000, polling: 50 },
+    )
+    .then(() => true)
+    .catch(() => false);
+}
+
 async function settle(page, probe, maxMs = 4000) {
   await page.evaluate(settleProbe, { probeSel: probe ?? "body", maxMs }).catch((error) => {
     if (settleErrorLogged) return;
@@ -1994,6 +2014,7 @@ async function checkDiceAnimation(ctx, width, meta) {
     if ((await segmentBorder(page, "off")) === accentBorderRgb) fail("Off is selected by default");
     await page.locator(offSel).first().click();
     await settle(page);
+    if (!(await waitForSavedDiceAnimation(page, "off"))) fail("choosing Off was not saved");
     if ((await segmentBorder(page, "off")) !== accentBorderRgb) fail(`tapping Off did not select it (border ${await segmentBorder(page, "off")}, expected ${accentBorderRgb})`);
     if ((await segmentBorder(page, "tumble")) === accentBorderRgb) fail("Tumble stayed selected after tapping Off");
     await maybeShot(page, shot("options-off"), meta);
@@ -2020,6 +2041,7 @@ async function checkDiceAnimation(ctx, width, meta) {
   await page.locator(tumbleSel).first().click();
   await settle(page);
   if ((await segmentBorder(page, "tumble")) !== accentBorderRgb) fail(`tapping Tumble did not select it (border ${await segmentBorder(page, "tumble")}, expected ${accentBorderRgb})`);
+  if (!(await waitForSavedDiceAnimation(page, "tumble"))) fail("choosing Tumble was not saved");
   await gotoApp(page, `${BASE}/character/${CHARACTER_ID}`);
   await rollTrayPool(page);
   if (!(await page.waitForSelector(diceSel, { state: "visible", timeout: 10000 }).catch(() => null))) fail("with Tumble chosen again, no animated die mounted in a new Roll");
@@ -3693,6 +3715,7 @@ async function checkDiceThrow(ctx, width, meta) {
     }
     await page.locator(throwSel).first().click();
     await settle(page);
+    if (!(await waitForSavedDiceAnimation(page, "throw"))) fail("choosing Throw was not saved");
     const borders = await page.evaluate(() => ({
       throw: getComputedStyle(document.querySelector('[data-testid="dice-animation-throw"]')).borderColor,
       off: getComputedStyle(document.querySelector('[data-testid="dice-animation-off"]')).borderColor,
@@ -3731,7 +3754,22 @@ async function checkDiceThrow(ctx, width, meta) {
       return count;
     };
     await rollThrow("d6,d8");
-    if (!(await waitForDiceCount(2, 10000))) fail(`expected two thrown dice, saw ${JSON.stringify(await throwDiceLabels())}`);
+    if (!(await waitForDiceCount(2, 10000))) {
+      // What the page shows instead, so a failure says whether the Roll ran at all.
+      const seen = await page.evaluate(() => ({
+        trayOpen: !!document.querySelector('[role="dialog"]'),
+        resultCard: !!document.querySelector('[data-testid="result-card"]'),
+        throwLayer: !!document.querySelector('[data-testid="throw-layer"]'),
+        savedAnimation: (() => {
+          try {
+            return JSON.parse(localStorage.getItem("@dnd5e_app_settings") ?? "null")?.diceAnimation ?? null;
+          } catch {
+            return "unreadable";
+          }
+        })(),
+      }));
+      fail(`expected two thrown dice, saw ${JSON.stringify(await throwDiceLabels())} (${JSON.stringify(seen)})`);
+    }
     else {
       const flight = await page.evaluate(() => {
         const dice = [...document.querySelectorAll('[data-testid^="throw-die-"]')];
@@ -3892,6 +3930,7 @@ async function checkDiceFreshPage(ctx, width, meta, animation) {
       }
       await setup.locator(throwSel).first().click();
       await settle(setup);
+      if (!(await waitForSavedDiceAnimation(setup, "throw"))) fail("choosing Throw was not saved");
       await closePage(setup);
     }
 
@@ -3959,6 +3998,7 @@ async function checkDiceOffCanvas(ctx, width, meta) {
     }
     await setup.locator(offSel).first().click();
     await settle(setup);
+    if (!(await waitForSavedDiceAnimation(setup, "off"))) fail("choosing Off was not saved");
     await closePage(setup);
 
     const page = await tctx.newPage();
