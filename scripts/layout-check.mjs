@@ -3718,7 +3718,10 @@ async function checkDiceThrow(ctx, width, meta) {
       return count;
     };
     await rollThrow("d6,d8");
-    if (!(await waitForDiceCount(2, 10000))) {
+    // The first Throw mounts ThrowLayer, a lazy chunk (about 540 modules) that a fresh dev server bundles on first
+    // request. In CI that request comes while the server still bundles the app for four widths, and it can take
+    // longer than ten seconds; the wait ends as soon as the two dice fly.
+    if (!(await waitForDiceCount(2, 60000))) {
       // What the page shows instead, so a failure says whether the Roll ran at all.
       const seen = await page.evaluate(() => ({
         trayOpen: !!document.querySelector('[role="dialog"]'),
