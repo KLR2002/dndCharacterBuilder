@@ -262,6 +262,10 @@ _Avoid_: Spell manager, casting controller, slot tracker
 The class spellcasting feature, or granting feature such as Pact of the Tome or Path of the Giant, that a known or prepared spell belongs to. The same spell can be known or prepared separately per Spell Owner on a multiclass character.
 _Avoid_: spell class, owner tag
 
+**Spell Page**:
+What the Spells tab shows for one Spell Owner, together with the character's spell resources and granted spells; one rules function answers it.
+_Avoid_: spell tab state, spell view model
+
 **Tactical Action Ledger**:
 The evaluated collection of standard actions, class bonus actions, reactions, and attack riders available to a character in combat.
 _Avoid_: Action list, combat menu, ability roster
