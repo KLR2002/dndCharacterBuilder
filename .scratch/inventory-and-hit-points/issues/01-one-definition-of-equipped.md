@@ -20,7 +20,7 @@
 
 **Status:** done
 
-**Landed:** merge 4d7c9af (a11fc70).
+**Landed:** merge 12c3c33 (a99d91f).
 - **On load:** `migrateCharacter` marks an item equipped when either field said so, then drops `section`.
 - **Writers:** `section` is removed from `InventoryItem` and from every writer: starting equipment, the unarmed strike, background equipment, infusions, the Inventory tab, seeds and about 22 test fixtures.
 - **Readers:** armor needs only `isEquipped`.

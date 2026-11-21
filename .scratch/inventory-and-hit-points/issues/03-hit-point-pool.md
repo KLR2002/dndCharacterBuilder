@@ -16,7 +16,7 @@
 
 **Status:** done
 
-**Landed:** merge 8157c56 (92073d1, d7ea10e, ad29864, 33bd6ca).
+**Landed:** merge 1b9ef7a (6eb1989, ba20169, 4e46d49, ea1e7bc).
 - **The router:** `hitPointPatch` lives in the new `src/rules/hitPointPool.ts`, because `wildShapeHp.ts` already imports `hitPoints.ts`. With no target, the pool is the form while one is active. The Stats tab handlers and `useHpQuickEdit` call it; the header keeps its explicit target.
 - **Decided with the user after the first screenshot**, which showed the form's HP in two cards and hid normal HP: while a form is active, the Active Wild Shape card is the one place to act (Damage, Heal, and a new Temp HP field). The Hit Points card shows normal HP read-only (no buttons, no temp field, the number inert), with HP Settings kept. With no form, the card is unchanged.
 - **New scenario:** `Stats Wild Shape HP` checks that both cards show their own pool. `checks/androidRunner.test.ts` counts `ONLY=Stats` scenarios and went from 5 to 6.

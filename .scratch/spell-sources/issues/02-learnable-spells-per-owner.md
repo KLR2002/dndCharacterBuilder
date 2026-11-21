@@ -8,7 +8,7 @@
 
 **Status:** done
 
-**Landed:** merge of 1bd1dc0. `src/rules/learnableSpells.ts`: `learnableSpells(character, profile, opts)` → `{ spells, restrictedSchools }`; "known" is `isKnown` (by `ownerKey`, legacy entries by class name); Fighter/Rogue third casters read the Wizard list through `THIRD_CASTERS`; `getThirdCasterRestrictedSchools` (curated, `subclassSpells.ts`). `newSpellsForLevelUp` reads it, so a Wizard/Sorcerer learns Shield for the Sorcerer side (red test first). check:all and check:live passed.
+**Landed:** merge of e6597db. `src/rules/learnableSpells.ts`: `learnableSpells(character, profile, opts)` → `{ spells, restrictedSchools }`; "known" is `isKnown` (by `ownerKey`, legacy entries by class name); Fighter/Rogue third casters read the Wizard list through `THIRD_CASTERS`; `getThirdCasterRestrictedSchools` (curated, `subclassSpells.ts`). `newSpellsForLevelUp` reads it, so a Wizard/Sorcerer learns Shield for the Sorcerer side (red test first). check:all and check:live passed.
 
 - [x] Red first: a Wizard 3 / Sorcerer 1 who knows Shield as a Wizard, levelling Sorcerer 1 → 2, is offered Shield; a Wizard levelling 3 → 4 who knows Shield is not.
 - [x] Tests: an Eldritch Knight's list reports Abjuration and Evocation as restricted and offers Wizard spells; a level-up for a Fighter 2 → 3 Eldritch Knight offers the same list `learnableSpells` gives for that profile.

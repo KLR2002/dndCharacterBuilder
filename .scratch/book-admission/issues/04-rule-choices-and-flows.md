@@ -20,7 +20,7 @@ Where a function has no Compendium, add a parameter defaulting to `currentCompen
 
 **Status:** done
 
-**Landed:** merge db8ef70 (3c16d7b); review fix 01bb794.
+**Landed:** merge 3ac40ff (f74ebba); review fix 1d7d688.
 - **Converted to `admits`:** `availableRuleChoices`, `availableSubclassRuleChoices` (id-prefix guard kept), `readPointerRow`, `describeClassFeature`, `subclassOptions`, `proficiencyChoiceOffers`, `checkActiveBooksIntegrity` and Origin Customization availability. Each takes an optional Compendium; `FeaturesTab` and `CharacterContext` pass `currentCompendium()`.
 - **Fixed:** with the SRD Baseline and books `["SRD"]`, the Hunter's Prey and Land Biome picks are now offered (red before), and the SRD Baseline raises no book warnings.
 - **Fixtures:** two pre-existing fixtures flagged integrated (`levelUpFlow`, `proficiencyChoices`). The `proficiencyChoices` case is now absent because its class is scoped out.

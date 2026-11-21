@@ -33,7 +33,7 @@
 
 **Status:** done
 
-**Landed:** merge a08b949 (9512a6b, 77b2745). `src/rules/spellPage.ts` (380 lines) returns owners, owner, header, prepared (with `overLimit`), list title/subtitle, `canAddSpells`, levels of rows; `SPELL_LEVEL_NAMES` shared with `SpellLearnList`. SpellsTab keys the open owner by `ownerKey`; banners, EK/AT detection, class-name badge tables and `groupedSpells` deleted. `spellPage` runs its own evaluation beside the tab's until ticket 02 moves the remaining reads. 7 tests in `checks/spellPage.test.ts`; `ONLY=Spells` green at 320 and 393; check:all passed.
+**Landed:** merge 3f8f0fe (eabd0b9, dab08ef). `src/rules/spellPage.ts` (380 lines) returns owners, owner, header, prepared (with `overLimit`), list title/subtitle, `canAddSpells`, levels of rows; `SPELL_LEVEL_NAMES` shared with `SpellLearnList`. SpellsTab keys the open owner by `ownerKey`; banners, EK/AT detection, class-name badge tables and `groupedSpells` deleted. `spellPage` runs its own evaluation beside the tab's until ticket 02 moves the remaining reads. 7 tests in `checks/spellPage.test.ts`; `ONLY=Spells` green at 320 and 393; check:all passed.
 
 - [x] `checks/spellPage.test.ts` (node:test, `makeChar()` from `checks/testUtils.ts`) covers:
   - A Cleric 3 / Wizard 3: two owners. The Cleric page shows a domain spell with a badge naming the subclass, locked, not forgettable. The Wizard page lists only Wizard spells. The prepared counter text is correct for both.

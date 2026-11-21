@@ -6,7 +6,7 @@
 - a `spellChoice` on Circle of the Land
 - `additionalSpells` on Way of the Open Hand
 
-Spell-counts ticket 01 avoided it by copying only the count fields (49c2645). Make the prune keep the baseline's form: drop `description` from classes, and drop feature `choices` and the subclass fields the baseline does not carry. Or have it copy an explicit list of fields. A run on today's data must then leave `src/data/classes.json` unchanged, apart from what the scraper truly adds.
+Spell-counts ticket 01 avoided it by copying only the count fields (111d16e). Make the prune keep the baseline's form: drop `description` from classes, and drop feature `choices` and the subclass fields the baseline does not carry. Or have it copy an explicit list of fields. A run on today's data must then leave `src/data/classes.json` unchanged, apart from what the scraper truly adds.
 
 **Blocked by:** None
 

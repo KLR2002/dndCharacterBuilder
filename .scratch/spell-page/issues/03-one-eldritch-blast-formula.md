@@ -12,7 +12,7 @@ Delete `hasAgonizingBlast`, `chaModifier` and every `"eldritch blast"` compariso
 
 **Status:** done
 
-**Landed:** merge 8ea6ab5 (6318424). Level rows, granted-card spells (`SpellPageGrantedCard`, a `blast` field per spell) and at-will cards carry the badge "Agonizing Blast" and the damage from `getEldritchBlastDamage`; `spellDetailText` serves the tab's detail openers, the Add Spells detail and the swap rows (the inscribe picker keeps its own Ritual/Classes text). The detail subtitle no longer repeats the damage. No node test covers the granted-card and at-will damage fields (no fixture grants Eldritch Blast that way). `ONLY=Spells` green at 320; check:all passed.
+**Landed:** merge 4000d15 (9027fd3). Level rows, granted-card spells (`SpellPageGrantedCard`, a `blast` field per spell) and at-will cards carry the badge "Agonizing Blast" and the damage from `getEldritchBlastDamage`; `spellDetailText` serves the tab's detail openers, the Add Spells detail and the swap rows (the inscribe picker keeps its own Ritual/Classes text). The detail subtitle no longer repeats the damage. No node test covers the granted-card and at-will damage fields (no fixture grants Eldritch Blast that way). `ONLY=Spells` green at 320; check:all passed.
 
 - [x] Tests:
   - A Warlock with Agonizing Blast and Charisma 8: the row subtitle ends with `"1d10 - 1 force"`, and `spellDetailText` has `"Damage: 1d10 - 1 force"`.
