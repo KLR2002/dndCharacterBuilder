@@ -34,6 +34,7 @@ import { dropLegacyBackgroundSkills } from "./legacyBackgroundSkills.ts";
 import { pruneStartingEquipmentPicks } from "./startingEquipmentPicks.ts";
 import { releaseSizeChoice } from "./sizeChoice.ts";
 import { reconcileOriginAbilities } from "./originCustomization.ts";
+import { releaseFeatIncreasesOutsidePool } from "./featIncrease.ts";
 
 /**
  * The single seam every state-changing builder transition ends in. Idempotent: reconciling a
@@ -76,6 +77,7 @@ export function reconcile(
   let updated = pruneStartingEquipmentPicks(character);
   updated = releaseSizeChoice(updated, compendium, options.activeBooks);
   updated = reconcileOriginAbilities(updated, compendium, options.activeBooks);
+  updated = releaseFeatIncreasesOutsidePool(updated, compendium, options.activeBooks);
 
   updated = moveLegacyFightingStyleIds(updated, classes);
   updated = pruneInvalidFightingStyles(updated, classes);

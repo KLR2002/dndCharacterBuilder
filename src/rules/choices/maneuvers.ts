@@ -4,7 +4,7 @@ import { currentCompendium, type Compendium } from "../../services/compendium.ts
 import { type AvailableRuleChoice, type ChoiceOwner, getSubclassName, setRuleChoicePick } from "./types.ts";
 import { hasFightingStyle } from "./fightingStyles.ts";
 
-/** The Martial Adept feat choice. Its id is frozen. Callers look it up by this exact id. */
+/** The Rule Choice the Martial Adept feat opens. Its id is frozen. Callers look it up by this exact id. */
 export const MARTIAL_ADEPT_CHOICE_ID = "PHB__Feat__Martial Adept__Maneuvers";
 
 const BATTLE_MASTER_MANEUVERS = /^PHB__Fighter__Battle Master__Maneuvers \d+$/;

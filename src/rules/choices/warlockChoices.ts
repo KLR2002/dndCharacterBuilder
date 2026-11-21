@@ -872,7 +872,7 @@ export function pruneInvalidInvocations(
     if (isInvocationChoiceId(rc.id)) {
       const validChoice = validChoiceMap.get(rc.id);
       if (!validChoice) {
-        // Milestone or feat choice is no longer valid
+        // The milestone or feat Rule Choice is no longer valid
         for (const p of rc.picked || []) {
           removedChoices.push(p);
         }

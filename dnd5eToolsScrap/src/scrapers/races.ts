@@ -1,4 +1,4 @@
-import type { ToolsClient , AbilityScoreChoice, AdditionalSpells, RaceModel, SubraceModel, TraitModel } from "../types/models.ts";
+import type { ToolsClient , AdditionalSpells, RaceModel, SubraceModel, TraitModel } from "../types/models.ts";
 import { resolveAllCopies } from "../parser/copy-resolver.ts";
 import { renderEntries } from "../parser/entry-renderer.ts";
 import { cleanTags } from "../parser/tag-cleaner.ts";
@@ -14,6 +14,7 @@ import {
 import { PROFICIENCY_GRANT_GATES, PROFICIENCY_GRANT_OVERRIDES, type ProficiencyGrantGate } from "../overrides/proficiency-grants.ts";
 import { INITIATIVE_BONUS_OVERRIDES } from "../overrides/initiative-bonuses.ts";
 import { resolveInitiativeBonuses } from "../parser/initiative-bonuses.ts";
+import { scrapeAbilityChoices } from "../parser/ability-choices.ts";
 
 /** Whether a 5e.tools structured proficiency field names at least one entry. */
 function hasEntries(field: unknown): boolean {
@@ -415,36 +416,6 @@ function parseAbilityScores(ability: any): Record<string, number>[] {
   }
 
   return result;
-}
-
-/** The choose keys the scraper states. Any other key makes the block unparsed (ADR 0019). */
-const KNOWN_CHOOSE_KEYS = new Set(["from", "count", "amount"]);
-
-/**
- * The Increase Choices of an ability entry, as `abilityScoreChoices` (count and amount default to 1). A choose block with a
- * key the scraper does not state, or with no `from` list, is reported as unparsed and writes no choice. Returns an object
- * spreading the field, which is absent when the record states no choice.
- */
-function scrapeAbilityChoices(
-  ability: any,
-  subject: { owner: string; feature: string; level: number },
-  report: ProficiencyReport
-): { abilityScoreChoices?: AbilityScoreChoice[] } {
-  const list = Array.isArray(ability) ? ability : [ability];
-  const choices: AbilityScoreChoice[] = [];
-  const unparsed: string[] = [];
-  for (const item of list) {
-    if (!item || typeof item !== "object" || item.choose === undefined) continue;
-    const choose = item.choose;
-    const unknownKeys = typeof choose === "object" && choose !== null ? Object.keys(choose).filter((key) => !KNOWN_CHOOSE_KEYS.has(key)) : ["*"];
-    if (unknownKeys.length > 0 || !Array.isArray(choose.from)) {
-      unparsed.push(`choose: ${JSON.stringify(choose)}`);
-      continue;
-    }
-    choices.push({ from: choose.from, count: choose.count ?? 1, amount: choose.amount ?? 1 });
-  }
-  if (unparsed.length > 0) report.unparsed.push({ ...subject, unparsed });
-  return choices.length > 0 ? { abilityScoreChoices: choices } : {};
 }
 
 function parseDarkvision(raw: any): number | null {

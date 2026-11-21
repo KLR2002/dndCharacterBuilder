@@ -13,7 +13,7 @@ import {
   setRuleChoicePick,
 } from "./types.ts";
 
-/** The Fighting Initiate feat choice. Its id is frozen. Callers look it up by this exact id. */
+/** The Rule Choice the Fighting Initiate feat opens. Its id is frozen. Callers look it up by this exact id. */
 export const FIGHTING_INITIATE_CHOICE_ID = "TCE__Feat__Fighting Initiate__Style";
 
 const STYLE_TITLE = "Fighting Style";
