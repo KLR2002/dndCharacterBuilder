@@ -35,8 +35,10 @@ import type {
  * Format 16 adds the feats' Increase Choices (`abilityScoreChoices`), which a catalog saved at format 15 does not carry.
  * Format 17 adds the class and Eldritch Knight or Arcane Trickster spell counts (`cantripsKnown`, `spellsKnown` and
  * `spellbookSpellsGained`), which a catalog saved at format 16 does not carry.
+ * Format 18 gives a class whose starting skills are any N skills a choice of N (`{ any: N }` was read as two), which a catalog
+ * saved at format 17 still carries.
  */
-export const REQUIRED_CATALOG_FORMAT = 17;
+export const REQUIRED_CATALOG_FORMAT = 18;
 
 /** True for an Integrated Catalog saved below the required format (or with none). The SRD Baseline is never stale. */
 export function isCatalogStale(collections: Pick<CompendiumCollections, "hasIntegratedCatalog" | "catalogFormat">): boolean {
