@@ -3699,11 +3699,24 @@ async function checkDiceThrow(ctx, width, meta) {
         .waitForFunction((n) => document.querySelectorAll('[data-testid^="throw-die-"]').length === n, count, { timeout, polling: 50 })
         .then(() => true)
         .catch(() => false);
+    // Page errors and console errors, and what the page shows just after a Roll tap, for the failure message.
+    const pageErrors = [];
+    page.on("pageerror", (error) => pageErrors.push(error.message.split("\n")[0].slice(0, 200)));
+    page.on("console", (message) => {
+      if (message.type() === "error") pageErrors.push(message.text().split("\n")[0].slice(0, 200));
+    });
+    let shownAfterTap = null;
     const rollThrow = async (expression) => {
       await page.getByLabel("Dice tray").first().click();
       await page.waitForSelector(dialogSel, { state: "visible", timeout: 10000 }).catch(() => fail("the tray did not open"));
       await page.getByLabel("Roll Expression", { exact: true }).fill(expression);
       await page.getByText(`Roll ${expression}`, { exact: true }).first().click();
+      shownAfterTap = await page.evaluate(() => ({
+        trayOpen: !!document.querySelector('[role="dialog"]'),
+        throwLayer: !!document.querySelector('[data-testid="throw-layer"]'),
+        dice: document.querySelectorAll('[data-testid^="throw-die-"]').length,
+        resultCard: !!document.querySelector('[data-testid="result-card"]'),
+      }));
     };
 
     await gotoApp(page, `${BASE}/options`);
@@ -3754,7 +3767,10 @@ async function checkDiceThrow(ctx, width, meta) {
       return count;
     };
     await rollThrow("d6,d8");
-    if (!(await waitForDiceCount(2, 10000))) {
+    // The first Throw mounts ThrowLayer, a lazy chunk (about 540 modules) that a fresh dev server bundles on first
+    // request. In CI that request comes while the server still bundles the app for four widths, and it can take
+    // longer than ten seconds; the wait ends as soon as the two dice fly.
+    if (!(await waitForDiceCount(2, 60000))) {
       // What the page shows instead, so a failure says whether the Roll ran at all.
       const seen = await page.evaluate(() => ({
         trayOpen: !!document.querySelector('[role="dialog"]'),
@@ -3768,7 +3784,9 @@ async function checkDiceThrow(ctx, width, meta) {
           }
         })(),
       }));
-      fail(`expected two thrown dice, saw ${JSON.stringify(await throwDiceLabels())} (${JSON.stringify(seen)})`);
+      fail(
+        `expected two thrown dice, saw ${JSON.stringify(await throwDiceLabels())} (${JSON.stringify(seen)}; just after the tap ${JSON.stringify(shownAfterTap)}; errors ${JSON.stringify(pageErrors.slice(-5))})`,
+      );
     }
     else {
       const flight = await page.evaluate(() => {
