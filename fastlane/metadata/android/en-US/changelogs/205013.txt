@@ -1,0 +1,5 @@
+- Feats from your race or background now show on the Features tab
+- Bards start with three skills
+- Spell picks follow how many spells each class learns
+- Easier-to-read attack rows
+- Smaller app download
