@@ -4,7 +4,7 @@
 
 - **The problem.** `src/app/build/[id].tsx` ticks a step when `status === "finished"`. A finished Character reports every step finished, so Edit Build ticks Class Choices with picks open, and a draft keeps its tick when the player goes back and clears a pick.
 - **The fix.** `CreationStep` in `src/rules/creationFlow.ts` gains `done`: the status is finished and, for Subclass, Class Choices and ASI/Feats, the step is valid. The build screen reads `done: step.done`.
-- **Why only those three.** Their validity means exactly "a pick is open". The other steps' validity is a creation gate that a finished Character can fail with nothing to pick: Equipment after its claim on an older save, Spells with a scribed spellbook, Review through either. Those keep their tick.
+- **Why only those three.** Their validity asks only for picks (ASI/Feats for its slots, not for a feat's own picks). The other steps' validity is a creation gate that a finished Character can fail with nothing to pick: Equipment after its claim on an older save, Spells with a scribed spellbook, Review through either. Those keep their tick.
 - Status, validity, the needs-attention marks and the buttons stay as they are.
 
 **Blocked by:** None
