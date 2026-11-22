@@ -3,6 +3,7 @@ import { skills } from "./skills.ts";
 import type { CharacterCatalogs } from "./catalogs.ts";
 import { proficiencySheet, type ProficiencySheet } from "./proficiencySheet.ts";
 import { withNotices } from "./needsReview.ts";
+import { hasFeat } from "./abilities.ts";
 
 export interface ExpertiseMilestone {
   id: string;
@@ -123,10 +124,7 @@ function milestonesFromSheet(character: Character, sheet: ProficiencySheet): Exp
   }
 
   // Feats
-  const hasSkillExpert = (character.asiSelections || []).some(
-    (asi) => asi.type === "feat" && asi.featName?.toLowerCase() === "skill expert"
-  );
-  if (hasSkillExpert) {
+  if (hasFeat(character, "Skill Expert")) {
     milestones.push({
       id: "feat_skill_expert",
       label: "Feat: Skill Expert",
@@ -135,10 +133,7 @@ function milestonesFromSheet(character: Character, sheet: ProficiencySheet): Exp
     });
   }
 
-  const hasProdigy = (character.asiSelections || []).some(
-    (asi) => asi.type === "feat" && asi.featName?.toLowerCase() === "prodigy"
-  );
-  if (hasProdigy) {
+  if (hasFeat(character, "Prodigy")) {
     milestones.push({
       id: "feat_prodigy",
       label: "Feat: Prodigy",
