@@ -51,3 +51,6 @@ modules/**/.cxx/
 
 # fdroiddata fork (F-Droid submission), its own git repo
 /data-cb/
+
+# subagent worktrees (here as well as in .git/info/exclude: EAS CLI copies whatever .gitignore does not list)
+/.claude/worktrees/
