@@ -191,7 +191,7 @@ export const ClassChoiceCards: React.FC<ClassChoiceCardsProps> = ({
                 ⚠️ Invalid Expertise Warning
               </Text>
               <Text style={{ color: theme.textSecondary, fontSize: 11 }}>
-                The following choices are no longer proficient:{" "}
+                Expertise isn&apos;t available for:{" "}
                 {invalidPicks.join(", ")}.
               </Text>
               <TouchableOpacity
