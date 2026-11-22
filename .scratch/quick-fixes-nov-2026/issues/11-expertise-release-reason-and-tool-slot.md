@@ -15,13 +15,19 @@
 
 **Blocked by:** None
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Tests in `checks/expertise.test.ts`, red first:
+**Landed:** merge ad5dc1bf (70c8dd79, f621cf83).
+- **Reasons and placement:** as above. An exhaustive check of 9906 milestone and pick arrangements found every one that placed all picks before unchanged, and every one now placed as fully as its slots allow.
+- **Seen on web with the integrated catalog at 320 and 1280:** the Rogue 6 level up saves Thieves' Tools, and lowering the Rogue away gives the two new reasons. The card's warning text was not seen on screen.
+- check:all, check:live and the full layout check (SRD and integrated) passed. Android not checked.
+- **Found, not fixed:** a feat picked in the Level-Up Flow never adds its Expertise milestone to the plan (Skill Expert saves with the pick open); it is picked in Edit Build.
+
+- [x] Tests in `checks/expertise.test.ts`, red first:
   - Removing the Skill Expert origin feat with the skill still proficient gives exactly "no Expertise slot left" (tighten the existing test).
   - Lowering a Rogue from 6 to 5 with no skill lost gives "no Expertise slot left".
   - Thieves' Tools held with only a Bard milestone gives "no Expertise slot takes".
   - The Rogue 5 level up above, through `planLevelUp`, `setPlanExpertisePick` and `applyLevelUpPlan`, saves all five picks in both pick orders.
   - Bard 3 with two picks, then Rogue 1 with a skill and Thieves' Tools: all four are placed and Class Choices' Expertise is filled.
-- [ ] The existing notices for a skill that is really lost keep their text.
-- [ ] `npm run check:all` and `npm run check:live` pass.
+- [x] The existing notices for a skill that is really lost keep their text.
+- [x] `npm run check:all` and `npm run check:live` pass.

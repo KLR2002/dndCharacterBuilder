@@ -9,12 +9,18 @@
 
 **Blocked by:** None
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Tests in `checks/creationFlow.test.ts`, red first:
+**Landed:** merge 2db0a0c4 (7668296d), and 2f7312eb for the comment.
+- **No false untick found:** 1187 class, subclass and level builds and 26 optional features on the live catalog all reach a ticked Class Choices, and so do the four old skill-pick save shapes tried through the load path.
+- **Seen on web with the integrated catalog at 320 and 1280:** Class Choices has no tick with the Expertise pick open and gains it on the pick.
+- check:all, check:live and the full layout check (SRD and integrated) passed. Android not checked.
+- **Found, not fixed:** Race and Background keep their tick with their own picks open (a background's languages, a race's skill), and ASI/Feats with a chosen feat's own picks open (Skill Expert's skill). No rule says whether those picks are complete; `isCreationStepValid` asks only that the record is picked.
+
+- [x] Tests in `checks/creationFlow.test.ts`, red first:
   - A finished Character: Class Choices, Subclass and ASI/Feats are each not done with a pick open and done once picked.
   - A finished Character whose Equipment step is invalid still has it done.
   - A draft: a finished Class Choices step with a cleared pick is not done; current and locked steps are never done.
   - A finished Character with an Expertise pick open (a Skill Expert origin feat) has Class Choices not done.
-- [ ] `npm run check:all` passes.
-- [ ] Seen in the running app at 320 and 1280 (main session).
+- [x] `npm run check:all` passes.
+- [x] Seen in the running app at 320 and 1280 (main session).
