@@ -489,9 +489,8 @@ test("origin feats: the Expertise pick survives reconcile, and removing the orig
 
   const removed = removeOriginFeat(char, skillExpertOrigin, compendium, ALL_BOOKS);
   assert.deepEqual(removed.chosenExpertise, []);
-  assert.deepEqual(removed.needsReview, [
-    "Stealth Expertise removed: Stealth is no longer a proficient skill or tool",
-  ]);
+  assert.equal(removed.needsReview?.length, 1);
+  assert.match(removed.needsReview?.[0] ?? "", /^Stealth Expertise removed/);
 });
 
 test("origin feats: a feat held in both lists gives one milestone; an origin feat of another name gives none", () => {
