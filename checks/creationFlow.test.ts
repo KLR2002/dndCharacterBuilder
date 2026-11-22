@@ -350,3 +350,69 @@ describe("Characters from the old builder count as finished", () => {
     assert.throws(() => roundTrip({ ...draft, creationProgress: { currentStep: 4 } }), /creationProgress/);
   });
 });
+
+describe("A step is done when finished, and a pick step also has no open pick", () => {
+  const flowOpts = { activeBooks: ALL_BOOKS };
+  const doneOf = (character: Character, id: string) =>
+    creationSteps(character, flowOpts).find((step) => step.id === id)?.done;
+
+  test("a finished Character's pick steps are done only once their pick is made", () => {
+    const wizard1 = makeChar({ classes: [cl("Wizard", 1)] });
+    const skillOffer = startingSkillPickOf(wizard1, flowOpts)!;
+    const wizardPicked = makeChar({
+      classes: [cl("Wizard", 1)],
+      proficiencyPicks: { [skillOffer.id]: skillOffer.from.slice(0, skillOffer.choose) },
+    });
+    const cases: [string, Character, Character][] = [
+      ["classChoices", wizard1, wizardPicked],
+      ["subclass", makeChar({ classes: [cl("Cleric", 1)] }), makeChar({ classes: [cl("Cleric", 1, "Life Domain")] })],
+      [
+        "asiFeats",
+        makeChar({ classes: [cl("Fighter", 4)] }),
+        makeChar({
+          classes: [cl("Fighter", 4)],
+          asiSelections: [{ level: 4, type: "asi", asi: { str: 2 } }],
+        }),
+      ],
+    ];
+    for (const [id, open, picked] of cases) {
+      assert.equal(doneOf(open, id), false, `${id} with a pick open is not done`);
+      assert.equal(doneOf(picked, id), true, `${id} with its pick made is done`);
+    }
+  });
+
+  test("a finished Character whose Equipment step is invalid still has it done", () => {
+    const wizard1 = makeChar({ classes: [cl("Wizard", 1)] });
+    assert.equal(isCreationStepValid(wizard1, "equipment", flowOpts), false);
+    assert.equal(doneOf(wizard1, "equipment"), true);
+  });
+
+  test("a draft's finished pick step with its pick cleared is not done; current and locked steps never are", () => {
+    const cleared = makeChar({ classes: [cl("Wizard", 1)], creationProgress: { currentStep: "details" } });
+    assert.equal(doneOf(cleared, "classChoices"), false, "a finished step with its pick cleared is not done");
+
+    const onPick = makeChar({ classes: [cl("Wizard", 1)], creationProgress: { currentStep: "classChoices" } });
+    const skillOffer = startingSkillPickOf(onPick, flowOpts)!;
+    const pickedOnPick = makeChar({
+      classes: [cl("Wizard", 1)],
+      proficiencyPicks: { [skillOffer.id]: skillOffer.from.slice(0, skillOffer.choose) },
+      creationProgress: { currentStep: "classChoices" },
+    });
+    assert.equal(doneOf(pickedOnPick, "classChoices"), false, "the current step is not done even when valid");
+    assert.equal(doneOf(pickedOnPick, "spells"), false, "a locked step is not done");
+  });
+
+  test("a finished Character with an Expertise pick open has Class Choices not done until the pick is made", () => {
+    const wizard1 = makeChar({ classes: [cl("Wizard", 1)] });
+    const skillOffer = startingSkillPickOf(wizard1, flowOpts)!;
+    const proficiencyPicks = { [skillOffer.id]: skillOffer.from.slice(0, skillOffer.choose) };
+    const withSkillExpert = {
+      classes: [cl("Wizard", 1)],
+      proficiencyPicks,
+      chosenSkills: ["Stealth", "Acrobatics"],
+      originFeats: [{ level: 1, type: "feat" as const, featName: "Skill Expert", featSource: "TCE" }],
+    };
+    assert.equal(doneOf(makeChar(withSkillExpert), "classChoices"), false, "the Expertise pick is open");
+    assert.equal(doneOf(makeChar({ ...withSkillExpert, chosenExpertise: ["Stealth"] }), "classChoices"), true);
+  });
+});
