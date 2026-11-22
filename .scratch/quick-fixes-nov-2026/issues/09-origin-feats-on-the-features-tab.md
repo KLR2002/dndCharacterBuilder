@@ -13,9 +13,15 @@
 
 **Blocked by:** None
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Tests in `checks/featFeatures.test.ts`, red first, with invented feat names and text:
+**Landed:** merge 53abbdc1 (aff89b78).
+- **Fix:** `featFeatureRows` in `src/rules/featFeatures.ts`; the Features tab maps its rows. Seven tests, six red before the fix.
+- **Seen on web with the integrated catalog:** a Variant Human with a level 4 feat (393 and 1280), a race feat beside a Giant Foundling's background feat (393), and a feat picked through the builder (1280).
+- **Found, not fixed:** `milestonesFromSheet` (`src/rules/expertise.ts`) reads only `asiSelections`, so Skill Expert and Prodigy taken as origin feats offer no Expertise.
+- check:all, check:live and the full layout check (SRD and integrated) passed.
+
+- [x] Tests in `checks/featFeatures.test.ts`, red first, with invented feat names and text:
   - A Variant Human's origin feat is listed at level 1 with its book and description, before a level 4 ASI feat.
   - An origin feat saved with level 0 reads level 1.
   - A Custom Lineage feat is listed.
@@ -23,5 +29,5 @@
   - A background's feat with no record is still listed.
   - An ASI-only character's rows are unchanged, and an ability score increase is not listed.
   - A feat held in both lists gives two distinct ids.
-- [ ] `npm run check:all` and `npm run check:live` pass.
-- [ ] Seen on the running Features tab: a Variant Human with an origin feat and a level 4 feat (main session).
+- [x] `npm run check:all` and `npm run check:live` pass.
+- [x] Seen on the running Features tab: a Variant Human with an origin feat and a level 4 feat (main session).
