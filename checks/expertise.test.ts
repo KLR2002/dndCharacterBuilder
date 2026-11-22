@@ -16,8 +16,10 @@ import {
   pruneInvalidExpertise,
   toggleExpertiseChoice,
 } from "../src/rules/expertise.ts";
-import type { Character } from "../src/types/character.ts";
+import type { AsiSelection, Character } from "../src/types/character.ts";
 import type { BackgroundData } from "../src/types/dnd5e.ts";
+import { classChoicesStepView, newExpertiseMilestones } from "../src/rules/classChoices.ts";
+import { removeOriginFeat } from "../src/rules/feats.ts";
 import { loadTestCatalog, inMemoryCompendium } from "./testUtils.ts";
 
 const races = loadTestCatalog("races");
@@ -439,4 +441,75 @@ test("reconcile: a valid character keeps its Expertise picks unchanged", () => {
   const once = reconcile(valid, compendium, { activeBooks: ALL_BOOKS });
   assert.strictEqual(once.chosenExpertise, valid.chosenExpertise, "the picks are not rebuilt");
   assert.deepStrictEqual(reconcile(once, compendium, { activeBooks: ALL_BOOKS }), once, "a settled character reconciles to the same value");
+});
+
+// --- Skill Expert and Prodigy as origin feats ---
+
+const originFeat = (featName: string): AsiSelection => ({ level: 1, type: "feat", featName, featSource: "TCE" });
+const skillExpertOrigin = originFeat("Skill Expert");
+const catalogsOf = { compendium: inMemoryCompendium({ classes }), activeBooks: ALL_BOOKS };
+
+test("origin feats: Skill Expert or Prodigy held as an origin feat gives its one Expertise milestone", () => {
+  const skillExpert = makeTestChar({ originFeats: [skillExpertOrigin], chosenSkills: ["Stealth", "Acrobatics"] });
+  const skillExpertMilestones = getAvailableExpertiseMilestones(skillExpert, catalogsOf);
+  assert.equal(skillExpertMilestones.length, 1);
+  assert.equal(skillExpertMilestones[0].id, "feat_skill_expert");
+  assert.equal(skillExpertMilestones[0].count, 1);
+  assert.ok(skillExpertMilestones[0].options.includes("Stealth"));
+
+  const prodigy = makeTestChar({ originFeats: [originFeat("Prodigy")], chosenSkills: ["Stealth", "Acrobatics"] });
+  const prodigyMilestones = getAvailableExpertiseMilestones(prodigy, catalogsOf);
+  assert.equal(prodigyMilestones.length, 1);
+  assert.equal(prodigyMilestones[0].id, "feat_prodigy");
+  assert.equal(prodigyMilestones[0].count, 1);
+});
+
+test("origin feats: a Skill Expert origin feat makes the Class Choices step apply, incomplete until its pick", () => {
+  const char = makeTestChar({ originFeats: [skillExpertOrigin], chosenSkills: ["Stealth", "Acrobatics"] });
+  const before = classChoicesStepView(char, catalogsOf);
+  assert.equal(before.applies, true);
+  assert.equal(before.complete, false, "no Expertise pick yet");
+
+  const picked = toggleExpertiseChoice(char, "Stealth", catalogsOf);
+  assert.deepEqual(picked.chosenExpertise, ["Stealth"]);
+  assert.equal(classChoicesStepView(picked, catalogsOf).complete, true, "the one pick is made");
+});
+
+test("origin feats: the Expertise pick survives reconcile, and removing the origin feat releases it with a notice", () => {
+  const compendium = inMemoryCompendium({ classes });
+  const char = makeTestChar({
+    originFeats: [skillExpertOrigin],
+    chosenSkills: ["Stealth", "Acrobatics"],
+    chosenExpertise: ["Stealth"],
+  });
+
+  const reconciled = reconcile(char, compendium, { activeBooks: ALL_BOOKS });
+  assert.deepEqual(reconciled.chosenExpertise, ["Stealth"]);
+  assert.equal(reconciled.needsReview, undefined, "no notice while the feat is held");
+
+  const removed = removeOriginFeat(char, skillExpertOrigin, compendium, ALL_BOOKS);
+  assert.deepEqual(removed.chosenExpertise, []);
+  assert.deepEqual(removed.needsReview, [
+    "Stealth Expertise removed: Stealth is no longer a proficient skill or tool",
+  ]);
+});
+
+test("origin feats: a feat held in both lists gives one milestone; an origin feat of another name gives none", () => {
+  const both = makeTestChar({
+    asiSelections: [{ level: 4, type: "feat", featName: "Skill Expert", featSource: "TCE" }],
+    originFeats: [skillExpertOrigin],
+    chosenSkills: ["Stealth", "Acrobatics"],
+  });
+  const bothMilestones = getAvailableExpertiseMilestones(both, catalogsOf);
+  assert.equal(bothMilestones.length, 1);
+  assert.equal(bothMilestones[0].id, "feat_skill_expert");
+
+  const other = makeTestChar({ originFeats: [originFeat("Lucky")], chosenSkills: ["Stealth", "Acrobatics"] });
+  assert.deepEqual(getAvailableExpertiseMilestones(other, catalogsOf), []);
+});
+
+test("origin feats: a level up does not offer the held origin feat's milestone again", () => {
+  const char = makeTestChar({ originFeats: [skillExpertOrigin], chosenSkills: ["Stealth", "Acrobatics"] });
+  const offered = newExpertiseMilestones(char, { className: "Rogue", source: "PHB", level: 1 }, catalogsOf);
+  assert.deepEqual(offered.map((milestone) => milestone.id), ["rogue_1"]);
 });
