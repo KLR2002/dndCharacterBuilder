@@ -1,25 +1,39 @@
 #!/usr/bin/env bash
 # Stops what a session started: the emulators, the adb server, the Gradle and
 # Kotlin daemons, and the web servers listening on the --port numbers given.
-# Then prints what is still running.
+# With --since <time>, only the processes started at or after that time are
+# stopped, so a session leaves alone what the user started earlier. Then prints
+# what is still running.
 set -euo pipefail
 
 usage() {
   cat <<'EOF'
-usage: scripts/stop-dev.sh [--port <n>]...
+usage: scripts/stop-dev.sh [--since <time>] [--port <n>]...
 
 Stops the running emulators, the adb server and the Gradle and Kotlin daemons,
 and the process group of each process listening on a --port <n>. Repeat --port
 for each web server. Then prints what is still running.
 
+--since <time> (any time date -d reads, such as @1763862000) limits the stop to
+the processes started at or after that time. Older processes are never signalled
+and are listed as left running. Without it, every matching process is stopped.
+
 Exit status: 0 when nothing is left running, 1 when something is, 2 on a bad
-argument.
+argument. Processes left running from before --since do not make it 1.
 EOF
 }
 
 ports=()
+since_epoch=""
 while (($# > 0)); do
   case "$1" in
+    --since)
+      if (($# < 2)) || [[ -z "$2" ]] || ! since_epoch="$(date -d "$2" +%s 2>/dev/null)"; then
+        echo "stop-dev: --since needs a time date -d reads, such as @1763862000" >&2
+        exit 2
+      fi
+      shift 2
+      ;;
     --port)
       if (($# < 2)) || [[ ! "$2" =~ ^[0-9]+$ ]]; then
         echo "stop-dev: --port needs a port number" >&2
@@ -57,7 +71,7 @@ protected_pids() {
 }
 
 # Prints the pids pgrep matches, minus the protected ones.
-find_pids() {
+match_pids() {
   local protected pid
   protected="$(protected_pids)"
   while read -r pid; do
@@ -65,6 +79,42 @@ find_pids() {
       echo "$pid"
     fi
   done < <(pgrep "$@" || true)
+}
+
+# Whether a process started at or after --since. Without --since every process
+# counts. The start time is now minus the elapsed seconds ps reports, so it is
+# whole seconds and can be off by one.
+started_since() {
+  local pid="$1" elapsed
+  if [[ -z "$since_epoch" ]]; then
+    return 0
+  fi
+  elapsed="$(ps -o etimes= -p "$pid" 2>/dev/null | tr -d ' ' || true)"
+  if [[ -z "$elapsed" ]]; then
+    return 1
+  fi
+  ((($(date +%s) - elapsed) >= since_epoch))
+}
+
+# Prints the matched pids the run acts on: all of them, or with --since those
+# that started since.
+find_pids() {
+  local pid
+  while read -r pid; do
+    if started_since "$pid"; then
+      echo "$pid"
+    fi
+  done < <(match_pids "$@")
+}
+
+# Prints the matched pids that started before --since. Empty without --since.
+find_older_pids() {
+  local pid
+  while read -r pid; do
+    if ! started_since "$pid"; then
+      echo "$pid"
+    fi
+  done < <(match_pids "$@")
 }
 
 # Waits up to $1 seconds for no process to match the remaining pgrep arguments.
@@ -99,10 +149,39 @@ listener_pids() {
   ss -ltnpH "sport = :$1" 2>/dev/null | grep -o 'pid=[0-9]*' | cut -d= -f2 | sort -u || true
 }
 
+# Prints the pids listening on a port that started since --since, or on any
+# port without --since. With --since, a line in the listening output alone is
+# not enough: the listener must be one this run acts on.
+listening_since() {
+  local pid
+  if [[ -z "$since_epoch" ]]; then
+    listening "$1"
+    return
+  fi
+  for pid in $(listener_pids "$1"); do
+    if started_since "$pid"; then
+      echo "$pid"
+    fi
+  done
+}
+
+# Prints the pids listening on a port that started before --since.
+older_listener_pids() {
+  local pid
+  for pid in $(listener_pids "$1"); do
+    if ! started_since "$pid"; then
+      echo "$pid"
+    fi
+  done
+}
+
 stop_emulators() {
   local serial
+  if [[ -n "$since_epoch" ]]; then
+    # adb cannot name the serial of a pid cheaply, so the emulators started since get SIGTERM.
+    term_matching "emulator" -x 'qemu-system-.*'
   # `adb devices` starts the server when only the emulator is running; stop_adb stops it again.
-  if [[ -x "$adb" ]] && [[ -n "$(find_pids -x adb)" || -n "$(find_pids -x 'qemu-system-.*')" ]]; then
+  elif [[ -x "$adb" ]] && [[ -n "$(find_pids -x adb)" || -n "$(find_pids -x 'qemu-system-.*')" ]]; then
     while read -r serial; do
       echo "emulator: stopping $serial"
       "$adb" -s "$serial" emu kill >/dev/null 2>&1 || true
@@ -140,7 +219,8 @@ stop_gradle() {
   if [[ -n "$(find_pids -f 'GradleDaemon|KotlinCompileDaemon')" ]]; then
     acted=1
   fi
-  if [[ -n "$gradlew" ]]; then
+  # `gradlew --stop` stops every daemon, so it runs only without --since.
+  if [[ -n "$gradlew" && -z "$since_epoch" ]]; then
     (cd "$root" && "$gradlew" --stop >/dev/null 2>&1) || echo "gradle: $gradlew --stop failed"
   fi
   term_matching "gradle daemon" -f GradleDaemon
@@ -152,7 +232,7 @@ stop_port() {
   local port="$1" pid pgid self_pgid
   self_pgid="$(ps -o pgid= -p $$ | tr -d ' ')"
   for pid in $(listener_pids "$port"); do
-    if grep -qx "$pid" <<<"$(protected_pids)"; then
+    if grep -qx "$pid" <<<"$(protected_pids)" || ! started_since "$pid"; then
       continue
     fi
     pgid="$(ps -o pgid= -p "$pid" 2>/dev/null | tr -d ' ' || true)"
@@ -169,7 +249,7 @@ stop_port() {
 wait_for_port_free() {
   local port="$1" i
   for ((i = 0; i < 20; i++)); do
-    if [[ -z "$(listening "$port")" ]]; then
+    if [[ -z "$(listening_since "$port")" ]]; then
       return 0
     fi
     sleep 0.5
@@ -177,20 +257,33 @@ wait_for_port_free() {
 }
 
 still_running() {
-  local label="$1" pids
+  local label="$1" pids older
   shift
   pids="$(find_pids "$@" | tr '\n' ' ')"
   if [[ -n "$pids" ]]; then
     echo "still running: $label pid(s) ${pids% }"
     alive=1
   fi
+  older="$(find_older_pids "$@" | tr '\n' ' ')"
+  if [[ -n "$older" ]]; then
+    echo "left running (started before --since): $label pid(s) ${older% }"
+  fi
 }
 
 report() {
-  local port line
+  local port line older
   for port in 5037 ${ports[@]+"${ports[@]}"}; do
-    line="$(listening "$port")"
-    if [[ -n "$line" ]]; then
+    line="$(listening_since "$port")"
+    if [[ -n "$since_epoch" ]]; then
+      if [[ -n "$line" ]]; then
+        echo "still listening on port $port: pid(s) ${line//$'\n'/ }"
+        alive=1
+      fi
+      older="$(older_listener_pids "$port" | tr '\n' ' ')"
+      if [[ -n "$older" ]]; then
+        echo "left running (started before --since): port $port listener pid(s) ${older% }"
+      fi
+    elif [[ -n "$line" ]]; then
       echo "still listening on port $port: $line"
       alive=1
     fi
