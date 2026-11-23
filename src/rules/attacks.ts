@@ -372,7 +372,6 @@ export function getWeaponAttacks(
       id: "unarmed_strike_virtual",
       name: "Unarmed Strike",
       source: "PHB",
-      section: "equipped",
       quantity: 1,
       weight: 0,
       isEquipped: true,

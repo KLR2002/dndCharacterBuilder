@@ -14,9 +14,22 @@ import { useCharacters } from "../../context/CharacterContext";
 import { useAppTheme } from "../../context/ThemeContext";
 import { useResponsiveLayout } from "../../hooks/useResponsiveLayout";
 import { evaluateCharacter } from "../../rules/characterEvaluation";
-import { armorCategoryOfType } from "../../rules/ac";
+import {
+  addItem,
+  CatalogItemRecord,
+  changeCoin,
+  changeItemQuantity,
+  Coin,
+  customItem,
+  itemFromCatalog,
+  removeItem,
+  setCoin,
+  swapAttunement,
+  toggleAttunement,
+  toggleEquipped,
+} from "../../rules/inventory";
 import { currentCompendium } from "../../services/compendium";
-import { InventoryItem } from "../../types/character";
+import { Character, InventoryItem } from "../../types/character";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
 import { Card } from "../ui/Card";
@@ -25,11 +38,7 @@ import { DetailModal } from "../DetailModal";
 import { SearchBar } from "../ui/SearchBar";
 import { ActiveInfusionsSection } from "../ActiveInfusionsSection";
 
-const COIN_TYPES: ("cp" | "sp" | "ep" | "gp" | "pp")[] = ["cp", "sp", "ep", "gp", "pp"];
-
-function makeItemId(prefix: string): string {
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-}
+const COIN_TYPES: Coin[] = ["cp", "sp", "ep", "gp", "pp"];
 
 export const InventoryTab: React.FC = () => {
   const sheetScrollPad = useSheetScrollContentPadding();
@@ -103,155 +112,60 @@ export const InventoryTab: React.FC = () => {
   const pouch = currentCharacter.pouch || { cp: 0, sp: 0, ep: 0, gp: 0, pp: 0 };
   const { currentWeight, maxCapacity, encumbered, heavilyEncumbered } = evaluated.carryingWeight;
 
-  // Separate equipped vs carried. An older save can hold section "equipped" without the isEquipped flag;
-  // either marks the item as equipped, so the Equipped list shows both.
-  const isShownEquipped = (item: InventoryItem) => item.isEquipped || item.section === "equipped";
-  const equippedItems = items.filter(isShownEquipped);
-  const carriedItems = items.filter((i) => !isShownEquipped(i));
+  const equippedItems = items.filter((i) => i.isEquipped);
+  const carriedItems = items.filter((i) => !i.isEquipped);
+
+  // The Inventory module returns the next character; the tab saves the part that changed.
+  const saveItems = (next: Character) => updateCharacter(currentCharacter.id, { items: next.items });
+  const savePouch = (next: Character) => updateCharacter(currentCharacter.id, { pouch: next.pouch });
 
   // Currency Handlers
-  const updateCoin = (coin: "cp" | "sp" | "ep" | "gp" | "pp", delta: number) => {
-    const current = pouch[coin] || 0;
-    const next = Math.max(0, current + delta);
-    updateCharacter(currentCharacter.id, {
-      pouch: {
-        ...pouch,
-        [coin]: next,
-      },
-    });
-  };
-
-  const setCoinDirect = (coin: "cp" | "sp" | "ep" | "gp" | "pp", text: string) => {
-    const val = parseInt(text, 10);
-    updateCharacter(currentCharacter.id, {
-      pouch: {
-        ...pouch,
-        [coin]: isNaN(val) ? 0 : Math.max(0, val),
-      },
-    });
-  };
+  const updateCoin = (coin: Coin, delta: number) => savePouch(changeCoin(currentCharacter, coin, delta));
+  const setCoinDirect = (coin: Coin, text: string) => savePouch(setCoin(currentCharacter, coin, text));
 
   // Item Handlers
-  const toggleEquip = (item: InventoryItem) => {
-    const newEquipped = !item.isEquipped;
-    const updated = items.map((i) => {
-      if (i.id === item.id) {
-        return {
-          ...i,
-          isEquipped: newEquipped,
-          section: (newEquipped ? "equipped" : "carried") as "equipped" | "carried",
-        };
-      }
-      return i;
-    });
-    updateCharacter(currentCharacter.id, { items: updated });
-  };
+  const toggleEquip = (item: InventoryItem) => saveItems(toggleEquipped(currentCharacter, item.id));
+  const updateItemQuantity = (id: string, delta: number) =>
+    saveItems(changeItemQuantity(currentCharacter, id, delta));
+  const removeItemById = (id: string) => saveItems(removeItem(currentCharacter, id));
 
-  const updateItemQuantity = (id: string, delta: number) => {
-    const updated = items
-      .map((i) => {
-        if (i.id === id) {
-          const nextQ = i.quantity + delta;
-          return nextQ > 0 ? { ...i, quantity: nextQ } : null;
-        }
-        return i;
-      })
-      .filter((i): i is InventoryItem => i !== null);
-    updateCharacter(currentCharacter.id, { items: updated });
-  };
-
-  const removeItem = (id: string) => {
-    const updated = items.filter((i) => i.id !== id);
-    updateCharacter(currentCharacter.id, { items: updated });
-  };
-
-  const attunedItems = items.filter(
-    (i) => Boolean(i.attunement) && i.isAttuned === true
-  );
+  const attunedItems = items.filter((i) => Boolean(i.attunement) && i.isAttuned === true);
   const attunedCount = attunedItems.length;
 
   const toggleAttune = (item: InventoryItem) => {
-    if (item.isAttuned) {
-      const updated = items.map((i) => (i.id === item.id ? { ...i, isAttuned: false } : i));
-      updateCharacter(currentCharacter.id, { items: updated });
-    } else {
-      if (attunedCount >= 3) {
-        setAttunementSwapModal({ visible: true, targetItem: item });
-      } else {
-        const updated = items.map((i) => (i.id === item.id ? { ...i, isAttuned: true } : i));
-        updateCharacter(currentCharacter.id, { items: updated });
-      }
-    }
+    const result = toggleAttunement(currentCharacter, item.id);
+    if ("swapNeeded" in result) setAttunementSwapModal({ visible: true, targetItem: item });
+    else saveItems(result.character);
   };
 
-  const swapAttunement = (itemToUnattune: InventoryItem) => {
+  const swapAttunementWith = (itemToUnattune: InventoryItem) => {
     const target = attunementSwapModal.targetItem;
     if (!target) return;
-    const updated = items.map((i) => {
-      if (i.id === itemToUnattune.id) return { ...i, isAttuned: false };
-      if (i.id === target.id) return { ...i, isAttuned: true };
-      return i;
-    });
-    updateCharacter(currentCharacter.id, { items: updated });
+    saveItems(swapAttunement(currentCharacter, itemToUnattune.id, target.id));
     setAttunementSwapModal({ visible: false, targetItem: undefined });
   };
 
-  const addItemFromLibrary = (itemData: any) => {
-    const newItem: InventoryItem = {
-      id: makeItemId("item"),
-      name: itemData.name,
-      source: itemData.source || "PHB",
-      quantity: 1,
-      isEquipped: false,
-      section: "carried",
-      weight: itemData.weight ?? null,
-      cost: itemData.cost || itemData.value || null,
-      damage: itemData.damage || itemData.dmg1 || null,
-      damageType: itemData.damageType || itemData.dmgType || null,
-      range: itemData.range || null,
-      ac: itemData.ac ?? null,
-      rarity: itemData.rarity || "None",
-      attunement: itemData.attunement || false,
-      isAttuned: false,
-      bonusWeapon: itemData.bonusWeapon != null ? itemData.bonusWeapon : undefined,
-      bonusAc: itemData.bonusAc != null ? itemData.bonusAc : undefined,
-      itemCategory: itemData.itemCategory || undefined,
-      armorCategory: armorCategoryOfType(itemData.type),
-      description: itemData.description || (Array.isArray(itemData.rawEntries) ? itemData.rawEntries.join("\n") : "") || "",
-    };
-    updateCharacter(currentCharacter.id, { items: [...items, newItem] });
-  };
+  const addItemFromLibrary = (itemData: CatalogItemRecord) =>
+    saveItems(addItem(currentCharacter, itemFromCatalog(itemData)));
 
   const addCustomItem = () => {
     if (!customName.trim()) return;
-    const parsedBonusFromName = (() => {
-      const m = customName.trim().match(/\+(\d+)/);
-      return m ? parseInt(m[1], 10) : undefined;
-    })();
-    const bonusWeaponVal = customBonusWeapon.trim()
-      ? parseInt(customBonusWeapon, 10)
-      : (customDamage.trim() ? parsedBonusFromName : undefined);
-    const bonusAcVal = customBonusAc.trim()
-      ? parseInt(customBonusAc, 10)
-      : (customAc.trim() ? parsedBonusFromName : undefined);
-
-    const newItem: InventoryItem = {
-      id: makeItemId("custom"),
-      name: customName.trim(),
-      source: "Custom",
-      quantity: 1,
-      isEquipped: customSection === "equipped",
-      section: customSection,
-      weight: customWeight ? parseFloat(customWeight) : null,
-      cost: customCost.trim() || null,
-      damage: customDamage.trim() || null,
-      ac: customAc ? parseInt(customAc, 10) : null,
-      description: customDesc.trim() || "",
-      isCustom: true,
-      bonusWeapon: bonusWeaponVal,
-      bonusAc: bonusAcVal,
-    };
-    updateCharacter(currentCharacter.id, { items: [...items, newItem] });
+    saveItems(
+      addItem(
+        currentCharacter,
+        customItem({
+          name: customName,
+          weight: customWeight,
+          cost: customCost,
+          damage: customDamage,
+          ac: customAc,
+          bonusWeapon: customBonusWeapon,
+          bonusAc: customBonusAc,
+          description: customDesc,
+          equipped: customSection === "equipped",
+        }),
+      ),
+    );
     setCustomName("");
     setCustomWeight("");
     setCustomCost("");
@@ -460,16 +374,16 @@ export const InventoryTab: React.FC = () => {
                 <TouchableOpacity
                   onPress={() => toggleEquip(item)}
                   accessibilityRole="checkbox"
-                  accessibilityState={{ checked: isShownEquipped(item) }}
-                  accessibilityLabel={isShownEquipped(item) ? `Equipped: ${item.name}` : `Equip ${item.name}`}
+                  accessibilityState={{ checked: item.isEquipped }}
+                  accessibilityLabel={item.isEquipped ? `Equipped: ${item.name}` : `Equip ${item.name}`}
                   style={[
                     styles.equipCheck,
                     {
-                      borderColor: isShownEquipped(item) ? theme.accentHover : theme.border,
-                      backgroundColor: isShownEquipped(item) ? theme.accentGlow : "transparent",
+                      borderColor: item.isEquipped ? theme.accentHover : theme.border,
+                      backgroundColor: item.isEquipped ? theme.accentGlow : "transparent",
                     },
                   ]}>
-                  {isShownEquipped(item) && <Ionicons name="checkmark" size={14} color={theme.accentHover} />}
+                  {item.isEquipped && <Ionicons name="checkmark" size={14} color={theme.accentHover} />}
                 </TouchableOpacity>
 
                 {/* Item Info (click to view details) */}
@@ -530,7 +444,7 @@ export const InventoryTab: React.FC = () => {
                 </View>
 
                 {/* Delete */}
-                <TouchableOpacity onPress={() => removeItem(item.id)} style={{ padding: 6 }}>
+                <TouchableOpacity onPress={() => removeItemById(item.id)} style={{ padding: 6 }}>
                   <Ionicons name="trash-outline" size={16} color={theme.textMuted} />
                 </TouchableOpacity>
               </View>
@@ -568,16 +482,16 @@ export const InventoryTab: React.FC = () => {
                 <TouchableOpacity
                   onPress={() => toggleEquip(item)}
                   accessibilityRole="checkbox"
-                  accessibilityState={{ checked: isShownEquipped(item) }}
-                  accessibilityLabel={isShownEquipped(item) ? `Equipped: ${item.name}` : `Equip ${item.name}`}
+                  accessibilityState={{ checked: item.isEquipped }}
+                  accessibilityLabel={item.isEquipped ? `Equipped: ${item.name}` : `Equip ${item.name}`}
                   style={[
                     styles.equipCheck,
                     {
-                      borderColor: isShownEquipped(item) ? theme.accentHover : theme.border,
-                      backgroundColor: isShownEquipped(item) ? theme.accentGlow : "transparent",
+                      borderColor: item.isEquipped ? theme.accentHover : theme.border,
+                      backgroundColor: item.isEquipped ? theme.accentGlow : "transparent",
                     },
                   ]}>
-                  {isShownEquipped(item) && <Ionicons name="checkmark" size={14} color={theme.accentHover} />}
+                  {item.isEquipped && <Ionicons name="checkmark" size={14} color={theme.accentHover} />}
                 </TouchableOpacity>
 
                 {/* Item Info */}
@@ -638,7 +552,7 @@ export const InventoryTab: React.FC = () => {
                 </View>
 
                 {/* Delete */}
-                <TouchableOpacity onPress={() => removeItem(item.id)} style={{ padding: 6 }}>
+                <TouchableOpacity onPress={() => removeItemById(item.id)} style={{ padding: 6 }}>
                   <Ionicons name="trash-outline" size={16} color={theme.textMuted} />
                 </TouchableOpacity>
               </View>
@@ -913,7 +827,7 @@ export const InventoryTab: React.FC = () => {
         {attunedItems.map((item) => (
           <TouchableOpacity
             key={item.id}
-            onPress={() => swapAttunement(item)}
+            onPress={() => swapAttunementWith(item)}
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             style={{
               flexDirection: "row",

@@ -138,7 +138,7 @@ export default function BuildScreen() {
     open: step.id === openStep,
     current: step.id === current,
     locked: step.status === "locked",
-    done: step.status === "finished",
+    done: step.done,
     needsAttention: step.needsAttention,
   }));
 

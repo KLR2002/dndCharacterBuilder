@@ -16,8 +16,11 @@ import {
   pruneInvalidExpertise,
   toggleExpertiseChoice,
 } from "../src/rules/expertise.ts";
-import type { Character } from "../src/types/character.ts";
+import type { AsiSelection, Character } from "../src/types/character.ts";
 import type { BackgroundData } from "../src/types/dnd5e.ts";
+import { classChoicesStepView, newExpertiseMilestones } from "../src/rules/classChoices.ts";
+import { removeOriginFeat } from "../src/rules/feats.ts";
+import { applyLevelUpPlan, planLevelUp, setPlanExpertisePick } from "../src/rules/levelUpFlow.ts";
 import { loadTestCatalog, inMemoryCompendium } from "./testUtils.ts";
 
 const races = loadTestCatalog("races");
@@ -439,4 +442,160 @@ test("reconcile: a valid character keeps its Expertise picks unchanged", () => {
   const once = reconcile(valid, compendium, { activeBooks: ALL_BOOKS });
   assert.strictEqual(once.chosenExpertise, valid.chosenExpertise, "the picks are not rebuilt");
   assert.deepStrictEqual(reconcile(once, compendium, { activeBooks: ALL_BOOKS }), once, "a settled character reconciles to the same value");
+});
+
+// --- Skill Expert and Prodigy as origin feats ---
+
+const originFeat = (featName: string): AsiSelection => ({ level: 1, type: "feat", featName, featSource: "TCE" });
+const skillExpertOrigin = originFeat("Skill Expert");
+const catalogsOf = { compendium: inMemoryCompendium({ classes }), activeBooks: ALL_BOOKS };
+
+test("origin feats: Skill Expert or Prodigy held as an origin feat gives its one Expertise milestone", () => {
+  const skillExpert = makeTestChar({ originFeats: [skillExpertOrigin], chosenSkills: ["Stealth", "Acrobatics"] });
+  const skillExpertMilestones = getAvailableExpertiseMilestones(skillExpert, catalogsOf);
+  assert.equal(skillExpertMilestones.length, 1);
+  assert.equal(skillExpertMilestones[0].id, "feat_skill_expert");
+  assert.equal(skillExpertMilestones[0].count, 1);
+  assert.ok(skillExpertMilestones[0].options.includes("Stealth"));
+
+  const prodigy = makeTestChar({ originFeats: [originFeat("Prodigy")], chosenSkills: ["Stealth", "Acrobatics"] });
+  const prodigyMilestones = getAvailableExpertiseMilestones(prodigy, catalogsOf);
+  assert.equal(prodigyMilestones.length, 1);
+  assert.equal(prodigyMilestones[0].id, "feat_prodigy");
+  assert.equal(prodigyMilestones[0].count, 1);
+});
+
+test("origin feats: a Skill Expert origin feat makes the Class Choices step apply, incomplete until its pick", () => {
+  const char = makeTestChar({ originFeats: [skillExpertOrigin], chosenSkills: ["Stealth", "Acrobatics"] });
+  const before = classChoicesStepView(char, catalogsOf);
+  assert.equal(before.applies, true);
+  assert.equal(before.complete, false, "no Expertise pick yet");
+
+  const picked = toggleExpertiseChoice(char, "Stealth", catalogsOf);
+  assert.deepEqual(picked.chosenExpertise, ["Stealth"]);
+  assert.equal(classChoicesStepView(picked, catalogsOf).complete, true, "the one pick is made");
+});
+
+test("origin feats: the Expertise pick survives reconcile, and removing the origin feat releases it with a notice", () => {
+  const compendium = inMemoryCompendium({ classes });
+  const char = makeTestChar({
+    originFeats: [skillExpertOrigin],
+    chosenSkills: ["Stealth", "Acrobatics"],
+    chosenExpertise: ["Stealth"],
+  });
+
+  const reconciled = reconcile(char, compendium, { activeBooks: ALL_BOOKS });
+  assert.deepEqual(reconciled.chosenExpertise, ["Stealth"]);
+  assert.equal(reconciled.needsReview, undefined, "no notice while the feat is held");
+
+  const removed = removeOriginFeat(char, skillExpertOrigin, compendium, ALL_BOOKS);
+  assert.deepEqual(removed.chosenExpertise, []);
+  assert.equal(removed.needsReview?.length, 1);
+  assert.equal(removed.needsReview?.[0], "Stealth Expertise removed: no Expertise slot left");
+});
+
+test("origin feats: a feat held in both lists gives one milestone; an origin feat of another name gives none", () => {
+  const both = makeTestChar({
+    asiSelections: [{ level: 4, type: "feat", featName: "Skill Expert", featSource: "TCE" }],
+    originFeats: [skillExpertOrigin],
+    chosenSkills: ["Stealth", "Acrobatics"],
+  });
+  const bothMilestones = getAvailableExpertiseMilestones(both, catalogsOf);
+  assert.equal(bothMilestones.length, 1);
+  assert.equal(bothMilestones[0].id, "feat_skill_expert");
+
+  const other = makeTestChar({ originFeats: [originFeat("Lucky")], chosenSkills: ["Stealth", "Acrobatics"] });
+  assert.deepEqual(getAvailableExpertiseMilestones(other, catalogsOf), []);
+});
+
+test("origin feats: a level up does not offer the held origin feat's milestone again", () => {
+  const char = makeTestChar({ originFeats: [skillExpertOrigin], chosenSkills: ["Stealth", "Acrobatics"] });
+  const offered = newExpertiseMilestones(char, { className: "Rogue", source: "PHB", level: 1 }, catalogsOf);
+  assert.deepEqual(offered.map((milestone) => milestone.id), ["rogue_1"]);
+});
+
+// --- Release reasons and the tool slot ---
+
+test("release reason: lowering a Rogue from 6 to 5 with every skill still held says no slot is left", () => {
+  const char = makeTestChar({
+    classes: [{ className: "Rogue", level: 5, source: "PHB" }],
+    chosenSkills: ["Stealth", "Acrobatics", "Deception", "Insight"],
+    chosenExpertise: ["Stealth", "Acrobatics", "Deception", "Insight"],
+  });
+
+  const pruned = pruneInvalidExpertise(char, catalogsOf);
+  assert.deepEqual(pruned.chosenExpertise, ["Stealth", "Acrobatics"]);
+  assert.deepEqual(pruned.needsReview, [
+    "Deception Expertise removed: no Expertise slot left",
+    "Insight Expertise removed: no Expertise slot left",
+  ]);
+});
+
+test("release reason: Thieves' Tools held with only a Bard milestone says no Expertise slot takes it", () => {
+  const char = makeTestChar({
+    classes: [{ className: "Bard", level: 3, source: "PHB" }],
+    chosenSkills: ["Performance", "Persuasion"],
+    addedTools: ["Thieves' Tools"],
+    chosenExpertise: ["Performance", "Thieves' Tools"],
+  });
+
+  const pruned = pruneInvalidExpertise(char, catalogsOf);
+  assert.deepEqual(pruned.chosenExpertise, ["Performance"]);
+  assert.deepEqual(pruned.needsReview, [
+    "Thieves' Tools Expertise removed: no Expertise slot takes Thieves' Tools",
+  ]);
+});
+
+test("level up: a Rogue 6 pick and Thieves' Tools are both saved, in either pick order", () => {
+  const compendium = inMemoryCompendium({ classes });
+  const character = makeTestChar({
+    classes: [{ className: "Rogue", level: 5, source: "PHB", subclassName: "Thief", subclass: "Thief", subclassSource: "PHB" }],
+    originFeats: [skillExpertOrigin],
+    chosenSkills: ["Stealth", "Perception", "Deception", "Acrobatics", "Insight"],
+    addedTools: ["Thieves' Tools"],
+    chosenExpertise: ["Stealth", "Perception", "Deception"],
+  });
+
+  for (const order of [["Acrobatics", "Thieves' Tools"], ["Thieves' Tools", "Acrobatics"]]) {
+    const result = planLevelUp(character, { className: "Rogue", compendium, activeBooks: ALL_BOOKS });
+    if (!result.ok) assert.fail(result.reason);
+    const picked = order.reduce((plan, name) => setPlanExpertisePick(plan, name), result.plan);
+    const applied = applyLevelUpPlan(character, picked, { compendium, activeBooks: ALL_BOOKS });
+    assert.deepEqual(applied.chosenExpertise, ["Stealth", "Perception", "Deception", ...order]);
+  }
+});
+
+test("tool slot: Bard 3 picks, then Rogue 1 with a skill and Thieves' Tools places all four", () => {
+  const char = makeTestChar({
+    classes: [
+      { className: "Bard", level: 3, source: "PHB" },
+      { className: "Rogue", level: 1, source: "PHB" },
+    ],
+    chosenSkills: ["Performance", "Persuasion", "Stealth"],
+    addedTools: ["Thieves' Tools"],
+    chosenExpertise: ["Performance", "Persuasion", "Stealth", "Thieves' Tools"],
+  });
+
+  const picks = getMilestonePicks(getAvailableExpertiseMilestones(char, catalogsOf), char.chosenExpertise ?? []);
+  assert.deepEqual(picks.flatMap((pick) => pick.chosen).sort(), [...(char.chosenExpertise ?? [])].sort());
+
+  const view = classChoicesStepView(char, catalogsOf);
+  assert.deepEqual(view.expertise.invalidPicks, []);
+  assert.equal(view.expertise.picks.flatMap((pick) => pick.chosen).length, 4);
+  assert.deepEqual(pruneInvalidExpertise(char, catalogsOf), char, "all four are kept");
+});
+
+test("tool slot: toggling Thieves' Tools after the Bard picks is accepted", () => {
+  const char = makeTestChar({
+    classes: [
+      { className: "Bard", level: 3, source: "PHB" },
+      { className: "Rogue", level: 1, source: "PHB" },
+    ],
+    chosenSkills: ["Performance", "Persuasion", "Stealth"],
+    addedTools: ["Thieves' Tools"],
+    chosenExpertise: ["Performance", "Persuasion", "Stealth"],
+  });
+
+  const toggled = toggleExpertiseChoice(char, "Thieves' Tools", catalogsOf);
+  assert.deepEqual(toggled.chosenExpertise, ["Performance", "Persuasion", "Stealth", "Thieves' Tools"]);
 });

@@ -1,27 +1,13 @@
 import { useState } from "react";
 import type { HpAction } from "../components/HpQuickEditModal";
 import { useCharacters } from "../context/CharacterContext";
-import { damage, heal, setCurrentHp, type HitPointPatch } from "../rules/hitPoints";
-import { damageWildShape, healWildShape, setWildShapeHp, type WildShapeHpPatch } from "../rules/wildShapeHp";
-import type { ActiveWildShape, Character } from "../types/character";
+import { hitPointPatch, type HitPointTarget } from "../rules/hitPointPool";
+import type { Character } from "../types/character";
 
 const HP_TRIGGER_HIT_SLOP = { top: 8, bottom: 8, left: 8, right: 8 };
 
 /** "character" edits normal HP. "wildShape" edits the Active Wild Shape's own HP. */
-export type HpTarget = "character" | "wildShape";
-
-function characterPatch(character: Character, maxHp: number, { kind, amount }: HpAction): HitPointPatch {
-  const state = { currentHp: character.currentHp, tempHp: character.tempHp };
-  if (kind === "damage") return damage(state, amount);
-  if (kind === "heal") return heal(state, amount, maxHp);
-  return setCurrentHp(state, amount, maxHp);
-}
-
-function wildShapePatch(character: Character, shape: ActiveWildShape, { kind, amount }: HpAction): WildShapeHpPatch {
-  if (kind === "damage") return damageWildShape(character, amount);
-  if (kind === "heal") return healWildShape(shape, amount);
-  return setWildShapeHp(character, amount);
-}
+export type HpTarget = HitPointTarget;
 
 /**
  * Open/close state and wiring for the HP quick-edit modal and the touchable that opens it.
@@ -50,10 +36,8 @@ export function useHpQuickEdit(character: Character | null | undefined, maxHp: n
 
   const onAction = (action: HpAction) => {
     if (!character) return;
-    const patch = beast
-      ? shape && wildShapePatch(character, shape, action)
-      : characterPatch(character, maxHp, action);
-    if (patch && Object.keys(patch).length > 0) void updateCharacter(character.id, patch);
+    const patch = hitPointPatch(character, action, maxHp, target);
+    if (Object.keys(patch).length > 0) void updateCharacter(character.id, patch);
   };
 
   return {

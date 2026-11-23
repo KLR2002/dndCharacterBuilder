@@ -24,7 +24,7 @@ import {
 } from "../../rules/optionalFeatures";
 import { adoptWildShape, getWildShapeLimits } from "../../rules/wildShape";
 import { describeClassFeature } from "../../rules/featureOptions";
-import { findFeat } from "../../rules/featSlot";
+import { featFeatureRows } from "../../rules/featFeatures";
 import { ResourceCounter } from "../../types/character";
 import type { BeastData } from "../../types/dnd5e";
 import { Badge } from "../ui/Badge";
@@ -323,20 +323,8 @@ export const FeaturesTab: React.FC = () => {
     }
 
     // 5. Feats
-    if (currentCharacter.asiSelections) {
-      const allFeats = currentCompendium().for(activeBooks).feats();
-      for (const asi of currentCharacter.asiSelections) {
-        if (asi.type === "feat" && asi.featName) {
-          const fData = findHeldRecord(allFeats, { name: asi.featName, source: asi.featSource }, activeBooks);
-          list.push({
-            id: `feat_${asi.featName}_${asi.level}`,
-            name: `${asi.featName} (Feat, Lvl ${asi.level})`,
-            origin: "Feat",
-            source: findFeat(asi.featName ?? "", asi.featSource, currentCompendium(), activeBooks)?.source ?? asi.featSource ?? "",
-            description: fData?.description || "Feat benefits.",
-          });
-        }
-      }
+    for (const row of featFeatureRows(currentCharacter, currentCompendium(), activeBooks)) {
+      list.push({ ...row, origin: "Feat" });
     }
 
     return list;

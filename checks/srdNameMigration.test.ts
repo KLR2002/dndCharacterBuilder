@@ -6,7 +6,7 @@ import type { Character, InventoryItem } from "../src/types/character.ts";
 import { integratedTestCompendium, makeChar, srdBaselineCompendium } from "./testUtils.ts";
 
 function item(name: string, source: string): InventoryItem {
-  return { id: `item_${name}`, name, source, quantity: 1, isEquipped: false, section: "carried" };
+  return { id: `item_${name}`, name, source, quantity: 1, isEquipped: false };
 }
 
 function savedWizard(overrides: Partial<Character>): Character {

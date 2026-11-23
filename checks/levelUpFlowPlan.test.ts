@@ -129,7 +129,7 @@ test("plan pick editors set their pick immutably", () => {
   const plan = fighterPlan();
   const snapshot = structuredClone(plan);
 
-  const withAsi = setPlanAsi(plan, { level: 4, className: "Fighter", classLevel: 4, type: "asi", asi: { con: 2 } });
+  const withAsi = setPlanAsi(FIGHTER_3, plan, { level: 4, className: "Fighter", classLevel: 4, type: "asi", asi: { con: 2 } });
   assert.deepEqual(withAsi.picks.asi?.asi, { con: 2 });
   assert.deepEqual(plan.picks, {}, "the original plan keeps no pick");
 
@@ -190,9 +190,9 @@ test("levelUpStepComplete reads the plan: class needs a plan, asiFeat needs a pi
   assert.equal(levelUpStepComplete(plan, "hitPoints"), true);
   assert.equal(levelUpStepComplete(plan, "spells"), true);
   assert.equal(levelUpStepComplete(plan, "asiFeat"), false);
-  assert.equal(levelUpStepComplete(setPlanAsi(plan, { level: 4, type: "asi", asi: { con: 2 } }), "asiFeat"), true);
+  assert.equal(levelUpStepComplete(setPlanAsi(FIGHTER_3, plan, { level: 4, type: "asi", asi: { con: 2 } }), "asiFeat"), true);
   assert.equal(levelUpStepComplete(plan, "review"), false, "the unpicked ASI/Feat step blocks Review");
-  assert.equal(levelUpStepComplete(setPlanAsi(plan, { level: 4, type: "asi", asi: { con: 2 } }), "review"), true);
+  assert.equal(levelUpStepComplete(setPlanAsi(FIGHTER_3, plan, { level: 4, type: "asi", asi: { con: 2 } }), "review"), true);
 
   const rogue = planLevelUp(FIGHTER_3, { className: "Rogue", source: "PHB" });
   if (!rogue.ok) assert.fail(rogue.reason);
@@ -378,9 +378,9 @@ test("a Barbarian 2 to 3 plan whose only new choice is an optional feature shows
 test("a feat offering +1 to one of several abilities keeps the ASI/Feat step incomplete until one is chosen", () => {
   const plan = fighterPlan();
   const opts = { character: FIGHTER_3, activeBooks: ALL_BOOKS };
-  const athlete = setPlanAsi(plan, { level: 4, className: "Fighter", classLevel: 4, type: "feat", featName: "Athlete", featSource: "PHB" });
+  const athlete = setPlanAsi(FIGHTER_3, plan, { level: 4, className: "Fighter", classLevel: 4, type: "feat", featName: "Athlete", featSource: "PHB" });
   assert.equal(levelUpStepComplete(athlete, "asiFeat", opts), false, "no ability chosen yet");
-  const withAbility = setPlanAsi(plan, { level: 4, className: "Fighter", classLevel: 4, type: "feat", featName: "Athlete", featSource: "PHB", featAbility: "str", asi: { str: 1 } });
+  const withAbility = setPlanAsi(FIGHTER_3, plan, { level: 4, className: "Fighter", classLevel: 4, type: "feat", featName: "Athlete", featSource: "PHB", featAbility: "str", asi: { str: 1 } });
   assert.equal(levelUpStepComplete(withAbility, "asiFeat", opts), true, "Athlete grants no rule choice of its own");
   assert.equal(levelUpStepComplete(withAbility, "review", opts), true);
 });
@@ -388,12 +388,12 @@ test("a feat offering +1 to one of several abilities keeps the ASI/Feat step inc
 test("a half-finished ASI pick (one +1 of two) keeps the ASI/Feat step incomplete", () => {
   const plan = fighterPlan();
   const opts = { character: FIGHTER_3, activeBooks: ALL_BOOKS };
-  const half = setPlanAsi(plan, { level: 4, className: "Fighter", classLevel: 4, type: "asi", asi: { str: 1 } });
+  const half = setPlanAsi(FIGHTER_3, plan, { level: 4, className: "Fighter", classLevel: 4, type: "asi", asi: { str: 1 } });
   assert.equal(levelUpStepComplete(half, "asiFeat", opts), false, "one +1 of the two is not a complete ASI");
   assert.equal(levelUpStepComplete(half, "review", opts), false, "the half-finished ASI blocks Review too");
-  const two = setPlanAsi(plan, { level: 4, className: "Fighter", classLevel: 4, type: "asi", asi: { str: 1, dex: 1 } });
+  const two = setPlanAsi(FIGHTER_3, plan, { level: 4, className: "Fighter", classLevel: 4, type: "asi", asi: { str: 1, dex: 1 } });
   assert.equal(levelUpStepComplete(two, "asiFeat", opts), true);
-  const plus2 = setPlanAsi(plan, { level: 4, className: "Fighter", classLevel: 4, type: "asi", asi: { con: 2 } });
+  const plus2 = setPlanAsi(FIGHTER_3, plan, { level: 4, className: "Fighter", classLevel: 4, type: "asi", asi: { con: 2 } });
   assert.equal(levelUpStepComplete(plus2, "asiFeat", opts), true);
 });
 
@@ -411,7 +411,7 @@ test("asiFeatStepView derives the whole ASI/Feat selection from the plan's pick,
     },
   ];
   // A feat with an ability choice is picked but its ability is not chosen yet — the remount case.
-  const athlete = setPlanAsi(plan, { level: 4, className: "Fighter", classLevel: 4, type: "feat", featName: "Athlete", featSource: "PHB" });
+  const athlete = setPlanAsi(FIGHTER_3, plan, { level: 4, className: "Fighter", classLevel: 4, type: "feat", featName: "Athlete", featSource: "PHB" });
   const view = asiFeatStepView(athlete, FIGHTER_3, feats, opts);
   assert.equal(view.tab, "feat");
   assert.equal(view.featName, "Athlete");
@@ -419,12 +419,12 @@ test("asiFeatStepView derives the whole ASI/Feat selection from the plan's pick,
   assert.equal(view.featAbility, null, "no ability chosen yet, so the ability chips render unpicked");
   assert.equal(view.featAbilityOptions.type, "choice");
   // Choosing the ability is a plan write; the view reads it back.
-  const withAbility = setPlanAsi(athlete, { level: 4, className: "Fighter", classLevel: 4, type: "feat", featName: "Athlete", featSource: "PHB", featAbility: "str", asi: { str: 1 } });
+  const withAbility = setPlanAsi(FIGHTER_3, athlete, { level: 4, className: "Fighter", classLevel: 4, type: "feat", featName: "Athlete", featSource: "PHB", featAbility: "str", asi: { str: 1 } });
   const abilityView = asiFeatStepView(withAbility, FIGHTER_3, feats, opts);
   assert.equal(abilityView.tab, "feat");
   assert.equal(abilityView.featAbility, "str");
   // A half-finished ASI pick in the plan replaces the feat: the view shows it on the ASI tab, nothing stale.
-  const halfAsi = setPlanAsi(athlete, { level: 4, className: "Fighter", classLevel: 4, type: "asi", asi: { str: 1 } });
+  const halfAsi = setPlanAsi(FIGHTER_3, athlete, { level: 4, className: "Fighter", classLevel: 4, type: "asi", asi: { str: 1 } });
   const halfView = asiFeatStepView(halfAsi, FIGHTER_3, feats, opts);
   assert.equal(halfView.tab, "asi");
   assert.equal(halfView.featName, null);
@@ -433,7 +433,7 @@ test("asiFeatStepView derives the whole ASI/Feat selection from the plan's pick,
   assert.deepEqual(halfView.plus1Picks, ["str"]);
   assert.equal(halfView.plus2Pick, null);
   // A +2 pick shows in the plus2 mode.
-  const plus2 = setPlanAsi(plan, { level: 4, className: "Fighter", classLevel: 4, type: "asi", asi: { con: 2 } });
+  const plus2 = setPlanAsi(FIGHTER_3, plan, { level: 4, className: "Fighter", classLevel: 4, type: "asi", asi: { con: 2 } });
   const plus2View = asiFeatStepView(plus2, FIGHTER_3, feats, opts);
   assert.equal(plus2View.tab, "asi");
   assert.equal(plus2View.asiMode, "plus2");
@@ -446,7 +446,7 @@ test("asiFeatStepView derives the whole ASI/Feat selection from the plan's pick,
   assert.equal(emptyView.selectedFeat, null);
   assert.equal(emptyView.featAbility, null);
   // The feat's own rule choices are derived with the pick.
-  const initiate = setPlanAsi(plan, { level: 4, className: "Fighter", classLevel: 4, type: "feat", featName: "Fighting Initiate", featSource: "TCE" });
+  const initiate = setPlanAsi(FIGHTER_3, plan, { level: 4, className: "Fighter", classLevel: 4, type: "feat", featName: "Fighting Initiate", featSource: "TCE" });
   const subView = asiFeatStepView(initiate, FIGHTER_3, feats, opts);
   assert.equal(subView.tab, "feat");
   assert.ok(subView.subChoices.length >= 1, "the style choice is derived with the pick");
@@ -455,7 +455,7 @@ test("asiFeatStepView derives the whole ASI/Feat selection from the plan's pick,
 test("a feat with its own rule choice (a fighting style) is incomplete until the pick is made, and applying records it", () => {
   const plan = fighterPlan();
   const opts = { character: FIGHTER_3, activeBooks: ALL_BOOKS };
-  const initiate = setPlanAsi(plan, { level: 4, className: "Fighter", classLevel: 4, type: "feat", featName: "Fighting Initiate", featSource: "TCE" });
+  const initiate = setPlanAsi(FIGHTER_3, plan, { level: 4, className: "Fighter", classLevel: 4, type: "feat", featName: "Fighting Initiate", featSource: "TCE" });
   assert.equal(levelUpStepComplete(initiate, "asiFeat", opts), false, "the style is not picked yet");
   const choices = asiFeatSubChoices(initiate, FIGHTER_3, { activeBooks: ALL_BOOKS });
   assert.equal(choices.length, 1, "Fighting Initiate grants exactly its style choice");
@@ -475,7 +475,7 @@ test("a feat with its own rule choice (a fighting style) is incomplete until the
 
 test("setPlanFeatPick refuses a new option once the cap is reached; the picked ones stay deselectable", () => {
   const plan = fighterPlan();
-  const initiate = setPlanAsi(plan, { level: 4, className: "Fighter", classLevel: 4, type: "feat", featName: "Fighting Initiate", featSource: "TCE" });
+  const initiate = setPlanAsi(FIGHTER_3, plan, { level: 4, className: "Fighter", classLevel: 4, type: "feat", featName: "Fighting Initiate", featSource: "TCE" });
   const choice = asiFeatSubChoices(initiate, FIGHTER_3, { activeBooks: ALL_BOOKS })[0];
   assert.ok(choice, "Fighting Initiate grants its fighting style choice");
   assert.ok(choice.options.length >= 2);
@@ -498,7 +498,7 @@ test("setPlanFeatPick refuses a new option once the cap is reached; the picked o
 
 test("levelUpSummary lists the feat's own picks as rows", () => {
   const plan = fighterPlan();
-  const initiate = setPlanAsi(plan, { level: 4, className: "Fighter", classLevel: 4, type: "feat", featName: "Fighting Initiate", featSource: "TCE" });
+  const initiate = setPlanAsi(FIGHTER_3, plan, { level: 4, className: "Fighter", classLevel: 4, type: "feat", featName: "Fighting Initiate", featSource: "TCE" });
   const choice = asiFeatSubChoices(initiate, FIGHTER_3, { activeBooks: ALL_BOOKS })[0];
   const picked = setPlanFeatPick(initiate, choice.id, choice.options[0].name, choice.choose);
   const rows = new Map(levelUpSummary(picked, FIGHTER_3, { fullHealOnLevelUp: false, activeBooks: ALL_BOOKS }).map((r) => [r.label, r.value]));
@@ -520,7 +520,7 @@ test("levelUpSummary lists the level and hit points before → after, plus every
   assert.equal(rolledRows.get("Hit points"), `${maxHp(FIGHTER_3)} → ${maxHp(FIGHTER_3) + 12}`);
   assert.match(rolledRows.get("Hit points method") ?? "", /Roll/);
 
-  const withAsi = setPlanAsi(plan, { level: 4, type: "feat", featName: "Grappler", featSource: "PHB" });
+  const withAsi = setPlanAsi(FIGHTER_3, plan, { level: 4, type: "feat", featName: "Grappler", featSource: "PHB" });
   const asiRows = new Map(levelUpSummary(withAsi, FIGHTER_3, { fullHealOnLevelUp: false }).map((r) => [r.label, r.value]));
   assert.equal(asiRows.get("ASI/Feat"), "Grappler");
 });

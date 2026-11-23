@@ -15,7 +15,7 @@ These functions take `activeBooks` and often a Compendium. Where one has no Comp
 
 **Status:** done
 
-**Landed:** merge 2abe67d (3f91170).
+**Landed:** merge c46bedb (f3f4690).
 - **Spell readers:** `isSpellAvailableForClass` takes an optional Compendium and asks `admits`, for the spell's book and for variant grants. `pickSpell` (exported) takes the listings; an active copy is admitted and not SRD.
 - **Feats:** `featOfSelection` ranks feats by `admits`; `featSwitchedOff` asks `admits`. Callers pass their Compendium, including `BackgroundSection`.
 - **Decided in review: gating fixtures.** Eight pre-existing gating tests used in-memory compendia holding non-SRD books while flagged non-integrated, a state the app never reaches. Those fixtures are now integrated, with assertions unchanged.

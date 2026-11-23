@@ -6,7 +6,7 @@
 
 **Status:** done
 
-**Landed:** 41552e6. `src/rules/featIncrease.ts` (leaf module: `findFeat`, `featIncreaseOptions`, `releaseFeatIncreasesOutsidePool`; `featSlot.ts` re-exports them) avoids the reconciler → featSlot → builderTransitions import cycle. A released pick loses `featAbility` and `asi` (`effectiveScores` reads `asi` first), keeps the feat. Skipped while `compendium.stale`. check:all and check:live passed.
+**Landed:** 9d857f6. `src/rules/featIncrease.ts` (leaf module: `findFeat`, `featIncreaseOptions`, `releaseFeatIncreasesOutsidePool`; `featSlot.ts` re-exports them) avoids the reconciler → featSlot → builderTransitions import cycle. A released pick loses `featAbility` and `asi` (`effectiveScores` reads `asi` first), keeps the feat. Skipped while `compendium.stale`. check:all and check:live passed.
 
 - [x] Tests (red first, paste it): a Resilient pick saved with `featAbility: "con"` against a catalog whose Resilient offers only `["str","dex"]` is released with one notice naming the feat; the same pick against a catalog with no `abilityScoreChoices` on Resilient is kept with no notice; an origin feat behaves the same as an ASI feat.
 - [x] `npm run check:all` passes.

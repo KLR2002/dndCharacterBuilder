@@ -77,9 +77,18 @@ export interface CreationStep {
   status: CreationStepStatus;
   /** Whether the step's own requirement is met. A later step stays locked until the current one is valid. */
   valid: boolean;
+  /** Finished, and for a pick step also valid. */
+  done: boolean;
   /** An earlier step's change released this step's picks; it must be finished again. */
   needsAttention: boolean;
 }
+
+/**
+ * The steps whose validity asks only for picks: the subclass, the Class Choices, and the ASI/Feat slots (not a feat's
+ * own picks). The other steps' validity is a creation gate a finished Character can fail with nothing to pick, so
+ * their done state is their status alone.
+ */
+const PICK_STEPS: ReadonlySet<CreationStepId> = new Set<CreationStepId>(["subclass", "classChoices", "asiFeats"]);
 
 /**
  * A draft is a character whose creation progress is recorded. Absent means the character is finished, so a
@@ -123,7 +132,9 @@ export function creationSteps(character: Character, opts: CreationFlowOptions = 
     if (current === null || index < currentIndex) status = "finished";
     else if (index === currentIndex) status = "current";
     else status = "locked";
-    return { id, status, valid: isCreationStepValid(character, id, opts), needsAttention: creationStepNeedsAttention(character, id) };
+    const valid = isCreationStepValid(character, id, opts);
+    const done = status === "finished" && (valid || !PICK_STEPS.has(id));
+    return { id, status, valid, done, needsAttention: creationStepNeedsAttention(character, id) };
   });
 }
 

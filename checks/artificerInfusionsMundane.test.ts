@@ -16,6 +16,7 @@ test("isMundaneItem and isMundaneInfusionTarget correctly identify nonmagical ba
     name: "Dagger",
     source: "PHB",
     quantity: 1,
+    isEquipped: false,
     weight: 1,
     rarity: "None",
   };
@@ -27,6 +28,7 @@ test("isMundaneItem and isMundaneInfusionTarget correctly identify nonmagical ba
     name: "Longsword",
     source: "PHB",
     quantity: 1,
+    isEquipped: false,
     weight: 3,
   };
   assert.equal(isMundaneItem(mundaneLongsword), true);
@@ -36,6 +38,7 @@ test("isMundaneItem and isMundaneInfusionTarget correctly identify nonmagical ba
     name: "Shield",
     source: "PHB",
     quantity: 1,
+    isEquipped: false,
     weight: 6,
     ac: 2,
     rarity: "None",
@@ -47,6 +50,7 @@ test("isMundaneItem and isMundaneInfusionTarget correctly identify nonmagical ba
     name: "Plate Armor",
     source: "PHB",
     quantity: 1,
+    isEquipped: false,
     weight: 65,
     ac: 18,
   };
@@ -60,6 +64,7 @@ test("isMundaneItem rejects magic weapons, armors, and wondrous items", () => {
     name: "Longsword, +1",
     source: "DMG",
     quantity: 1,
+    isEquipped: false,
     bonusWeapon: 1,
     rarity: "Uncommon",
   };
@@ -70,6 +75,7 @@ test("isMundaneItem rejects magic weapons, armors, and wondrous items", () => {
     name: "Sun Blade",
     source: "DMG",
     quantity: 1,
+    isEquipped: false,
     bonusWeapon: 2,
     rarity: "Rare",
   };
@@ -80,6 +86,7 @@ test("isMundaneItem rejects magic weapons, armors, and wondrous items", () => {
     name: "Dagger of Warning",
     source: "DMG",
     quantity: 1,
+    isEquipped: false,
     rarity: "Uncommon",
   };
   assert.equal(isMundaneItem(daggerOfWarning), false);
@@ -90,6 +97,7 @@ test("isMundaneItem rejects magic weapons, armors, and wondrous items", () => {
     name: "Shield, +1",
     source: "DMG",
     quantity: 1,
+    isEquipped: false,
     ac: 2,
     bonusAc: 1,
     rarity: "Uncommon",
@@ -101,6 +109,7 @@ test("isMundaneItem rejects magic weapons, armors, and wondrous items", () => {
     name: "Plate Armor, +1",
     source: "DMG",
     quantity: 1,
+    isEquipped: false,
     ac: 18,
     bonusAc: 1,
     rarity: "Rare",
@@ -112,6 +121,7 @@ test("isMundaneItem rejects magic weapons, armors, and wondrous items", () => {
     name: "Adamantine Chain Mail",
     source: "DMG",
     quantity: 1,
+    isEquipped: false,
     ac: 16,
     rarity: "Uncommon",
   };
@@ -123,6 +133,7 @@ test("isMundaneItem rejects magic weapons, armors, and wondrous items", () => {
     name: "Ring of Protection",
     source: "DMG",
     quantity: 1,
+    isEquipped: false,
     bonusAc: 1,
     rarity: "Rare",
   };
@@ -135,6 +146,7 @@ test("reconcile removes active infusions bound to magical items", () => {
     name: "Longsword",
     source: "PHB",
     quantity: 1,
+    isEquipped: false,
     isInfused: true,
     infusedWith: "Enhanced Weapon",
   };
@@ -144,6 +156,7 @@ test("reconcile removes active infusions bound to magical items", () => {
     name: "Sun Blade",
     source: "DMG",
     quantity: 1,
+    isEquipped: false,
     rarity: "Rare",
     bonusWeapon: 2,
     isInfused: true,

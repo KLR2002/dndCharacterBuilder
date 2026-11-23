@@ -92,7 +92,6 @@ describe("Inventory Compendium & Category Filtering", () => {
       source: longswordPlusTwo.source,
       quantity: 1,
       isEquipped: true,
-      section: "equipped",
       weight: longswordPlusTwo.weight,
       cost: longswordPlusTwo.cost,
       damage: longswordPlusTwo.damage,

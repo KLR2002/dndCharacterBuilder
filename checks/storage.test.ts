@@ -71,7 +71,7 @@ test("migration preserves all original strings before changing any payload", asy
   }
   const kv = new TrackedMap();
   const originals = {
-    [CHARACTERS]: '  ' + JSON.stringify([makeChar({ notes: "Journal", items: [{ id: "i", name: "Sword", source: "PHB", quantity: 1, isEquipped: true, section: "equipped" }] })]),
+    [CHARACTERS]: '  ' + JSON.stringify([makeChar({ notes: "Journal", items: [{ id: "i", name: "Sword", source: "PHB", quantity: 1, isEquipped: true }] })]),
     [FOLDERS]: '[ {"id":"f","name":"Party","createdAt":1} ]',
     [SETTINGS]: '{ "themeAccentId":"blue", "activeResourceBooks":["PHB"], "hasCompletedFirstRun":true }',
   };

@@ -23,7 +23,6 @@ function weapon(id: string, name: string, overrides: Partial<InventoryItem> = {}
     source: "PHB",
     quantity: 1,
     isEquipped: true,
-    section: "equipped",
     ...overrides,
   };
 }
@@ -35,7 +34,6 @@ function armor(id: string, name: string, ac: number, overrides: Partial<Inventor
     source: "PHB",
     quantity: 1,
     isEquipped: true,
-    section: "equipped",
     ac,
     ...overrides,
   };

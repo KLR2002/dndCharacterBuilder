@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { Text, View } from "react-native";
+import { Text, TextInput, View } from "react-native";
 import { useCharacters } from "../context/CharacterContext";
 import { useAppTheme } from "../context/ThemeContext";
 import { useHpQuickEdit } from "../hooks/useHpQuickEdit";
+import { hitPointPatch } from "../rules/hitPointPool";
 import { revertWildShape } from "../rules/wildShapeHp";
 import { currentCompendium } from "../services/compendium";
 import type { Character } from "../types/character";
@@ -29,6 +30,7 @@ export const ActiveWildShapeCard: React.FC<ActiveWildShapeCardProps> = ({
   const { theme } = useAppTheme();
 
   const [hpAmount, setHpAmount] = useState("1");
+  const [tempAmount, setTempAmount] = useState("");
   const [statblock, setStatblock] = useState<{
     visible: boolean;
     title: string;
@@ -43,6 +45,14 @@ export const ActiveWildShapeCard: React.FC<ActiveWildShapeCardProps> = ({
   if (!shape) return null;
 
   const amount = () => parseInt(hpAmount, 10) || 1;
+
+  const applyTemp = () => {
+    const val = parseInt(tempAmount, 10);
+    if (!isNaN(val) && val >= 0) {
+      updateCharacter(character.id, hitPointPatch(character, { kind: "temp", amount: val }, 0));
+      setTempAmount("");
+    }
+  };
 
   const openStatblock = () => {
     const b = currentCompendium().findBeast(shape.name, shape.source);
@@ -95,13 +105,50 @@ export const ActiveWildShapeCard: React.FC<ActiveWildShapeCardProps> = ({
           maxHp={shape.maxHp}
           tempHp={shape.tempHp ?? 0}
           numberProps={hpQuickEdit.triggerProps}
-          amount={hpAmount}
-          onAmountChange={setHpAmount}
-          onDamage={() =>
-            hpQuickEdit.apply({ kind: "damage", amount: amount() })
-          }
-          onHeal={() => hpQuickEdit.apply({ kind: "heal", amount: amount() })}
+          actions={{
+            amount: hpAmount,
+            onAmountChange: setHpAmount,
+            onDamage: () => hpQuickEdit.apply({ kind: "damage", amount: amount() }),
+            onHeal: () => hpQuickEdit.apply({ kind: "heal", amount: amount() }),
+          }}
         />
+
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 8,
+            marginTop: 10,
+            paddingTop: 8,
+            borderTopWidth: 1,
+            borderTopColor: "rgba(255,255,255,0.06)",
+          }}
+        >
+          <Text style={{ color: theme.textSecondary, fontSize: 13, flex: 1, flexShrink: 1 }}>Temp HP:</Text>
+          <TextInput
+            style={{
+              minWidth: 96,
+              flexGrow: 1,
+              maxWidth: 160,
+              minHeight: 36,
+              borderRadius: 6,
+              borderWidth: 1,
+              borderColor: theme.border,
+              backgroundColor: theme.surfaceHighlight,
+              color: theme.text,
+              paddingHorizontal: 8,
+              paddingVertical: 0,
+              fontSize: 13,
+              textAlignVertical: "center",
+            }}
+            value={tempAmount}
+            onChangeText={setTempAmount}
+            keyboardType="number-pad"
+            placeholder="New Temp"
+            placeholderTextColor={theme.textMuted}
+          />
+          <Button title="Apply" size="sm" variant="secondary" onPress={applyTemp} />
+        </View>
 
         {/* Action Buttons: Inspect Beast & Revert */}
         <View

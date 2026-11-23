@@ -979,10 +979,10 @@ export function setOptionalFeatureEnabled(
 
 export function parseBackgroundEquipment(startingEquipment: string[] = []): {
   coins: { cp?: number; sp?: number; ep?: number; gp?: number; pp?: number };
-  items: { name: string; quantity: number; section: "carried" | "equipped" }[];
+  items: { name: string; quantity: number; isEquipped: boolean }[];
 } {
   const coins: { cp?: number; sp?: number; ep?: number; gp?: number; pp?: number } = {};
-  const items: { name: string; quantity: number; section: "carried" | "equipped" }[] = [];
+  const items: { name: string; quantity: number; isEquipped: boolean }[] = [];
 
   for (const raw of startingEquipment) {
     const text = raw.trim();
@@ -1007,11 +1007,11 @@ export function parseBackgroundEquipment(startingEquipment: string[] = []): {
       const q = parseInt(qtyMatch[1], 10);
       let name = qtyMatch[2].trim();
       name = name.charAt(0).toUpperCase() + name.slice(1);
-      items.push({ name, quantity: q, section: "carried" });
+      items.push({ name, quantity: q, isEquipped: false });
     } else {
       let name = text.replace(/^a\s+pouch\s+containing.*$/i, "Pouch");
       name = name.charAt(0).toUpperCase() + name.slice(1);
-      items.push({ name, quantity: 1, section: "carried" });
+      items.push({ name, quantity: 1, isEquipped: false });
     }
   }
 
@@ -1037,8 +1037,7 @@ function grantBackground(character: Character, bgData?: BackgroundData): Charact
       name: it.name,
       source: bgData?.source || "PHB",
       quantity: it.quantity,
-      isEquipped: false,
-      section: it.section,
+      isEquipped: it.isEquipped,
     })),
     character.items ?? []
   );

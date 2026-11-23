@@ -6,7 +6,7 @@
 
 **Status:** done
 
-**Landed:** 4be35b3. Lint rule red then green; check:all passed. The export ships Ionicons, Source Serif and MaterialSymbols_400Regular.ttf (967 KB): expo-router 57 depends on expo-symbols, whose Android icon converter imports it. Left in place.
+**Landed:** 9b3b694. Lint rule red then green; check:all passed. The export ships Ionicons, Source Serif and MaterialSymbols_400Regular.ttf (967 KB): expo-router 57 depends on expo-symbols, whose Android icon converter imports it. Left in place.
 
 - [x] `grep -rn 'from "@expo/vector-icons"' src` lists nothing.
 - [x] The lint rule fails on a bare import: show it failing on one file before the import is changed (paste the output).
