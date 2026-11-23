@@ -1,6 +1,6 @@
 - Feats from your race or background now show on the Features tab
 - Skill Expert and Prodigy give Expertise when taken as an origin feat
-- Level Up keeps a Thieves' Tools Expertise pick
+- Level Up asks for a feat's Expertise and keeps a Thieves' Tools pick
 - Edit Build shows no tick on Class Choices with picks left
 - Notices give the right reason when Expertise is removed
 - Bards start with three skills

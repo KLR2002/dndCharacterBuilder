@@ -18,9 +18,14 @@
 
 **Blocked by:** None
 
-**Status:** open
+**Status:** done
 
-- [ ] Tests in `checks/levelUpFlowPlan.test.ts` (or a new `checks/levelUpFeatExpertise.test.ts`), red first. Use the integrated test catalog (`loadTestCatalog("classes")` and `loadTestCatalog("feats")`, `ALL_BOOKS`), since Skill Expert is TCE. Base character: a Rogue 3 (Thief) with Stealth, Perception, Deception and Acrobatics, Thieves' Tools, and Expertise in Stealth and Perception.
+**Landed:** merge 3ae38cae (651c2375).
+- **Seen on web with the integrated catalog at 320 and 1280:** a Rogue 3 who takes Skill Expert on Level Up gets a Class Choices step with the feat's Expertise (Acrobatics, Religion, Insight, Deception). Continue stays off until one is picked. Review lists it, and the save holds Stealth, Perception and Deception.
+- check:all, check:live and the Level-Up Flow layout scenarios (SRD at four widths, integrated at 320) passed. Android not checked.
+- No Prodigy test: it takes the same path. The `setPlanSubclass` pass-through has no test, since no class gets its subclass and an ASI at the same level.
+
+- [x] Tests in `checks/levelUpFlowPlan.test.ts` (or a new `checks/levelUpFeatExpertise.test.ts`), red first. Use the integrated test catalog (`loadTestCatalog("classes")` and `loadTestCatalog("feats")`, `ALL_BOOKS`), since Skill Expert is TCE. Base character: a Rogue 3 (Thief) with Stealth, Perception, Deception and Acrobatics, Thieves' Tools, and Expertise in Stealth and Perception.
   - Planning Rogue 4 and setting Skill Expert (featAbility `dex`) with `setPlanAsi` adds the Class Choices step and a `feat_skill_expert` milestone. Its options leave out Stealth and Perception.
   - The Class Choices step is not complete until one Expertise is picked, and then it is.
   - The applied plan saves `chosenExpertise` as Stealth, Perception and the pick, with Skill Expert in `asiSelections`.
@@ -28,5 +33,5 @@
   - The Review rows include `Expertise` with the pick.
   - `levelUpClassChoicesView` on the plan has `applies` true and lists the feat's milestone.
   - A plan with no feat is unchanged: the existing tests still pass.
-- [ ] `npm run check:all` passes.
-- [ ] Seen in the running app on the integrated catalog at 320 and 1280 (main session).
+- [x] `npm run check:all` passes.
+- [x] Seen in the running app on the integrated catalog at 320 and 1280 (main session).

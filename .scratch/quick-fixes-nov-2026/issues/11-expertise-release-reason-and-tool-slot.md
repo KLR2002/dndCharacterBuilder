@@ -21,7 +21,7 @@
 - **Reasons and placement:** as above. An exhaustive check of 9906 milestone and pick arrangements found every one that placed all picks before unchanged, and every one now placed as fully as its slots allow.
 - **Seen on web with the integrated catalog at 320 and 1280:** the Rogue 6 level up saves Thieves' Tools, and lowering the Rogue away gives the two new reasons. The card's warning text was not seen on screen.
 - check:all, check:live and the full layout check (SRD and integrated) passed. Android not checked.
-- **Found, not fixed:** a feat picked in the Level-Up Flow never adds its Expertise milestone to the plan (Skill Expert saves with the pick open); it is picked in Edit Build.
+- **Found, not fixed:** a feat picked in the Level-Up Flow never adds its Expertise milestone to the plan (Skill Expert saves with the pick open); it is picked in Edit Build. Fixed in 13.
 
 - [x] Tests in `checks/expertise.test.ts`, red first:
   - Removing the Skill Expert origin feat with the skill still proficient gives exactly "no Expertise slot left" (tighten the existing test).
