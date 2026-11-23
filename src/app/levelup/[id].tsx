@@ -225,7 +225,7 @@ export default function LevelUpScreen() {
             character={character}
             allFeats={allFeats}
             activeBooks={activeBooks}
-            onPick={(asi) => commitPlan(setPlanAsi(plan, asi))}
+            onPick={(asi) => commitPlan(setPlanAsi(character, plan, asi, flowOpts))}
             onFeatPick={(choiceId, option, choose) => commitPlan(setPlanFeatPick(plan, choiceId, option, choose))}
           />
         );

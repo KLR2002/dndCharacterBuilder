@@ -183,7 +183,7 @@ export function planLevelUp(character: Character, options: PlanLevelUpOptions): 
   const choices = plannedLevelChoices(character, { className, source, fromLevel, toLevel, subclassName: picks.subclass?.name }, {
     compendium,
     activeBooks,
-  });
+  }, picks.asi);
   if (bringsClassChoices(choices)) wanted.add("classChoices");
   const spellsDue = plannedSpellsDue(character, { className, source, fromLevel, toLevel, subclassName: picks.subclass?.name }, {
     compendium,
@@ -304,12 +304,6 @@ export function applyLevelUpPlan(
       next = pickRuleChoice(next, choice, option, compendium, activeBooks);
     }
   }
-  // The level's Expertise picks, through the builder's Expertise toggle once the level exists (it reads the
-  // milestone the new level opens); an option the Character already holds is not toggled off again.
-  for (const item of plan.picks.expertisePicks ?? []) {
-    if (next.chosenExpertise?.some((held) => held.trim().toLowerCase() === item.trim().toLowerCase())) continue;
-    next = toggleExpertiseChoice(next, item, { compendium, activeBooks });
-  }
   for (const [featureName, enabled] of Object.entries(plan.picks.optionalFeatures ?? {})) {
     if (enabled) next = setOptionalFeatureEnabled(next, featureName, true, compendium, { activeBooks });
   }
@@ -328,6 +322,12 @@ export function applyLevelUpPlan(
         next = pickRuleChoice(next, choice, option, compendium, activeBooks);
       }
     }
+  }
+  // The level's Expertise picks, through the builder's Expertise toggle once the level exists and holds its ASI/Feat
+  // pick (a feat's milestone opens with the feat); an option the Character already holds is not toggled off again.
+  for (const item of plan.picks.expertisePicks ?? []) {
+    if (next.chosenExpertise?.some((held) => held.trim().toLowerCase() === item.trim().toLowerCase())) continue;
+    next = toggleExpertiseChoice(next, item, { compendium, activeBooks });
   }
   if (plan.picks.learnedSpells?.length) {
     const profile = getClassSpellProfiles(next, { activeBooks, compendium }).find((p) =>
@@ -575,16 +575,20 @@ interface PlannedLevelChoices {
   optionalFeatures: OptionalFeatureOption[];
 }
 
-/** What the planned level brings, read on the planned class entry through the shared classChoices readers. */
+/**
+ * What the planned level brings, read on the planned class entry through the shared classChoices readers. `asi` is the
+ * level's ASI/Feat pick, so a feat that opens an Expertise milestone is read too.
+ */
 function plannedLevelChoices(
   character: Character,
   plan: { className: string; source: string; fromLevel: number; toLevel: number; subclassName?: string },
-  opts: { compendium: Compendium; activeBooks: ActiveBooks }
+  opts: { compendium: Compendium; activeBooks: ActiveBooks },
+  asi?: AsiSelection
 ): PlannedLevelChoices {
   const entry = plannedClassEntry(character, plan);
   return {
     choices: classChoicesAtLevel(character, entry, plan.fromLevel, opts),
-    expertise: newExpertiseMilestones(character, entry, opts),
+    expertise: newExpertiseMilestones(character, entry, opts, asi),
     optionalFeatures: newOptionalFeatures(character, entry, plan.fromLevel, opts),
   };
 }
@@ -615,7 +619,8 @@ export function setPlanSubclass(
   const levelChoices = plannedLevelChoices(
     character,
     { className: plan.className, source: plan.source, fromLevel: plan.fromLevel, toLevel: plan.toLevel, subclassName: name },
-    { compendium, activeBooks }
+    { compendium, activeBooks },
+    plan.picks.asi
   );
   const classChoices = [...levelChoices.choices.proficiencyChoices, ...levelChoices.choices.ruleChoices];
   const offered = new Set(classChoices.map((choice) => choice.id));
@@ -698,9 +703,39 @@ function withReplacement(plan: LevelUpPlan, replaced: LevelUpPicks["replacedSpel
   return { ...plan, picks };
 }
 
-/** Sets the plan's ASI/Feat pick. The given plan is never mutated. */
-export function setPlanAsi(plan: LevelUpPlan, asi: AsiSelection): LevelUpPlan {
-  return { ...plan, picks: { ...plan.picks, asi } };
+/**
+ * Sets the plan's ASI/Feat pick and re-derives the level's Expertise milestones on the character holding that pick: a
+ * feat that opens a milestone adds the Class Choices step, and the Expertise picks no milestone offers any more are
+ * dropped. The other picks and steps are left as they are. The given plan is never mutated.
+ */
+export function setPlanAsi(
+  character: Character,
+  plan: LevelUpPlan,
+  asi: AsiSelection,
+  opts: { compendium?: Compendium; activeBooks?: ActiveBooks } = {}
+): LevelUpPlan {
+  const compendium = opts.compendium ?? currentCompendium();
+  const activeBooks = opts.activeBooks ?? DEFAULT_ACTIVE_BOOK_CODES;
+  const levelChoices = plannedLevelChoices(
+    character,
+    { className: plan.className, source: plan.source, fromLevel: plan.fromLevel, toLevel: plan.toLevel, subclassName: plan.picks.subclass?.name },
+    { compendium, activeBooks },
+    asi
+  );
+  const offeredExpertise = new Set(levelChoices.expertise.flatMap((milestone) => milestone.options.map((o) => o.toLowerCase())));
+  const expertisePicks = (plan.picks.expertisePicks ?? []).filter((pick) => offeredExpertise.has(pick.toLowerCase()));
+
+  const stepIds = new Set<LevelUpStepId>(plan.steps.map((step) => step.id));
+  if (bringsClassChoices(levelChoices)) stepIds.add("classChoices");
+  else stepIds.delete("classChoices");
+  const steps = STEP_ORDER.filter((id) => stepIds.has(id)).map((id) => ({ id, className: plan.className, classLevel: plan.toLevel }));
+
+  return {
+    ...plan,
+    steps,
+    expertiseMilestones: levelChoices.expertise,
+    picks: { ...plan.picks, asi, expertisePicks },
+  };
 }
 
 /**
@@ -927,7 +962,7 @@ export function levelUpClassChoicesView(
     toLevel: plan.toLevel,
     subclassName: plan.picks.subclass?.name,
   });
-  return classChoicesLevelView(character, entry, plan.fromLevel, opts, plan.picks.expertisePicks ?? []);
+  return classChoicesLevelView(character, entry, plan.fromLevel, opts, plan.picks.expertisePicks ?? [], plan.picks.asi);
 }
 
 /** The subclasses a class offers in the active books. */

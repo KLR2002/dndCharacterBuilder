@@ -1,5 +1,5 @@
 import type { ActiveBooks } from "../constants/books.ts";
-import type { Character, CharacterClass } from "../types/character.ts";
+import type { AsiSelection, Character, CharacterClass } from "../types/character.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { catalogListings, type CharacterCatalogs } from "./catalogs.ts";
 import type { AvailableRuleChoice, ChoiceGroup } from "./choices/types.ts";
@@ -148,19 +148,23 @@ export function expertiseFilled(picks: ExpertiseMilestonePick[]): boolean {
 /**
  * The Expertise milestones the entry's new level brings: the milestones the planned character offers that the
  * character does not have, with the options its held Expertise picks already claim left out. A milestone with no
- * option left is not offered.
+ * option left is not offered. `asi`, the Level-Up Flow's ASI/Feat pick, is added to the planned character, so a
+ * feat that opens a milestone counts as new.
  */
 export function newExpertiseMilestones(
   character: Character,
   entry: CharacterClass,
   catalogs: CharacterCatalogs,
+  asi?: AsiSelection,
 ): ExpertiseMilestone[] {
   const held = getAvailableExpertiseMilestones(character, catalogs);
   const heldIds = new Set(held.map((milestone) => milestone.id));
   const claimed = new Set(
     getMilestonePicks(held, character.chosenExpertise ?? []).flatMap((pick) => pick.chosen.map((name) => name.toLowerCase())),
   );
-  return getAvailableExpertiseMilestones(holding(character, entry), catalogs)
+  const planned = holding(character, entry);
+  const withAsi = asi ? { ...planned, asiSelections: [...(planned.asiSelections ?? []), asi] } : planned;
+  return getAvailableExpertiseMilestones(withAsi, catalogs)
     .filter((milestone) => !heldIds.has(milestone.id))
     .map((milestone) => ({ ...milestone, options: milestone.options.filter((option) => !claimed.has(option.toLowerCase())) }))
     .filter((milestone) => milestone.options.length > 0);
@@ -181,7 +185,7 @@ export function newOptionalFeatures(
 /**
  * The Level-Up Flow's view of one class's new level: the choices `classChoicesAtLevel` gives for the levels after
  * `fromLevel`, the new Expertise milestones with the picks `expertisePicks` make, and the optional features the level
- * gains, with the skill picks split out as the Class Choices step shows them.
+ * gains, with the skill picks split out as the Class Choices step shows them. `asi` is the level's ASI/Feat pick.
  */
 export function classChoicesLevelView(
   saved: Character,
@@ -189,6 +193,7 @@ export function classChoicesLevelView(
   fromLevel: number,
   query: ClassChoicesQuery = {},
   expertisePicks: string[] = [],
+  asi?: AsiSelection,
 ): ClassChoicesStepView {
   const compendium = query.compendium ?? currentCompendium();
   const activeBooks = query.activeBooks;
@@ -200,7 +205,7 @@ export function classChoicesLevelView(
   const levelIds = new Set(choices.proficiencyChoices.map((choice) => choice.id));
   const skillPicks = allSkillPicks.filter((offer) => levelIds.has(offer.id));
   const proficiencies = choices.proficiencyChoices.filter((choice) => !skillIds.has(choice.id));
-  const milestones = newExpertiseMilestones(character, entry, catalogs);
+  const milestones = newExpertiseMilestones(character, entry, catalogs, asi);
   const expertise = getMilestonePicks(milestones, expertisePicks);
   const optionalFeatures = newOptionalFeatures(character, entry, fromLevel, catalogs);
 
