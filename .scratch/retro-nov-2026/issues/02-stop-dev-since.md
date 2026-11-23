@@ -15,13 +15,16 @@
 
 **Blocked by:** None
 
-**Status:** open
+**Status:** done
 
-- [ ] `checks/stopDevSince.test.ts`, red first. Fake daemons are `node -e "setTimeout(() => {}, 60000)" GradleDaemon`, which `pgrep -f GradleDaemon` matches. Spawn them detached and kill them in an `after` hook whatever the result.
+**Landed:** merge 9e0b42fc (3cbb97bf). Run for real with `--since` now: it signalled nothing and listed the user's adb server as left running. `docs/agents/driving-the-android-emulator.md` documents the option.
+- **Found, not fixed:** a `--port` listener started since is still stopped with its whole process group, which could hold an older process. The final line says `nothing was running` even when it listed older processes.
+
+- [x] `checks/stopDevSince.test.ts`, red first. Fake daemons are `node -e "setTimeout(() => {}, 60000)" GradleDaemon`, which `pgrep -f GradleDaemon` matches. Spawn them detached and kill them in an `after` hook whatever the result.
   1. Spawn fake A and wait 1.5 s.
   2. Take `since` as `@<epoch seconds>`, wait 1.1 s, and spawn fake B.
   3. Run `bash scripts/stop-dev.sh --since @<since>`.
   - B is gone within a few seconds, A is still alive, and the output names A's pid under `left running (started before --since)`.
   - A bad `--since` value (`--since nonsense`) exits 2.
   - The test stops only the fakes it spawned. Signal them by pid, never with `pkill -f`.
-- [ ] `npm run check:all` passes.
+- [x] `npm run check:all` passes.

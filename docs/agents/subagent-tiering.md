@@ -4,7 +4,7 @@ How to allocate model tiers when invoking subagents to conserve tokens and preve
 
 ## Tier Allocation Matrix
 
-- **Main session**: analysis, diagnosis, briefs, merging. It verifies every implementer's output itself: read the diff, run `npm run check:all`, and look at the running app for UI work.
+- **Main session**: analysis, diagnosis, briefs, merging. It verifies every implementer's output itself: read the diff, run `npm run check:all`, and look at the running app for UI work. After merging an implementer's branch, it runs `scripts/clean-worktrees.sh`: an implementer's worktree outlives the agent, and left alone they fill the disk.
 - **Implementers**: Haiku (`model: "haiku"`), one per ticket, in its own worktree. The brief carries the analysis: exact files, the seam to test, the acceptance criteria. An implementer writes its own code and never spawns further agents; say so in the brief.
 - **Mistral Large 4, only when the user asks for it**: a T3 delegate (`delegate_task`, provider `acpRegistry_mistral_vibe`, model `mistral-large-4-0-3`, `isolation: "worktree"`). Pass `options.mode: "auto-approve"`: the default mode stops on every shell command and the child stalls. It has no Skill tool, so the brief spells out the red-green steps in words.
 - **Brief contents**: the ticket path, the integration branch, the commit trailer, the verified facts (files, lines, the seam), and a pointer to "Implementer Rules" below. Every rule in that section reaches the implementer through the pointer, so the brief carries only what is specific to the ticket.

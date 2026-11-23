@@ -38,6 +38,7 @@ The app reads these keys when it launches:
 - Scroll the target into view before a click made at coordinates (`page.mouse.click(x, y)`, as layout-check's `tapHeaderAdd` does): call `el.scrollIntoView({ block: "center" })`, then measure the rect. A coordinate click on an element outside the viewport lands on nothing, which reads as a false negative. `locator.click()` scrolls the element into view by itself.
 - Run Expo through `spawnExpoWeb` or `npm run layout:check`, so the process group is stopped with the run.
 - Give each run its own port and screenshot folder.
+- A layout check that fails and then passes on a rerun is a race in the check until a cause is shown. Make it fail on purpose (delay the save, cold-start the server, run all widths at once) before calling it a flake. Both dice "flakes" of 2026-11 were the check not waiting for a settings save and for a lazily loaded chunk.
 - Use phone widths as layout-check does: a viewport of 393 by 851, `deviceScaleFactor: 1`, `isMobile: true`, `hasTouch: true`. The layout widths are 320, 393, 768 and 1280.
 
 ## Example
