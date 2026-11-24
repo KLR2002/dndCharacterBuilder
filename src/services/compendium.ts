@@ -51,6 +51,8 @@ export interface Compendium {
   readonly integrated: boolean;
   /** True when the integrated catalog is below the format the application requires. Its records still load. */
   readonly stale: boolean;
+  /** True when the integrated catalog was saved with no beasts (the Skip Beasts case). Always false for the SRD Baseline. */
+  readonly lacksBeasts: boolean;
   /** Listings scoped to active books. Unscoped when no books are given or the bundle is not integrated. */
   for(activeBooks?: readonly string[]): CompendiumListings;
   /** The race a held race resolves to, subrace included: the saved source's record, else an active book's (see findHeldRace). */
@@ -173,6 +175,7 @@ export function createCompendium(
   return {
     integrated,
     stale: isCatalogStale(bundle),
+    lacksBeasts: integrated && !bundle.beasts?.length,
     for: (activeBooks) => (!activeBooks || !integrated ? unscoped : scopedFor(activeBooks)),
     findRace: (held, activeBooks) => findHeldRace(races, held, activeBooks).race,
     findClass: (name, source) => findIn(classes, name, source),
