@@ -34,6 +34,8 @@ import { Modal } from "../ui/Modal";
 import { DetailModal } from "../DetailModal";
 import { WildShapeModal } from "../WildShapeModal";
 import { ActiveWildShapeCard } from "../ActiveWildShapeCard";
+import { BeastsNotice } from "../BeastsNotice";
+import { wildShapeCatalogNotice } from "../wildShapeCatalogNotice";
 import { applyRuleChoice, findArtificerInfusion, getChosenInvocations, getKnownInfusions, replacedTraitNames, ruleChoiceId } from "../../rules/ruleChoices";
 import { ActiveInfusionsSection } from "../ActiveInfusionsSection";
 
@@ -54,7 +56,7 @@ function makeCounterId(): string {
 
 export const FeaturesTab: React.FC = () => {
   const sheetScrollPad = useSheetScrollContentPadding();
-  const { currentCharacter, updateCharacter, activeBooks, setActiveBooks } = useCharacters();
+  const { currentCharacter, updateCharacter, activeBooks, setActiveBooks, lacksBeasts } = useCharacters();
   const { theme } = useAppTheme();
   useResponsiveLayout();
 
@@ -69,6 +71,12 @@ export const FeaturesTab: React.FC = () => {
   const [wildShapeModalVisible, setWildShapeModalVisible] = useState(false);
 
   const isMmActive = useMemo(() => catalogListings({ activeBooks }).admits("MM"), [activeBooks]);
+  // lacksBeasts comes from the character context, so the notice follows a download without a screen reload.
+  const catalogNotice = wildShapeCatalogNotice({
+    integrated: currentCompendium().integrated,
+    lacksBeasts,
+    mmActive: isMmActive,
+  });
 
   const handleEnableMonsterManual = () => {
     if (isMmActive) return;
@@ -539,8 +547,9 @@ export const FeaturesTab: React.FC = () => {
             )}
           </View>
 
+          {catalogNotice === "beasts" && <BeastsNotice />}
           {/* Monster Manual Inactive Warning (Integrated Catalog only; the SRD Baseline carries its own beasts) */}
-          {currentCompendium().integrated && !isMmActive && (
+          {catalogNotice === "monsterManual" && (
             <Card
               style={{
                 padding: 10,
