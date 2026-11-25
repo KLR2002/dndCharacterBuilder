@@ -1,6 +1,7 @@
 # 01: The Subclass step keeps its list after a pick
 
-**Status:** ready-for-agent
+**Status:** done
+**Landed:** c03ab95c. The new check "Subclass step keeps its list" was red with 4 violations before the fix and green after. Gate on c03ab95c: check:all passed; layout:check SRD at all widths and layout:check --integrated at 320 passed; the draft screenshot was opened.
 
 ## The bug
 
@@ -15,10 +16,10 @@ In the Creation Flow and in Edit Build (both host `BuilderTab` with a `step`, `s
 
 ## Acceptance Criteria
 
-- [ ] With an Integrated Catalog, a level 3 draft (any class with subclass level 3, or a level 2 Druid if its subclass level is 2 there) on the Subclass step: pick subclass A, the list stays with A highlighted; pick B, B is highlighted and the character's subclass is B.
-- [ ] The same on a finished character opened in Edit Build.
-- [ ] On the Class step, tapping the archetype opens the Subclass step with the list.
-- [ ] SRD Baseline: unchanged (no list, plain archetype text).
+- [x] With an Integrated Catalog, a level 3 draft (any class with subclass level 3, or a level 2 Druid if its subclass level is 2 there) on the Subclass step: pick subclass A, the list stays with A highlighted; pick B, B is highlighted and the character's subclass is B.
+- [x] The same on a finished character opened in Edit Build.
+- [x] On the Class step, tapping the archetype opens the Subclass step with the list.
+- [x] SRD Baseline: unchanged (no list, plain archetype text).
 
 ## Verification
 
