@@ -43,9 +43,10 @@ export function BeastsNotice() {
         }}
       >
         <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-          <View style={{ flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 8 }}>
+          {/* The text's basis lets the button wrap onto its own line before the text is squeezed. */}
+          <View style={{ flexGrow: 1, flexShrink: 1, flexBasis: 180, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 8 }}>
             <Ionicons name="warning-outline" size={18} color={theme.warning} />
-            <Text style={{ color: theme.text, fontSize: 12, flex: 1, flexShrink: 1 }}>
+            <Text style={{ color: theme.text, fontSize: 12, flex: 1, flexShrink: 1, minWidth: 0 }}>
               Beasts were not downloaded. Wild Shape shows only the SRD beasts.
             </Text>
           </View>
