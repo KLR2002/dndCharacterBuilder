@@ -129,6 +129,35 @@ test("the Compendium answers lacksBeasts only for an Integrated Catalog saved wi
   assert.equal(srd.lacksBeasts, false, "the SRD Baseline never lacks beasts: no download is offered there");
 });
 
+const beastOf = (name: string, source: string) => ({ name, source }) as unknown as BeastData;
+
+test("holdsBeast: an SRD-sourced name resolves through an integrated catalog that prints the beast under another book", () => {
+  const integrated = createCompendium(bundle({ beasts: [beastOf("Invented Beast", "MM")] }));
+  assert.equal(integrated.holdsBeast("Invented Beast", "SRD"), true);
+});
+
+test("holdsBeast: a name resolves on the SRD Baseline, and an unknown name never does", () => {
+  const srd = srdBaselineCompendium();
+  assert.equal(srd.holdsBeast("Brown Bear", "SRD"), true);
+  assert.equal(srd.holdsBeast("Nonexistent Beast", "SRD"), false);
+  const integrated = createCompendium(bundle({ beasts: [beastOf("Invented Beast", "MM")] }));
+  assert.equal(integrated.holdsBeast("Nonexistent Beast", "SRD"), false);
+  assert.equal(integrated.holdsBeast("Nonexistent Beast", "MM"), false);
+});
+
+test("holdsBeast: a name saved under a book is held only with that book, never by name alone", () => {
+  const integrated = createCompendium(bundle({ beasts: [beastOf("Invented Beast", "MM")] }));
+  assert.equal(integrated.holdsBeast("Invented Beast", "MM"), true);
+  assert.equal(integrated.holdsBeast("Invented Beast", "XGE"), false);
+  assert.equal(srdBaselineCompendium().holdsBeast("Brown Bear", "MM"), false);
+});
+
+test("holdsBeast: an inactive book does not end a beast, since the answer never reads Active Books", () => {
+  const integrated = createCompendium(bundle({ beasts: [beastOf("Invented Beast", "MM")] }));
+  assert.equal(integrated.for(["PHB"]).beasts().length, 0);
+  assert.equal(integrated.holdsBeast("Invented Beast", "MM"), true);
+});
+
 test("the Compendium reports stale only for an integrated catalog below the required format", () => {
   assert.equal(createCompendium(bundle({ catalogFormat: REQUIRED_CATALOG_FORMAT - 1 })).stale, true, "older format is stale");
   assert.equal(createCompendium(bundle()).stale, true, "a catalog with no format is stale");

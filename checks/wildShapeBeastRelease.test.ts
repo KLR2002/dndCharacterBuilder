@@ -32,13 +32,13 @@ const druidInBadger = (overrides = {}) =>
 
 const BADGER_NOTICE = "Giant Badger form ended: Giant Badger is no longer in the catalog";
 
-// AC-13: the form ends like Revert. Temp HP goes back (the larger of the two), HP and the spent use stay.
+// The form ends like Revert. Temp HP goes back (the larger of the two), HP and the spent use stay.
 for (const [label, compendium] of [
   ["the SRD Baseline (revert)", srdBaselineCompendium()],
   ["an Integrated Catalog with no beasts", integratedWith([])],
   ["an Integrated Catalog whose beasts lack Giant Badger", integratedWith(withoutGiantBadger)],
 ] as const) {
-  test(`AC-13: a Giant Badger form ends on ${label}, like Revert`, () => {
+  test(`a Giant Badger form ends on ${label}, like Revert`, () => {
     const result = reconcileForActiveBooks(druidInBadger(), compendium, EVERY_BOOK);
 
     assert.equal(result.activeWildShape, null);
@@ -49,8 +49,8 @@ for (const [label, compendium] of [
   });
 }
 
-// AC-14: a form whose beast is still there, or whose book is inactive, stays with no notice.
-test("AC-14: an SRD-sourced Brown Bear form stays on an Integrated Catalog that prints Brown Bear under MM", () => {
+// A form whose beast is still there, or whose book is inactive, stays with no notice.
+test("an SRD-sourced Brown Bear form stays on an Integrated Catalog that prints Brown Bear under MM", () => {
   const brownBear = { name: "Brown Bear", source: "SRD", ac: 11, currentHp: 34, maxHp: 34, tempHp: 5 };
   const character = druidInBadger({ activeWildShape: brownBear });
   const result = reconcileForActiveBooks(character, integratedWith(loadTestCatalog<BeastData[]>("beasts")), EVERY_BOOK);
@@ -59,7 +59,7 @@ test("AC-14: an SRD-sourced Brown Bear form stays on an Integrated Catalog that 
   assert.equal(result.needsReview, undefined);
 });
 
-test("AC-14: an SRD-sourced Brown Bear form stays on an Integrated Catalog with no beasts (the SRD beasts remain)", () => {
+test("an SRD-sourced Brown Bear form stays on an Integrated Catalog with no beasts (the SRD beasts remain)", () => {
   const brownBear = { name: "Brown Bear", source: "SRD", ac: 11, currentHp: 34, maxHp: 34, tempHp: 5 };
   const character = druidInBadger({ activeWildShape: brownBear });
   const result = reconcileForActiveBooks(character, integratedWith([]), EVERY_BOOK);
@@ -68,7 +68,7 @@ test("AC-14: an SRD-sourced Brown Bear form stays on an Integrated Catalog with 
   assert.equal(result.needsReview, undefined);
 });
 
-test("AC-14: a Giant Badger form stays when its book is turned off in Active Books", () => {
+test("a Giant Badger form stays when its book is turned off in Active Books", () => {
   const character = druidInBadger();
   const result = reconcileForActiveBooks(character, integratedWith(loadTestCatalog<BeastData[]>("beasts")), ["PHB"]);
 
@@ -76,10 +76,10 @@ test("AC-14: a Giant Badger form stays when its book is turned off in Active Boo
   assert.equal(result.needsReview, undefined);
 });
 
-// AC-15: favourites are saved, hidden while their beast is absent, and listed again with it.
+// Favourites are saved, hidden while their beast is absent, and listed again with it.
 const FAVOURITE = "Giant Badger__MM";
 
-test("AC-15: a favourite MM beast is kept in the save and hidden while its beast is absent", () => {
+test("a favourite MM beast is kept in the save and hidden while its beast is absent", () => {
   const character = druidInBadger({ activeWildShape: null, favoriteWildShapes: [FAVOURITE] });
   const compendium = srdBaselineCompendium();
   const result = reconcileForActiveBooks(character, compendium, EVERY_BOOK);
@@ -91,7 +91,7 @@ test("AC-15: a favourite MM beast is kept in the save and hidden while its beast
   );
 });
 
-test("AC-15: a favourite MM beast is listed again once a catalog with the beast is active", () => {
+test("a favourite MM beast is listed again once a catalog with the beast is active", () => {
   const character = druidInBadger({ activeWildShape: null, favoriteWildShapes: [FAVOURITE] });
   const compendium = integratedWith(loadTestCatalog<BeastData[]>("beasts"));
   const result = reconcileForActiveBooks(character, compendium, EVERY_BOOK);

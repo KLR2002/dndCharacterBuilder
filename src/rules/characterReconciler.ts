@@ -2,7 +2,6 @@ import type { ActiveBooks } from "../constants/books.ts";
 import type { Character, CharacterClass, KnownSpell } from "../types/character.ts";
 import type { ClassData } from "../types/dnd5e.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
-import { SRD_SOURCE } from "../constants/books.ts";
 import { GIANT_BARBARIAN_OWNER_KEY, GIANT_POWER_CANTRIPS } from "../constants/rules.ts";
 import { revertWildShape } from "./wildShapeHp.ts";
 import { getMaxSpellLevel, metamagicAllowance } from "./spellcasting.ts";
@@ -96,11 +95,7 @@ export function reconcile(
 function releaseEndedWildShape(character: Character, compendium: Compendium): Character {
   const shape = character.activeWildShape;
   if (!shape) return character;
-  const present = compendium
-    .for()
-    .beasts()
-    .some((beast) => beast.name === shape.name && (shape.source === SRD_SOURCE || beast.source === shape.source));
-  if (present) return character;
+  if (compendium.holdsBeast(shape.name, shape.source)) return character;
   const notice = `${shape.name} form ended: ${shape.name} is no longer in the catalog`;
   return withNotices({ ...character, ...revertWildShape(character) }, [notice]);
 }
