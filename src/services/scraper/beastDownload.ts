@@ -23,5 +23,4 @@ export async function downloadBeasts(client: ToolsClient, onProgress?: ScraperPr
   const saved = await replaceSavedBeasts(beasts as any);
   integrate(saved);
   await updateSettings({ skipBeasts: false });
-  await updateSettings({ skipBeasts: false });
 }

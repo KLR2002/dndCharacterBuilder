@@ -29,6 +29,7 @@ Spec: `.scratch/skip-beasts/spec.md`.
 
 - The progress window is one shared component used by the sync and the download; the sync's behaviour and look are unchanged.
 - Show the button by asking the Compendium (ticket 02), never the saved bundle.
+- The download changes the Compendium without changing any React state the screens depend on (`skipBeasts` may already be off). The character context exposes a catalog revision (or an equivalent piece of state) that the download bumps, and every screen that lists beasts or asks whether the catalog lacks beasts depends on it, so the button, the notices and the Wild Shape list update at once.
 - Copy per CODING_STANDARDS section 8; use the Skill `ui-discipline`.
 - The layout scenarios need an Integrated Catalog with an empty `beasts` collection; find how the scenario seeds and the browser driver choose a catalog (`docs/agents/driving-the-app.md`) and add that variant without changing the existing SRD and integrated runs.
 
