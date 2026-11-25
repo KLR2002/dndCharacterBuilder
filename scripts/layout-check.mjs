@@ -48,7 +48,7 @@ import {
   stopExpoWeb,
   waitForExpoWeb,
 } from "./lib/app-driver.mjs";
-import { buildScreens, buildSeed, ACTIONS_ID, ASI_FIGHTER_ID, CHARACTER_ID, DRAFT_ID, DRUID_ID, EDIT_BUILD_ID, LEVEL_UP_SORCERER_ID, LOW_CON_ID, MAX_LEVEL_ID, RANGER_ID, SORCERER_SWAP_ID, WIZARD_ID } from "./lib/scenarios.mjs";
+import { buildScreens, buildSeed, ACTIONS_ID, ASI_FIGHTER_ID, CHARACTER_ID, DRAFT_ID, DRUID_ID, EDIT_BUILD_ID, LEVEL_UP_SORCERER_ID, LOW_CON_ID, MAX_LEVEL_ID, RANGER_ID, SORCERER_SWAP_ID, SUBCLASS_DRAFT_ID, SUBCLASS_EDIT_ID, WIZARD_ID } from "./lib/scenarios.mjs";
 import { applyWideOverride } from "./lib/scenario-override.mjs";
 import { playStep, playSteps } from "./lib/web-steps.mjs";
 import { ACCENT_PALETTES, BASE_DARK_THEME } from "../src/constants/theme.ts";
@@ -4247,6 +4247,85 @@ async function checkBuilderAsiFeat(ctx, width, meta) {
   return failures;
 }
 
+// The Subclass step keeps its list after a pick (integrated mode: the Fighter's subclasses are in the catalog). On a draft
+// and in Edit Build the chips stay, the pick is the selected chip, and a second pick moves the selection and the
+// character's subclass. The Class step's archetype opens the Subclass step with the list.
+async function checkSubclassStepKeepsList(ctx, width, meta) {
+  const page = await ctx.newPage();
+  const prefix = `[${width}px subclass step]`;
+  let failures = 0;
+  let failedShotTaken = false;
+  const fail = (msg) => {
+    failures++;
+    console.log(`${prefix} ${msg}`);
+    if (!failedShotTaken) {
+      failedShotTaken = true;
+      shotFailed(page, meta, width);
+    }
+  };
+  // A chip is found by its visible name; its selected state is the aria-selected of the control around it.
+  const chip = (name) => page.getByText(name, { exact: true }).first();
+  const waitForChip = (name) =>
+    chip(name)
+      .waitFor({ state: "visible", timeout: 10000 })
+      .then(() => true)
+      .catch(() => false);
+  const isSelected = async (name) =>
+    (await chip(name).count()) > 0 &&
+    chip(name).evaluate((el) => el.closest("[aria-selected]")?.getAttribute("aria-selected") === "true");
+  const storedSubclass = async (id) => (await readStoredCharacter(page, id))?.classes?.[0]?.subclassName ?? null;
+  // Picks `picked` on the open Subclass step: `other` stays listed and unselected, `picked` is selected, and the stored
+  // character holds `picked`.
+  const pickKeepsList = async (id, picked, other, label) => {
+    if ((await chip(picked).count()) === 0) {
+      fail(`${label}: the list has no ${picked} chip to pick`);
+      return;
+    }
+    await chip(picked).click();
+    await settle(page);
+    if ((await chip(other).count()) === 0) fail(`${label}: the list has no ${other} chip after picking ${picked}`);
+    else if (await isSelected(other)) fail(`${label}: ${other} is still selected after picking ${picked}`);
+    if (!(await isSelected(picked))) fail(`${label}: ${picked} is not selected after picking it`);
+    const stored = await storedSubclass(id);
+    if (stored !== picked) fail(`${label}: the character's subclass is ${stored ?? "none"}, not ${picked}`);
+  };
+
+  await restoreSeededCharacter(page, SUBCLASS_DRAFT_ID);
+  await restoreSeededCharacter(page, SUBCLASS_EDIT_ID);
+
+  await gotoApp(page, `${BASE}/build/${SUBCLASS_DRAFT_ID}?step=subclass`);
+  if (!(await waitForChip("Champion"))) {
+    fail("the draft's Subclass step shows no subclass list");
+    await closePage(page);
+    return failures;
+  }
+  await pickKeepsList(SUBCLASS_DRAFT_ID, "Champion", "Battle Master", "draft");
+  await maybeShot(page, join(SHOTS, `SubclassStepDraft-${width}.png`), meta);
+  await pickKeepsList(SUBCLASS_DRAFT_ID, "Battle Master", "Champion", "draft");
+
+  await gotoApp(page, `${BASE}/build/${SUBCLASS_EDIT_ID}?step=subclass`);
+  if (!(await waitForChip("Battle Master"))) {
+    fail("Edit Build's Subclass step shows no subclass list");
+    await closePage(page);
+    return failures;
+  }
+  if (!(await isSelected("Champion"))) fail("Edit Build's Subclass step does not select the held Champion");
+  await pickKeepsList(SUBCLASS_EDIT_ID, "Battle Master", "Champion", "Edit Build");
+
+  await gotoApp(page, `${BASE}/build/${SUBCLASS_EDIT_ID}?step=class`);
+  if (!(await waitForVisibleText(page, "Archetype: Battle Master"))) {
+    fail("Edit Build's Class step shows no archetype line for Battle Master");
+    await closePage(page);
+    return failures;
+  }
+  await page.getByText("Archetype: Battle Master", { exact: true }).first().click();
+  await settle(page);
+  if (!(await waitForChip("Champion"))) fail("the archetype on the Class step does not open the Subclass step's list");
+  else if (!(await isSelected("Battle Master"))) fail("the Subclass step opened from the archetype does not select Battle Master");
+  await closePage(page);
+  return failures;
+}
+
 const EXTRA_CHECKS = [
   { name: "HP modals", run: checkHitPointModals },
   { name: "Wild Shape Stats", run: checkWildShapeScreen },
@@ -4261,6 +4340,7 @@ const EXTRA_CHECKS = [
   { name: "Level-Up Flow feat replace", run: checkLevelUpFeatReplace },
   { name: "Level-Up Flow feat sub-choice chips", run: checkLevelUpFeatSubChoiceChips },
   ...(INTEGRATED ? [{ name: "Builder ASI feat Fighting Initiate", run: checkBuilderAsiFeat, shot: true }] : []),
+  ...(INTEGRATED ? [{ name: "Subclass step keeps its list", run: checkSubclassStepKeepsList, shot: true }] : []),
   { name: "Level-Up Flow HP modifier sign", run: checkLevelUpHpModifierSign },
   { name: "Level up hidden at level 20", run: checkLevelUpHiddenAtMaxLevel },
   { name: "Level-Up Flow cancel and review", run: checkLevelUpCancelAndReview },
