@@ -748,6 +748,19 @@ test("a failed beast download leaves the provider's Skip Beasts state on and rep
   assert.equal(h.value.skipBeasts, true);
 });
 
+test("a beast download that fails after its catalog was saved still bumps the catalog revision and rethrows", async () => {
+  const h = await providerHarness([], {
+    compendium: { hasIntegratedCatalog: true, races: [], classes: [] },
+    downloadBeasts: async () => { throw new Error("settings write failed"); },
+  });
+  const before = h.value.catalogRevision;
+  const download = h.value.downloadBeasts();
+  h.render();
+  await assert.rejects(download, /settings write failed/);
+  h.render();
+  assert.ok(h.value.catalogRevision > before, "the screens must re-read the saved beasts");
+});
+
 test("the provider passes the progress callback to the beast download", async () => {
   const seen: unknown[][] = [];
   const h = await providerHarness([], {

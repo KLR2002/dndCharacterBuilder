@@ -369,9 +369,13 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
   const downloadBeasts = async (
     onProgress?: (category: string, step: number, total: number) => void
   ) => {
-    await downloadBeastsService(new BrowserToolsClient(), onProgress);
-    setCatalogRevision(revision => revision + 1);
-    setSkipBeastsState(false);
+    try {
+      await downloadBeastsService(new BrowserToolsClient(), onProgress);
+      setSkipBeastsState(false);
+    } finally {
+      // A failure after the catalog was saved still leaves new beasts in the Compendium.
+      setCatalogRevision(revision => revision + 1);
+    }
   };
 
   const setFirstRunCompleted = async (books: string[]) => {
