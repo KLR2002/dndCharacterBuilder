@@ -4437,12 +4437,114 @@ async function checkSettingsDownloadBeasts(ctx, width, meta) {
   return failures;
 }
 
+const BEASTS_NOTICE_TEXT = "Beasts were not downloaded. Wild Shape shows only the SRD beasts.";
+const MM_REMINDER_TEXT = /Monster Manual is not active in Active Books/;
+
+// Runs in the browser. The row that holds the beasts notice text and its button, or null.
+function findBeastsNoticeRow() {
+  const leaves = [...document.querySelectorAll("*")].filter((e) => e.children.length === 0 && e.textContent.trim() !== "");
+  const text = leaves.find((e) => e.textContent.trim() === "Beasts were not downloaded. Wild Shape shows only the SRD beasts.");
+  const button = leaves.find((e) => e.textContent.trim() === "Download beasts");
+  for (let a = text?.parentElement; a; a = a.parentElement) {
+    if (button && a.contains(button)) return a;
+  }
+  return null;
+}
+
+// The Druid's Features tab in three catalogs, each with the Monster Manual inactive (the reminder is the state under
+// test): an Integrated Catalog without beasts shows the beasts notice and its button and no reminder, and a tap downloads
+// the beasts against the stubbed bestiary, after which the notice is gone and the reminder shows. An Integrated Catalog
+// with beasts shows only the reminder, and the SRD Baseline shows neither.
+async function checkFeaturesBeastsNotice(ctx, width, meta) {
+  const prefix = `[${width}px ${meta.name}]`;
+  let failures = 0;
+  let shotPage = null;
+  let failedShotTaken = false;
+  const fail = (msg) => {
+    failures++;
+    console.log(`${prefix} ${msg}`);
+    if (shotPage && !failedShotTaken) {
+      failedShotTaken = true;
+      shotFailed(shotPage, meta, width);
+    }
+  };
+  const shown = (locator, timeout = 10000) => locator.waitFor({ state: "visible", timeout }).then(() => true).catch(() => false);
+  const withoutMm = (settings) => ({ ...settings, activeResourceBooks: settings.activeResourceBooks.filter((code) => code !== "MM") });
+  const openSeeded = async (integrated) => {
+    const seeded = await ctx.browser().newContext({ viewport: { width, height: 851 }, deviceScaleFactor: DSF, hasTouch: true, isMobile: true });
+    await seeded.addInitScript(seedBrowser, { ...ACTIVE_SEED, settings: withoutMm(ACTIVE_SEED.settings), integrated });
+    const page = await seeded.newPage();
+    shotPage = page;
+    return { seeded, page };
+  };
+  const openDruidFeatures = async (page) => {
+    await gotoApp(page, `${BASE}/character/${DRUID_ID}`);
+    await page.getByText("Features", { exact: true }).first().click();
+    await settle(page);
+    await page.getByText("WILD SHAPE HP", { exact: true }).first().waitFor({ state: "visible", timeout: 10000 });
+  };
+
+  const noBeasts = await openSeeded({ ...integratedCollections(ROOT), beasts: [] });
+  try {
+    const { page } = noBeasts;
+    await stubBestiary(page, { indexDelayMs: 3000 });
+    await openDruidFeatures(page);
+    const notice = page.getByText(BEASTS_NOTICE_TEXT, { exact: true }).first();
+    const button = page.getByText("Download beasts", { exact: true }).first();
+    if (!(await shown(notice))) {
+      fail("an Integrated Catalog without beasts shows no beasts notice on the Features tab");
+    } else {
+      if (!(await shown(button, 2000))) fail('the beasts notice has no "Download beasts" button');
+      if ((await page.getByText(MM_REMINDER_TEXT).count()) > 0) fail("the Monster Manual reminder shows next to the beasts notice");
+      await notice.evaluate((el) => el.scrollIntoView({ block: "center" }));
+      await settle(page);
+      await maybeShot(page, join(SHOTS, `FeaturesBeasts-notice-${width}.png`), meta);
+      const row = await page.evaluateHandle(findBeastsNoticeRow);
+      if (!row.asElement()) fail("the beasts notice row is not on the page");
+      else for (const v of await page.evaluate(findLayoutViolations, row)) fail(`beasts notice: ${v}`);
+      await button.click();
+      if (!(await shown(page.getByText("Downloading Beasts...", { exact: true }).first()))) fail('the progress window does not show "Downloading Beasts..."');
+      await settleDialog(page);
+      await maybeShot(page, join(SHOTS, `FeaturesBeasts-progress-${width}.png`), meta);
+      if (!(await notice.waitFor({ state: "hidden", timeout: 60000 }).then(() => true).catch(() => false))) fail("the beasts notice is still shown after the download");
+      if (!(await shown(page.getByText(MM_REMINDER_TEXT).first(), 5000))) fail("after the download the Monster Manual reminder is not shown");
+      const saved = await page.evaluate(readSavedCatalog);
+      const stubNames = STUB_BESTIARY_BEASTS.map((beast) => beast.name).sort();
+      if (JSON.stringify([...saved.beasts].sort()) !== JSON.stringify(stubNames)) fail(`the saved catalog holds beasts ${JSON.stringify(saved.beasts)}`);
+      await settle(page);
+      await maybeShot(page, join(SHOTS, `FeaturesBeasts-after-${width}.png`), meta);
+    }
+  } finally {
+    await noBeasts.seeded.close();
+  }
+
+  const withBeasts = await openSeeded(integratedCollections(ROOT));
+  try {
+    await openDruidFeatures(withBeasts.page);
+    if (!(await shown(withBeasts.page.getByText(MM_REMINDER_TEXT).first()))) fail("an Integrated Catalog with beasts shows no Monster Manual reminder");
+    if ((await withBeasts.page.getByText(BEASTS_NOTICE_TEXT, { exact: true }).count()) > 0) fail("the beasts notice shows for a catalog that holds beasts");
+  } finally {
+    await withBeasts.seeded.close();
+  }
+
+  const srd = await openSeeded(null);
+  try {
+    await openDruidFeatures(srd.page);
+    if ((await srd.page.getByText(MM_REMINDER_TEXT).count()) > 0) fail("the SRD Baseline shows the Monster Manual reminder");
+    if ((await srd.page.getByText(BEASTS_NOTICE_TEXT, { exact: true }).count()) > 0) fail("the SRD Baseline shows the beasts notice");
+  } finally {
+    await srd.seeded.close();
+  }
+  return failures;
+}
+
 const EXTRA_CHECKS = [
   { name: "Settings skip beasts", run: checkSkipBeastsSetting },
   { name: "Settings download beasts", run: checkSettingsDownloadBeasts, shot: true },
   { name: "HP modals", run: checkHitPointModals },
   { name: "Wild Shape Stats", run: checkWildShapeScreen },
   { name: "Wild Shape Features", run: checkWildShapeFeatures },
+  { name: "Features beasts notice", run: checkFeaturesBeastsNotice, shot: true },
   { name: "Modal closing", run: checkModalClosing },
   { name: "New character draft folder", run: checkDraftFolder },
   { name: "Dice tray and Roll Log", run: checkDiceTrayAndLog, shot: true },
