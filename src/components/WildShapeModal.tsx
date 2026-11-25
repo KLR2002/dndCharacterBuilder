@@ -8,6 +8,7 @@ import {
   View,
 } from "react-native";
 import Ionicons from "@expo/vector-icons/Ionicons";
+import { useCharacters } from "../context/CharacterContext";
 import { useAppTheme } from "../context/ThemeContext";
 import { useResponsiveLayout } from "../hooks/useResponsiveLayout";
 import { currentCompendium } from "../services/compendium";
@@ -21,6 +22,8 @@ import {
 } from "../rules/wildShape";
 import type { Character } from "../types/character";
 import type { BeastData } from "../types/dnd5e";
+import { BeastsNotice } from "./BeastsNotice";
+import { wildShapeCatalogNotice } from "./wildShapeCatalogNotice";
 import { Badge } from "./ui/Badge";
 import { Button } from "./ui/Button";
 import { Card } from "./ui/Card";
@@ -61,8 +64,11 @@ export const WildShapeModal: React.FC<WildShapeModalProps> = ({
   const [showAllLocked, setShowAllLocked] = useState(false);
   const [inspectedBeast, setInspectedBeast] = useState<BeastData | null>(null);
 
+  const { lacksBeasts, catalogRevision } = useCharacters();
   const limits = useMemo(() => getWildShapeLimits(character), [character]);
-  const allBeasts = useMemo(() => currentCompendium().for(activeBooks).beasts(), [activeBooks]);
+  // The Compendium is a module-level store that React does not see change; catalogRevision is the signal that a download replaced it.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const allBeasts = useMemo(() => currentCompendium().for(activeBooks).beasts(), [activeBooks, catalogRevision]);
 
   const favoritesSet = useMemo(() => {
     return new Set(character.favoriteWildShapes || []);
@@ -70,8 +76,8 @@ export const WildShapeModal: React.FC<WildShapeModalProps> = ({
 
   const currentWildShapeCharges = getWildShapeCharges(character);
   const isMmActive = useMemo(() => catalogListings({ activeBooks }).admits("MM"), [activeBooks]);
-  // The SRD Baseline carries its own beasts, so the Monster Manual warning only applies to an Integrated Catalog.
   const isIntegrated = currentCompendium().integrated;
+  const catalogNotice = wildShapeCatalogNotice({ integrated: isIntegrated, lacksBeasts, mmActive: isMmActive });
 
   // Filter beasts list
   const filteredBeasts = useMemo(() => {
@@ -319,8 +325,9 @@ export const WildShapeModal: React.FC<WildShapeModalProps> = ({
       ) : (
         // ─── BROWSER CATALOG LIST VIEW ────────────────────────────────
         <View style={{ gap: 12 }}>
+          {catalogNotice === "beasts" && <BeastsNotice />}
           {/* Monster Manual Inactive Warning */}
-          {isIntegrated && !isMmActive && (
+          {catalogNotice === "monsterManual" && (
             <Card
               style={{
                 padding: 10,

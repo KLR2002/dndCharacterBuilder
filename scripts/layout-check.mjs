@@ -4441,8 +4441,8 @@ const BEASTS_NOTICE_TEXT = "Beasts were not downloaded. Wild Shape shows only th
 const MM_REMINDER_TEXT = /Monster Manual is not active in Active Books/;
 
 // Runs in the browser. The row that holds the beasts notice text and its button, or null.
-function findBeastsNoticeRow() {
-  const leaves = [...document.querySelectorAll("*")].filter((e) => e.children.length === 0 && e.textContent.trim() !== "");
+function findBeastsNoticeRow(root = document) {
+  const leaves = [...root.querySelectorAll("*")].filter((e) => e.children.length === 0 && e.textContent.trim() !== "");
   const text = leaves.find((e) => e.textContent.trim() === "Beasts were not downloaded. Wild Shape shows only the SRD beasts.");
   const button = leaves.find((e) => e.textContent.trim() === "Download beasts");
   for (let a = text?.parentElement; a; a = a.parentElement) {
@@ -4538,6 +4538,105 @@ async function checkFeaturesBeastsNotice(ctx, width, meta) {
   return failures;
 }
 
+// The Wild Shape browser (the Druid's "Browse Beast Shapes" modal) in the same three catalogs as the Features tab: an
+// Integrated Catalog without beasts shows the beasts notice and its button in the browser and no reminder; a tap
+// downloads against the stubbed bestiary with the progress window over the browser, and the browser's list then holds
+// a stub beast with the notice gone and the reminder shown. An Integrated Catalog with beasts shows only the reminder,
+// and the SRD Baseline shows neither. The Features tab underneath has its own notice, so every lookup is scoped to the
+// browser's dialog.
+async function checkWildShapeBrowserBeastsNotice(ctx, width, meta) {
+  const prefix = `[${width}px ${meta.name}]`;
+  let failures = 0;
+  let shotPage = null;
+  let failedShotTaken = false;
+  const fail = (msg) => {
+    failures++;
+    console.log(`${prefix} ${msg}`);
+    if (shotPage && !failedShotTaken) {
+      failedShotTaken = true;
+      shotFailed(shotPage, meta, width);
+    }
+  };
+  const shown = (locator, timeout = 10000) => locator.waitFor({ state: "visible", timeout }).then(() => true).catch(() => false);
+  const withoutMm = (settings) => ({ ...settings, activeResourceBooks: settings.activeResourceBooks.filter((code) => code !== "MM") });
+  // The stubbed beasts are from the invented book in STUB_BESTIARY_BEASTS, so that book is active for the list to admit them.
+  const withStubBook = (settings) => {
+    const base = withoutMm(settings);
+    return { ...base, activeResourceBooks: [...base.activeResourceBooks, STUB_BESTIARY_BEASTS[0].source] };
+  };
+  const openSeeded = async (integrated) => {
+    const seeded = await ctx.browser().newContext({ viewport: { width, height: 851 }, deviceScaleFactor: DSF, hasTouch: true, isMobile: true });
+    await seeded.addInitScript(seedBrowser, { ...ACTIVE_SEED, settings: withStubBook(ACTIVE_SEED.settings), integrated });
+    const page = await seeded.newPage();
+    shotPage = page;
+    return { seeded, page };
+  };
+  const browserDialog = (page) => page.locator('[role="dialog"]', { hasText: "Wild Shape Beast Browser" });
+  const browserDialogHandle = (page) =>
+    page.evaluateHandle(() => [...document.querySelectorAll('[role="dialog"]')].find((d) => d.textContent.includes("Wild Shape Beast Browser")) ?? null);
+  const openBrowser = async (page) => {
+    await gotoApp(page, `${BASE}/character/${DRUID_ID}`);
+    await page.getByText("Features", { exact: true }).first().click();
+    await settle(page);
+    await page.getByText("Browse Beast Shapes", { exact: true }).first().click();
+    await browserDialog(page).getByText("Wild Shape Beast Browser", { exact: true }).waitFor({ state: "visible", timeout: 10000 });
+    await settleDialog(page);
+  };
+
+  const noBeasts = await openSeeded({ ...integratedCollections(ROOT), beasts: [] });
+  try {
+    const { page } = noBeasts;
+    await stubBestiary(page, { indexDelayMs: 3000 });
+    await openBrowser(page);
+    const notice = browserDialog(page).getByText(BEASTS_NOTICE_TEXT, { exact: true });
+    const button = browserDialog(page).getByText("Download beasts", { exact: true });
+    if (!(await shown(notice))) {
+      fail("the browser of an Integrated Catalog without beasts shows no beasts notice");
+    } else {
+      if (!(await shown(button, 2000))) fail('the browser beasts notice has no "Download beasts" button');
+      if ((await browserDialog(page).getByText(MM_REMINDER_TEXT).count()) > 0) fail("the browser shows the Monster Manual reminder next to the beasts notice");
+      const dialog = await browserDialogHandle(page);
+      const row = await page.evaluateHandle(findBeastsNoticeRow, dialog);
+      if (!row.asElement()) fail("the beasts notice row is not in the browser");
+      else for (const v of await page.evaluate(findLayoutViolations, row)) fail(`browser beasts notice: ${v}`);
+      await maybeShot(page, join(SHOTS, `WildShapeBrowserBeasts-notice-${width}.png`), meta);
+      await button.click();
+      if (!(await shown(page.getByText("Downloading Beasts...", { exact: true }).first()))) fail('the progress window does not show "Downloading Beasts..." over the browser');
+      await settleDialog(page);
+      await maybeShot(page, join(SHOTS, `WildShapeBrowserBeasts-progress-${width}.png`), meta);
+      if (!(await notice.waitFor({ state: "hidden", timeout: 60000 }).then(() => true).catch(() => false))) fail("the browser beasts notice is still shown after the download");
+      const stubName = STUB_BESTIARY_BEASTS[0].name;
+      const listed = browserDialog(page).getByText(stubName, { exact: true }).first();
+      if (!(await shown(listed, 10000))) fail(`the browser list does not show the downloaded beast "${stubName}" after the download`);
+      if (!(await shown(browserDialog(page).getByText(MM_REMINDER_TEXT).first(), 5000))) fail("after the download the browser does not show the Monster Manual reminder");
+      await listed.evaluate((el) => el.scrollIntoView({ block: "center" })).catch(() => {});
+      await settle(page);
+      await maybeShot(page, join(SHOTS, `WildShapeBrowserBeasts-after-${width}.png`), meta);
+    }
+  } finally {
+    await noBeasts.seeded.close();
+  }
+
+  const withBeasts = await openSeeded(integratedCollections(ROOT));
+  try {
+    await openBrowser(withBeasts.page);
+    if (!(await shown(browserDialog(withBeasts.page).getByText(MM_REMINDER_TEXT).first()))) fail("the browser of an Integrated Catalog with beasts shows no Monster Manual reminder");
+    if ((await browserDialog(withBeasts.page).getByText(BEASTS_NOTICE_TEXT, { exact: true }).count()) > 0) fail("the browser shows the beasts notice for a catalog that holds beasts");
+  } finally {
+    await withBeasts.seeded.close();
+  }
+
+  const srd = await openSeeded(null);
+  try {
+    await openBrowser(srd.page);
+    if ((await browserDialog(srd.page).getByText(MM_REMINDER_TEXT).count()) > 0) fail("the browser of the SRD Baseline shows the Monster Manual reminder");
+    if ((await browserDialog(srd.page).getByText(BEASTS_NOTICE_TEXT, { exact: true }).count()) > 0) fail("the browser of the SRD Baseline shows the beasts notice");
+  } finally {
+    await srd.seeded.close();
+  }
+  return failures;
+}
+
 const EXTRA_CHECKS = [
   { name: "Settings skip beasts", run: checkSkipBeastsSetting },
   { name: "Settings download beasts", run: checkSettingsDownloadBeasts, shot: true },
@@ -4545,6 +4644,7 @@ const EXTRA_CHECKS = [
   { name: "Wild Shape Stats", run: checkWildShapeScreen },
   { name: "Wild Shape Features", run: checkWildShapeFeatures },
   { name: "Features beasts notice", run: checkFeaturesBeastsNotice, shot: true },
+  { name: "Wild Shape browser beasts notice", run: checkWildShapeBrowserBeastsNotice, shot: true },
   { name: "Modal closing", run: checkModalClosing },
   { name: "New character draft folder", run: checkDraftFolder },
   { name: "Dice tray and Roll Log", run: checkDiceTrayAndLog, shot: true },
