@@ -18,6 +18,8 @@ export interface AppSettings {
   diceAnimation?: DiceAnimation;
   /** The Catalog Format the user was last told about. Absent until the update notice is shown. */
   catalogFormatInformed?: number;
+  /** Absent means off. When on, the next sync leaves the bestiary out. Read only when a sync starts. */
+  skipBeasts?: boolean;
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -103,6 +105,9 @@ function normalizeSettings(value: unknown): AppSettings {
   }
   if (value.catalogFormatInformed !== undefined && typeof value.catalogFormatInformed !== "number") {
     throw new Error("Invalid settings: catalogFormatInformed must be a number");
+  }
+  if (value.skipBeasts !== undefined && typeof value.skipBeasts !== "boolean") {
+    throw new Error("Invalid settings: skipBeasts must be boolean");
   }
   if (value.activeResourceBooks !== undefined && (!Array.isArray(value.activeResourceBooks) ||
     !value.activeResourceBooks.every(book => typeof book === "string"))) {

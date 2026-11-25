@@ -85,7 +85,7 @@ async function providerHarness(initial: unknown = [makeChar()], options: {
       clearCompendiumData: async () => {},
     };
     if (name.includes("runner")) return {
-      runInAppIntegration: async () => ({
+      runSavedIntegration: async () => ({
         hasIntegratedCatalog: true,
         catalogFormat: compendiumStorage.REQUIRED_CATALOG_FORMAT,
         integratedAt: new Date().toISOString(),
