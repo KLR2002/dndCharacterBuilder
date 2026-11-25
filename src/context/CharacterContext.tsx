@@ -73,6 +73,10 @@ interface CharacterContextValue {
 
   // Compendium Integration
   isIntegrated: boolean;
+  /** Bumped whenever the Compendium changes; screens that read the Compendium depend on it to re-render. */
+  catalogRevision: number;
+  /** The Compendium holds an Integrated Catalog with no beasts. Recomputed with catalogRevision. */
+  lacksBeasts: boolean;
   integratedAt: string | null;
   /** The loaded Integrated Catalog is below the format the application requires. Always false for the SRD Baseline. */
   catalogStale: boolean;
@@ -136,6 +140,7 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
   const [skipBeasts, setSkipBeastsState] = useState<boolean>(false);
   const [hasCompletedFirstRun, setHasCompletedFirstRun] = useState<boolean>(true); // default true to avoid flash
   const [isIntegrated, setIsIntegrated] = useState<boolean>(false);
+  const [catalogRevision, setCatalogRevision] = useState<number>(0);
   const [integratedAt, setIntegratedAt] = useState<string | null>(null);
   const [catalogStale, setCatalogStale] = useState<boolean>(false);
   const [catalogFormatInformed, setCatalogFormatInformed] = useState<number | undefined>(undefined);
@@ -171,6 +176,7 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
           setIsIntegrated(false);
           setIntegratedAt(null);
         }
+        setCatalogRevision(revision => revision + 1);
         setCatalogStale(currentCompendium().stale);
         const raceCatalog = currentCompendium().for().races();
         const classCatalog = currentCompendium().for().classes();
@@ -364,6 +370,7 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
     onProgress?: (category: string, step: number, total: number) => void
   ) => {
     await downloadBeastsService(new BrowserToolsClient(), onProgress);
+    setCatalogRevision(revision => revision + 1);
     setSkipBeastsState(false);
   };
 
@@ -389,6 +396,7 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
     integrateCompendium(compendium);
     setIsIntegrated(true);
     setIntegratedAt(compendium.integratedAt || new Date().toISOString());
+    setCatalogRevision(revision => revision + 1);
     setCatalogStale(currentCompendium().stale);
     await setActiveBooks(DEFAULT_ACTIVE_BOOK_CODES);
   };
@@ -398,6 +406,7 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
     revertCompendiumToSrd();
     setIsIntegrated(false);
     setIntegratedAt(null);
+    setCatalogRevision(revision => revision + 1);
     setCatalogStale(false);
     await setActiveBooks([SRD_SOURCE]);
   };
@@ -432,6 +441,7 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
   }, [selectedCharacterId, activeBooks, integratedAt, isLoading]);
 
   const currentCharacter = characters.find((c) => c.id === selectedCharacterId) || null;
+  const lacksBeasts = currentCompendium().lacksBeasts;
 
   return (
     <CharacterContext.Provider
@@ -464,6 +474,8 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
         setFirstRunCompleted,
         getCharacter,
         isIntegrated,
+        catalogRevision,
+        lacksBeasts,
         integratedAt,
         catalogStale,
         catalogUpdateNoticeDue: shouldShowCatalogUpdateNotice({

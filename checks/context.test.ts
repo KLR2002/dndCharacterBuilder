@@ -103,13 +103,15 @@ async function providerHarness(initial: unknown = [makeChar()], options: {
       revertToSrd: () => { integrated = null; },
       currentCompendium: () => options.catalog ?? {
         stale: integrated ? compendiumStorage.isCatalogStale(integrated) : false,
+        lacksBeasts: integrated ? !integrated.beasts?.length : false,
         for: () => ({ races: () => options.races ?? [], classes: () => options.classes ?? [], backgrounds: () => [] }),
       },
     };
     if (name.includes("constants/rules")) return rules;
-    if (name.includes("constants/books")) return { DEFAULT_ACTIVE_BOOK_CODES: [] };
+    if (name.includes("constants/books")) return { DEFAULT_ACTIVE_BOOK_CODES: [], SRD_SOURCE: "SRD" };
     if (name.includes("builderTransitions")) return { checkActiveBooksIntegrity: () => [] };
     if (name.includes("beastDownload")) return { downloadBeasts: options.downloadBeasts ?? (async () => {
+      integrated = { ...integrated, beasts: [{ name: "Invented Beast", source: "TST" }] };
       await storage.updateSettings({ skipBeasts: false });
     }) };
     if (name.includes("browserClient")) return { BrowserToolsClient: class {} };
@@ -758,4 +760,46 @@ test("the provider passes the progress callback to the beast download", async ()
   await download;
   assert.equal(seen.length, 1);
   assert.equal(seen[0][0], progress);
+});
+
+test("the provider reports that an Integrated Catalog without beasts lacks beasts", async () => {
+  const h = await providerHarness([], { compendium: { hasIntegratedCatalog: true, races: [], classes: [] } });
+  assert.equal(h.value.lacksBeasts, true);
+});
+
+test("the provider reports that an Integrated Catalog with beasts holds them", async () => {
+  const h = await providerHarness([], {
+    compendium: { hasIntegratedCatalog: true, races: [], classes: [], beasts: [{ name: "Invented Beast", source: "TST" }] },
+  });
+  assert.equal(h.value.lacksBeasts, false);
+});
+
+test("the provider reports that the SRD Baseline does not lack beasts", async () => {
+  const h = await providerHarness([], { compendium: null });
+  assert.equal(h.value.lacksBeasts, false);
+});
+
+test("a successful beast download clears the provider's lacksBeasts and bumps the catalog revision", async () => {
+  const h = await providerHarness([], { compendium: { hasIntegratedCatalog: true, races: [], classes: [] } });
+  assert.equal(h.value.lacksBeasts, true);
+  const before = h.value.catalogRevision;
+  const download = h.value.downloadBeasts();
+  h.render();
+  await download;
+  h.render();
+  assert.equal(h.value.lacksBeasts, false);
+  assert.ok(h.value.catalogRevision > before, "catalogRevision should increase after a download");
+});
+
+test("reverting to the SRD Baseline clears the provider's lacksBeasts", async () => {
+  const h = await providerHarness([], { compendium: { hasIntegratedCatalog: true, races: [], classes: [] } });
+  assert.equal(h.value.lacksBeasts, true);
+  // The revert's character write is queued after its settings write, so renders keep the queue moving.
+  const revert = h.value.revertToSrd();
+  for (let i = 0; i < 20; i++) {
+    await new Promise(resolve => setImmediate(resolve));
+    h.render();
+  }
+  await revert;
+  assert.equal(h.value.lacksBeasts, false);
 });
