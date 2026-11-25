@@ -46,6 +46,8 @@ export default function OptionsScreen() {
     setActiveBooks,
     fullHealOnLevelUp,
     setFullHealOnLevelUp,
+    skipBeasts,
+    setSkipBeasts,
     setDiceAnimation,
     isIntegrated,
     integratedAt,
@@ -496,6 +498,41 @@ export default function OptionsScreen() {
                 </View>
               </>
             )}
+
+            <TouchableOpacity
+              onPress={() => setSkipBeasts(!skipBeasts)}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: skipBeasts }}
+              style={[
+                styles.bookRow,
+                {
+                  backgroundColor: skipBeasts ? theme.surface : "transparent",
+                  borderColor: skipBeasts ? theme.accentHover : theme.border,
+                },
+              ]}
+            >
+              <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+                <Text
+                  style={{ color: theme.text, fontSize: 14, fontWeight: "600" }}
+                >
+                  Skip beasts
+                </Text>
+                <Text
+                  style={{
+                    color: theme.textSecondary,
+                    fontSize: 13,
+                    lineHeight: 18,
+                  }}
+                >
+                  {"Speeds up integration. Worth enabling if you don't plan to play a Druid. Wild Shape keeps the SRD beasts."}
+                </Text>
+              </View>
+              <Ionicons
+                name={skipBeasts ? "checkbox" : "square-outline"}
+                size={22}
+                color={skipBeasts ? theme.accentHover : theme.textMuted}
+              />
+            </TouchableOpacity>
           </Card>
         </View>
 
