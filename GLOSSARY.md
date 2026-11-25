@@ -119,7 +119,7 @@ _Avoid_: Monster sheet, creature profile, beast card
 The SRD Baseline carries the SRD's beasts and elementals, so a Druid can browse and adopt forms without an Integrated Catalog. Which Beast Statblocks exist follows Sourcebook Gating; Wild Shape adds only its own limits (challenge rating, swimming and flying levels, elementals for Moon Druids). An Integrated Catalog synced under *Skip Beasts* holds none of its own.
 
 **Skip Beasts**:
-A setting that makes the next sync of the Integrated Catalog leave out its Beast Statblocks; it changes no catalog already saved. While an Integrated Catalog holds no beasts, Wild Shape offers the SRD Baseline's beasts, and the player can download the catalog's beasts on their own, which also turns the setting off. The SRD Baseline never offers that download.
+A setting that makes the next sync of the Integrated Catalog leave out its Beast Statblocks; it changes no catalog already saved. While an Integrated Catalog holds no beasts, Wild Shape offers the SRD Baseline's beasts, and the player can download the catalog's beasts on their own, which changes nothing else in the catalog (not its Catalog Format or its last synced date) and turns the setting off. The SRD Baseline never offers that download.
 _Avoid_: Fast sync, lite sync, no-bestiary mode
 
 **Elemental Wild Shape**:
