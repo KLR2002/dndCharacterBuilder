@@ -22,7 +22,9 @@ import {
 } from "../services/compendiumStorage";
 import { runE2eSeedHook } from "../services/e2eSeedHook";
 import { shouldShowCatalogUpdateNotice } from "../services/catalogUpdateNotice";
-import { runInAppIntegration } from "../services/scraper/runner";
+import { runSavedIntegration } from "../services/scraper/runner";
+import { downloadBeasts as downloadBeastsService } from "../services/scraper/beastDownload";
+import { BrowserToolsClient } from "../services/scraper/browserClient";
 import { unsetAbilityScores } from "../constants/rules";
 
 interface CharacterContextValue {
@@ -61,11 +63,20 @@ interface CharacterContextValue {
   /** The saved dice animation; undefined when never chosen, so the system reduced-motion preference decides. */
   diceAnimation: DiceAnimation | undefined;
   setDiceAnimation: (mode: DiceAnimation) => Promise<void>;
+  /** Skip Beasts: the next sync leaves the bestiary out. Read when a sync starts; changes no saved catalog. */
+  skipBeasts: boolean;
+  setSkipBeasts: (on: boolean) => Promise<void>;
+  /** Adds the beasts to the saved Integrated Catalog and turns Skip Beasts off. Throws, and changes nothing, on failure. */
+  downloadBeasts: (onProgress?: (category: string, step: number, total: number) => void) => Promise<void>;
   setFirstRunCompleted: (books: string[]) => Promise<void>;
   getCharacter: (id: string) => Character | undefined;
 
   // Compendium Integration
   isIntegrated: boolean;
+  /** Bumped whenever the Compendium changes; screens that read the Compendium depend on it to re-render. */
+  catalogRevision: number;
+  /** The Compendium holds an Integrated Catalog with no beasts. Recomputed with catalogRevision. */
+  lacksBeasts: boolean;
   integratedAt: string | null;
   /** The loaded Integrated Catalog is below the format the application requires. Always false for the SRD Baseline. */
   catalogStale: boolean;
@@ -126,8 +137,10 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
   const [fullHealOnLevelUp, setFullHealOnLevelUpState] = useState<boolean>(DEFAULT_SETTINGS.fullHealOnLevelUp);
   // Undefined until the user chooses a mode: then the saved value decides, not the system preference.
   const [diceAnimation, setDiceAnimationState] = useState<DiceAnimation | undefined>(undefined);
+  const [skipBeasts, setSkipBeastsState] = useState<boolean>(false);
   const [hasCompletedFirstRun, setHasCompletedFirstRun] = useState<boolean>(true); // default true to avoid flash
   const [isIntegrated, setIsIntegrated] = useState<boolean>(false);
+  const [catalogRevision, setCatalogRevision] = useState<number>(0);
   const [integratedAt, setIntegratedAt] = useState<string | null>(null);
   const [catalogStale, setCatalogStale] = useState<boolean>(false);
   const [catalogFormatInformed, setCatalogFormatInformed] = useState<number | undefined>(undefined);
@@ -163,6 +176,7 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
           setIsIntegrated(false);
           setIntegratedAt(null);
         }
+        setCatalogRevision(revision => revision + 1);
         setCatalogStale(currentCompendium().stale);
         const raceCatalog = currentCompendium().for().races();
         const classCatalog = currentCompendium().for().classes();
@@ -173,6 +187,7 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
         setActiveBooksState(loadedActiveBooks);
         setFullHealOnLevelUpState(loadedSettings.fullHealOnLevelUp);
         setDiceAnimationState(loadedSettings.diceAnimation);
+        setSkipBeastsState(loadedSettings.skipBeasts === true);
         setHasCompletedFirstRun(Boolean(loadedSettings.hasCompletedFirstRun));
         setCatalogFormatInformed(loadedSettings.catalogFormatInformed);
         setCharacters(migratedCharacters);
@@ -346,6 +361,23 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
     await updateSettings({ diceAnimation: mode });
   };
 
+  const setSkipBeasts = async (on: boolean) => {
+    setSkipBeastsState(on);
+    await updateSettings({ skipBeasts: on });
+  };
+
+  const downloadBeasts = async (
+    onProgress?: (category: string, step: number, total: number) => void
+  ) => {
+    try {
+      await downloadBeastsService(new BrowserToolsClient(), onProgress);
+      setSkipBeastsState(false);
+    } finally {
+      // A failure after the catalog was saved still leaves new beasts in the Compendium.
+      setCatalogRevision(revision => revision + 1);
+    }
+  };
+
   const setFirstRunCompleted = async (books: string[]) => {
     setHasCompletedFirstRun(true);
     setActiveBooksState(books);
@@ -364,10 +396,11 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
   const triggerIntegration = async (
     onProgress?: (category: string, step: number, total: number) => void
   ) => {
-    const compendium = await runInAppIntegration(onProgress);
+    const compendium = await runSavedIntegration(onProgress);
     integrateCompendium(compendium);
     setIsIntegrated(true);
     setIntegratedAt(compendium.integratedAt || new Date().toISOString());
+    setCatalogRevision(revision => revision + 1);
     setCatalogStale(currentCompendium().stale);
     await setActiveBooks(DEFAULT_ACTIVE_BOOK_CODES);
   };
@@ -377,6 +410,7 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
     revertCompendiumToSrd();
     setIsIntegrated(false);
     setIntegratedAt(null);
+    setCatalogRevision(revision => revision + 1);
     setCatalogStale(false);
     await setActiveBooks([SRD_SOURCE]);
   };
@@ -411,6 +445,7 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
   }, [selectedCharacterId, activeBooks, integratedAt, isLoading]);
 
   const currentCharacter = characters.find((c) => c.id === selectedCharacterId) || null;
+  const lacksBeasts = currentCompendium().lacksBeasts;
 
   return (
     <CharacterContext.Provider
@@ -437,9 +472,14 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
         setFullHealOnLevelUp,
         diceAnimation,
         setDiceAnimation,
+        skipBeasts,
+        setSkipBeasts,
+        downloadBeasts,
         setFirstRunCompleted,
         getCharacter,
         isIntegrated,
+        catalogRevision,
+        lacksBeasts,
         integratedAt,
         catalogStale,
         catalogUpdateNoticeDue: shouldShowCatalogUpdateNotice({

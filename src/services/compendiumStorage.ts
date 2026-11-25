@@ -135,11 +135,31 @@ function openIndexedDB(): Promise<IDBDatabase> {
   });
 }
 
+/** Saves a new Integrated Catalog, stamped with the required Catalog Format. Best effort: a failed write is only logged. */
 export async function saveCompendiumData(input: CompendiumCollections): Promise<void> {
-  const data: CompendiumCollections = { ...input, catalogFormat: REQUIRED_CATALOG_FORMAT };
+  await writeCompendium({ ...input, catalogFormat: REQUIRED_CATALOG_FORMAT });
+}
+
+/**
+ * Replaces the beasts of the saved Integrated Catalog and nothing else: its Catalog Format and its
+ * `integratedAt` keep their saved values, so a stale catalog stays stale. Throws, and writes nothing,
+ * when no Integrated Catalog is saved, or when no storage backend keeps the new catalog. Returns the catalog as saved.
+ */
+export async function replaceSavedBeasts(beasts: BeastData[]): Promise<CompendiumCollections> {
+  const saved = await loadCompendiumData();
+  if (!saved?.hasIntegratedCatalog) throw new Error("No Integrated Catalog is saved to add beasts to");
+  const updated: CompendiumCollections = { ...saved, beasts };
+  if (!(await writeCompendium(updated))) {
+    throw new Error("The beasts could not be saved on this device, so nothing was changed");
+  }
+  return updated;
+}
+
+/** Tries IndexedDB, then the native file, then AsyncStorage. Resolves true once a backend holds the catalog. */
+async function writeCompendium(data: CompendiumCollections): Promise<boolean> {
   if (testKv) {
     testKv.set(STORAGE_KEY, JSON.stringify(data));
-    return;
+    return true;
   }
 
   if (isWebIndexedDBAvailable()) {
@@ -153,7 +173,7 @@ export async function saveCompendiumData(input: CompendiumCollections): Promise<
           req.onsuccess = () => resolve();
           req.onerror = () => reject(req.error);
         });
-        return;
+        return true;
       }
     } catch (idbErr) {
       console.warn("IndexedDB saveCompendiumData failed, falling back to FileSystem/AsyncStorage:", idbErr);
@@ -166,7 +186,7 @@ export async function saveCompendiumData(input: CompendiumCollections): Promise<
     try {
       const fileUri = `${fs.documentDirectory}${COMPENDIUM_FILE_NAME}`;
       await fs.writeAsStringAsync(fileUri, JSON.stringify(data));
-      return;
+      return true;
     } catch (fsErr) {
       console.warn("FileSystem saveCompendiumData failed, falling back to AsyncStorage:", fsErr);
     }
@@ -175,8 +195,10 @@ export async function saveCompendiumData(input: CompendiumCollections): Promise<
   try {
     const { default: storage } = await import("@react-native-async-storage/async-storage");
     await storage.setItem(STORAGE_KEY, JSON.stringify(data));
+    return true;
   } catch (err) {
     console.warn("Failed to persist compendium in storage", err);
+    return false;
   }
 }
 

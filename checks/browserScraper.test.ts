@@ -2,7 +2,13 @@ import test from "node:test";
 import { currentCompendium } from "../src/services/compendium.ts";
 import assert from "node:assert/strict";
 import { BrowserToolsClient } from "../src/services/scraper/browserClient.ts";
-import { runInAppIntegration } from "../src/services/scraper/runner.ts";
+import {
+  integrationStepTotal,
+  readIncludeBeasts,
+  runInAppIntegration,
+  runSavedIntegration,
+} from "../src/services/scraper/runner.ts";
+import { __setKvForTests } from "../src/services/storage.ts";
 import {
   __setCompendiumKvForTests,
   loadCompendiumData,
@@ -10,6 +16,8 @@ import {
   REQUIRED_CATALOG_FORMAT,
 } from "../src/services/compendiumStorage.ts";
 import { resetTestCompendium } from "./testUtils.ts";
+
+const SETTINGS_KEY = "@dnd5e_app_settings";
 
 test("BrowserToolsClient: constructs endpoints and fetches JSON", async () => {
   const originalFetch = globalThis.fetch;
@@ -62,15 +70,11 @@ test("BrowserToolsClient: throws descriptive error on HTTP failure", async () =>
   }
 });
 
-test("runInAppIntegration: orchestrates 11 scrapers, reports progress, and hydrates CompendiumStorage", async () => {
-  const testKv = new Map<string, string>();
-  __setCompendiumKvForTests(testKv);
-
-  const originalFetch = globalThis.fetch;
-  try {
-    // Provide minimal mock payloads for each scrapers' endpoints
-    globalThis.fetch = (async (url: string | URL | Request) => {
+/** A mirror with minimal payloads for each scraper's endpoints; every requested URL is pushed to `requests`. */
+function fakeMirror(requests: string[]) {
+  return (async (url: string | URL | Request) => {
       const urlStr = String(url);
+      requests.push(urlStr);
 
       if (urlStr.includes("data/races.json")) {
         return {
@@ -248,7 +252,16 @@ test("runInAppIntegration: orchestrates 11 scrapers, reports progress, and hydra
         status: 200,
         json: async () => ({}),
       } as any;
-    }) as any;
+  }) as any;
+}
+
+test("runInAppIntegration: orchestrates 11 scrapers, reports progress, and hydrates CompendiumStorage", async () => {
+  const testKv = new Map<string, string>();
+  __setCompendiumKvForTests(testKv);
+
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = fakeMirror([]);
 
     const progressReports: { category: string; step: number; total: number }[] = [];
     const result = await runInAppIntegration((category, step, total) => {
@@ -388,6 +401,106 @@ test("scrapeBackgrounds: handles entries without string names without crashing",
   assert.equal(results.length, 1);
   assert.equal(results[0].name, "Custom Background");
   assert.equal(results[0].feature?.name, "Custom Shelter");
+});
+
+test("runInAppIntegration with beasts off: requests no bestiary, saves no beasts, reports 10 steps and no Beasts step", async () => {
+  __setCompendiumKvForTests(new Map<string, string>());
+  const requests: string[] = [];
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = fakeMirror(requests);
+
+    const progressReports: { category: string; step: number; total: number }[] = [];
+    await runInAppIntegration((category, step, total) => {
+      progressReports.push({ category, step, total });
+    }, { includeBeasts: false });
+
+    assert.equal(requests.some(url => url.includes("data/bestiary/")), false);
+    assert.deepEqual(progressReports.map(report => report.category), [
+      "Races", "Classes", "Feats", "Options & Features", "Backgrounds",
+      "Items", "Spells", "Conditions", "Books", "Origin Rules",
+    ]);
+    assert.deepEqual(progressReports.map(report => report.total), Array(10).fill(10));
+    assert.deepEqual(progressReports.map(report => report.step), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+
+    const withoutBeasts = await loadCompendiumData();
+    assert.deepEqual(withoutBeasts?.beasts, []);
+
+    await clearCompendiumData();
+    globalThis.fetch = fakeMirror([]);
+    await runInAppIntegration(undefined);
+    const withBeasts = await loadCompendiumData();
+    assert.deepEqual(withBeasts?.beasts.map(beast => beast.name), ["Wolf"]);
+
+    const { beasts: _offBeasts, integratedAt: _offAt, ...offRest } = withoutBeasts!;
+    const { beasts: _onBeasts, integratedAt: _onAt, ...onRest } = withBeasts!;
+    assert.deepEqual(offRest, onRest);
+  } finally {
+    globalThis.fetch = originalFetch;
+    await clearCompendiumData();
+    __setCompendiumKvForTests(undefined);
+    resetTestCompendium();
+  }
+});
+
+test("runSavedIntegration reads the saved Skip Beasts setting when the sync starts", async () => {
+  const originalFetch = globalThis.fetch;
+  try {
+    __setKvForTests(new Map([[SETTINGS_KEY, JSON.stringify({ schemaVersion: 2, skipBeasts: true })]]));
+    __setCompendiumKvForTests(new Map<string, string>());
+    assert.equal(await readIncludeBeasts(), false);
+    assert.equal(integrationStepTotal(await readIncludeBeasts()), 10);
+
+    const skipped: string[] = [];
+    globalThis.fetch = fakeMirror(skipped);
+    await runSavedIntegration();
+    assert.equal(skipped.some(url => url.includes("data/bestiary/")), false);
+    assert.deepEqual((await loadCompendiumData())?.beasts, []);
+
+    __setKvForTests(new Map([[SETTINGS_KEY, JSON.stringify({ schemaVersion: 2, skipBeasts: false })]]));
+    __setCompendiumKvForTests(new Map<string, string>());
+    assert.equal(await readIncludeBeasts(), true);
+    assert.equal(integrationStepTotal(await readIncludeBeasts()), 11);
+
+    const fetched: string[] = [];
+    globalThis.fetch = fakeMirror(fetched);
+    await runSavedIntegration();
+    assert.equal(fetched.some(url => url.includes("data/bestiary/bestiary-mm.json")), true);
+    assert.deepEqual((await loadCompendiumData())?.beasts.map(beast => beast.name), ["Wolf"]);
+  } finally {
+    globalThis.fetch = originalFetch;
+    await clearCompendiumData();
+    __setCompendiumKvForTests(undefined);
+    __setKvForTests(new Map());
+    resetTestCompendium();
+  }
+});
+
+test("runInAppIntegration by default: fetches the bestiary, saves the beasts, reports 11 steps with Beasts at step 8", async () => {
+  __setCompendiumKvForTests(new Map<string, string>());
+  const requests: string[] = [];
+  const originalFetch = globalThis.fetch;
+  try {
+    globalThis.fetch = fakeMirror(requests);
+
+    const progressReports: { category: string; step: number; total: number }[] = [];
+    await runInAppIntegration((category, step, total) => {
+      progressReports.push({ category, step, total });
+    });
+
+    assert.equal(requests.some(url => url.includes("data/bestiary/bestiary-mm.json")), true);
+    assert.equal(progressReports.length, 11);
+    assert.deepEqual(progressReports[7], { category: "Beasts", step: 8, total: 11 });
+    assert.deepEqual(progressReports.map(report => report.total), Array(11).fill(11));
+
+    const stored = await loadCompendiumData();
+    assert.deepEqual(stored?.beasts.map(beast => beast.name), ["Wolf"]);
+  } finally {
+    globalThis.fetch = originalFetch;
+    await clearCompendiumData();
+    __setCompendiumKvForTests(undefined);
+    resetTestCompendium();
+  }
 });
 
 

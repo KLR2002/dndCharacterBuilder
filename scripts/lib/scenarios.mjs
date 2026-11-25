@@ -2079,7 +2079,16 @@ export function buildScreens({ integrated }) {
         ready: /total level/i,
         expect: { labels: ["Needs attention"], absentLabels: ["Raise Fighter level"], texts: ["Back to sheet"], fitsWidth: true },
       },
-      { name: "Settings", route: "/options", ready: /settings & compendium/i },
+      // The integration card, scrolled into view: its Skip beasts checkbox and caption show in both catalog modes.
+      {
+        name: "Settings",
+        route: "/options",
+        ready: /settings & compendium/i,
+        scrollTo: "Skip beasts",
+        // The seeded catalog holds beasts (and the SRD Baseline never offers the download), so no download button.
+        expect: { texts: ["Skip beasts", "Speeds up integration. Worth enabling if you don't plan to play a Druid. Wild Shape keeps the SRD beasts."], absent: ["Download beasts"], fitsWidth: true },
+        shot: true,
+      },
       // The floating dice button (label "Dice tray") is on every screen at every width: Home, Options, the
       // character sheet, and the Creation Flow in its draft, Edit Build and Level-Up modes.
       { name: "Dice button on the character list", route: "/", ready: /5e Character Builder/, expect: { labels: ["Dice tray"], fitsWidth: true } },

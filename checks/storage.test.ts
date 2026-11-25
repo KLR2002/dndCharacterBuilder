@@ -209,3 +209,16 @@ test("catalogFormatInformed is absent in settings saved before it existed and su
 test("catalogFormatInformed rejects a non-number value", () => {
   assert.throws(() => migrateIfNeeded({ characters: [], folders: [], settings: { catalogFormatInformed: "11" } }), /catalogFormatInformed/);
 });
+
+test("Skip Beasts reads as off when no value is saved, and a saved true or false reads back unchanged", async () => {
+  __setKvForTests(new Map([[SETTINGS, JSON.stringify({ schemaVersion: 2, hasCompletedFirstRun: true })]]));
+  assert.equal((await loadSettings()).skipBeasts === true, false);
+  for (const saved of [true, false]) {
+    __setKvForTests(new Map([[SETTINGS, JSON.stringify({ schemaVersion: 2, skipBeasts: saved })]]));
+    assert.equal((await loadSettings()).skipBeasts, saved);
+  }
+});
+
+test("Skip Beasts rejects a value that is not a boolean", () => {
+  assert.throws(() => migrateIfNeeded({ characters: [], folders: [], settings: { skipBeasts: "yes" } }), /skipBeasts/);
+});

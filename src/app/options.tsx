@@ -16,6 +16,7 @@ import type { DiceAnimation } from "../rules/diceAnimation";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { Modal } from "../components/ui/Modal";
+import { SyncProgressModal } from "../components/SyncProgressModal";
 import { SearchBar } from "../components/ui/SearchBar";
 import {
   ALL_RESOURCE_BOOKS,
@@ -28,6 +29,7 @@ import {
 import { ACCENT_PALETTES } from "../constants/theme";
 import { useCharacters } from "../context/CharacterContext";
 import { useAppTheme } from "../context/ThemeContext";
+import { integrationStepTotal } from "../services/scraper/runner";
 
 const DICE_ANIMATION_MODES: { mode: DiceAnimation; label: string }[] = [
   { mode: "off", label: "Off" },
@@ -45,11 +47,15 @@ export default function OptionsScreen() {
     setActiveBooks,
     fullHealOnLevelUp,
     setFullHealOnLevelUp,
+    skipBeasts,
+    setSkipBeasts,
     setDiceAnimation,
     isIntegrated,
     integratedAt,
     catalogStale,
+    lacksBeasts,
     triggerIntegration,
+    downloadBeasts,
     revertToSrd,
   } = useCharacters();
 
@@ -69,19 +75,39 @@ export default function OptionsScreen() {
     total: 11,
   });
   const [syncError, setSyncError] = useState<string | null>(null);
+  const [isBeastsOnlyWindow, setIsBeastsOnlyWindow] = useState(false);
 
   const startIntegrationProcess = async () => {
     setConfirmDisclaimerVisible(false);
+    setIsBeastsOnlyWindow(false);
     setIsSyncing(true);
     setSyncError(null);
-    setSyncStep({ category: "Races", step: 1, total: 11 });
+    setSyncStep({ category: "Races", step: 1, total: integrationStepTotal(!skipBeasts) });
     try {
       await triggerIntegration((category, step, total) => {
         setSyncStep({ category, step, total });
       });
       setIsSyncing(false);
     } catch (err: any) {
-      setSyncError(err?.message || "Failed to download integration data");
+      setSyncError(
+        `Failed to complete integration: ${err?.message || "Failed to download integration data"}`,
+      );
+    }
+  };
+
+  const startBeastsDownload = async () => {
+    if (isSyncing) return;
+    setIsBeastsOnlyWindow(true);
+    setIsSyncing(true);
+    setSyncError(null);
+    setSyncStep({ category: "Beasts", step: 1, total: 1 });
+    try {
+      await downloadBeasts((category, step, total) => {
+        setSyncStep({ category, step, total });
+      });
+      setIsSyncing(false);
+    } catch (err: any) {
+      setSyncError(err?.message || "Failed to download beasts");
     }
   };
 
@@ -486,6 +512,14 @@ export default function OptionsScreen() {
                     size="sm"
                     onPress={() => setConfirmDisclaimerVisible(true)}
                   />
+                  {lacksBeasts ? (
+                    <Button
+                      title="Download beasts"
+                      variant="outline"
+                      size="sm"
+                      onPress={startBeastsDownload}
+                    />
+                  ) : null}
                   <Button
                     title="Revert to SRD"
                     variant="secondary"
@@ -495,6 +529,41 @@ export default function OptionsScreen() {
                 </View>
               </>
             )}
+
+            <TouchableOpacity
+              onPress={() => setSkipBeasts(!skipBeasts)}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: skipBeasts }}
+              style={[
+                styles.bookRow,
+                {
+                  backgroundColor: skipBeasts ? theme.surface : "transparent",
+                  borderColor: skipBeasts ? theme.accentHover : theme.border,
+                },
+              ]}
+            >
+              <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
+                <Text
+                  style={{ color: theme.text, fontSize: 14, fontWeight: "600" }}
+                >
+                  Skip beasts
+                </Text>
+                <Text
+                  style={{
+                    color: theme.textSecondary,
+                    fontSize: 13,
+                    lineHeight: 18,
+                  }}
+                >
+                  {"Speeds up integration. Worth enabling if you don't plan to play a Druid. Wild Shape keeps the SRD beasts."}
+                </Text>
+              </View>
+              <Ionicons
+                name={skipBeasts ? "checkbox" : "square-outline"}
+                size={22}
+                color={skipBeasts ? theme.accentHover : theme.textMuted}
+              />
+            </TouchableOpacity>
           </Card>
         </View>
 
@@ -848,74 +917,20 @@ export default function OptionsScreen() {
         </View>
       </Modal>
 
-      {/* Syncing Progress Modal */}
-      <Modal
+      <SyncProgressModal
         visible={isSyncing}
+        title={isBeastsOnlyWindow ? "Downloading beasts" : "Syncing Compendium"}
+        errorTitle={isBeastsOnlyWindow ? "Download failed" : "Integration Error"}
+        category={syncStep.category}
+        step={syncStep.step}
+        total={syncStep.total}
+        error={syncError}
+        errorHint={isBeastsOnlyWindow ? undefined : "Please check your internet connection and try again."}
         onClose={() => {
-          if (syncError) {
-            setIsSyncing(false);
-            setSyncError(null);
-          }
+          setIsSyncing(false);
+          setSyncError(null);
         }}
-        title={syncError ? "Integration Error" : "Syncing Compendium"}
-        subtitle={
-          syncError
-            ? undefined
-            : `Category ${syncStep.step} of ${syncStep.total}`
-        }
-        footer={
-          syncError ? (
-            <Button
-              title="Close"
-              variant="secondary"
-              onPress={() => {
-                setIsSyncing(false);
-                setSyncError(null);
-              }}
-            />
-          ) : undefined
-        }
-      >
-        {syncError ? (
-          <View style={{ gap: 10 }}>
-            <Text style={{ color: theme.accentHover, fontSize: 14 }}>
-              Failed to complete integration: {syncError}
-            </Text>
-            <Text style={{ color: theme.textSecondary, fontSize: 13 }}>
-              Please check your internet connection and try again.
-            </Text>
-          </View>
-        ) : (
-          <View style={{ gap: 16, paddingVertical: 8 }}>
-            <Text
-              style={{ color: theme.text, fontSize: 15, fontWeight: "600" }}
-            >
-              Downloading {syncStep.category}...
-            </Text>
-            <View
-              style={{
-                width: "100%",
-                height: 8,
-                backgroundColor: theme.surfaceHighlight,
-                borderRadius: 4,
-                overflow: "hidden",
-              }}
-            >
-              <View
-                style={{
-                  width: `${Math.round((syncStep.step / syncStep.total) * 100)}%`,
-                  height: "100%",
-                  backgroundColor: theme.accent,
-                }}
-              />
-            </View>
-            <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
-              Downloading catalog datasets directly into local IndexedDB
-              storage.
-            </Text>
-          </View>
-        )}
-      </Modal>
+      />
 
       {/* Revert Confirmation Modal */}
       <Modal
