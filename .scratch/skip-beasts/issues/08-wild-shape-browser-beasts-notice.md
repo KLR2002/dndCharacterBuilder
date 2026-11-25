@@ -1,6 +1,7 @@
 # 08: Beasts notice in the Wild Shape browser
 
-**Status:** ready-for-agent
+**Status:** done
+**Landed:** 3434b060. check:all passed; scoped layout runs (integrated 320, 768) passed; list read after a stubbed download. Nested progress window inside the browser's modal not checked on a device. Integration gate (final tree 54f74f4e): check:all, check:live, full layout:check (SRD, all widths) and layout:check --integrated at 320 passed.
 
 ## What to build
 
@@ -14,7 +15,7 @@ Spec: `.scratch/skip-beasts/spec.md`.
 
 ## Acceptance Criteria
 
-- [ ] AC-12: in the browser, with an Integrated Catalog that holds no beasts, the notice and button show and there is no Monster Manual reminder; with beasts and the Monster Manual inactive only the reminder shows; with the SRD Baseline neither shows. After a successful download from the browser, the list shows the catalog's beasts at once.
+- [x] AC-12: in the browser, with an Integrated Catalog that holds no beasts, the notice and button show and there is no Monster Manual reminder; with beasts and the Monster Manual inactive only the reminder shows; with the SRD Baseline neither shows. After a successful download from the browser, the list shows the catalog's beasts at once.
 
 ## Verification
 

@@ -1,6 +1,7 @@
 # 02: The Compendium knows when the catalog has no beasts
 
-**Status:** ready-for-agent
+**Status:** done
+**Landed:** 55e27f8b. check:all passed; the condition mutation failed the SRD case. Integration gate (final tree 54f74f4e): check:all, check:live, full layout:check (SRD, all widths) and layout:check --integrated at 320 passed.
 
 ## What to build
 
@@ -14,7 +15,7 @@ Spec: `.scratch/skip-beasts/spec.md`.
 
 ## Acceptance Criteria
 
-- [ ] AC-6: for an Integrated Catalog saved with no beasts, the Compendium answers that the catalog holds no beasts and `beasts()` lists the 92 SRD beasts; for an Integrated Catalog with beasts it answers that it does; for the SRD Baseline it answers that it does not lack beasts (no download is offered there).
+- [x] AC-6: for an Integrated Catalog saved with no beasts, the Compendium answers that the catalog holds no beasts and `beasts()` lists the 92 SRD beasts; for an Integrated Catalog with beasts it answers that it does; for the SRD Baseline it answers that it does not lack beasts (no download is offered there).
 
 ## Verification
 

@@ -1,6 +1,7 @@
 # 05: "Skip beasts" checkbox in Settings
 
-**Status:** ready-for-agent
+**Status:** done
+**Landed:** c7934e13, c899de18. check:all passed; the scoped layout runs at 320 (SRD and integrated) and 1280 passed; screenshots opened; removing the checkbox handler failed the browser step. Integration gate (final tree 54f74f4e): check:all, check:live, full layout:check (SRD, all widths) and layout:check --integrated at 320 passed.
 
 ## What to build
 
@@ -15,8 +16,8 @@ Spec: `.scratch/skip-beasts/spec.md`.
 
 ## Acceptance Criteria
 
-- [ ] AC-4: the integration card shows the checkbox labelled "Skip beasts" with the caption above, with the SRD Baseline and with an Integrated Catalog, at 320, 393, 768 and 1280 px; checking it saves the setting, and the next sync reads it.
-- [ ] AC-5: with an Integrated Catalog holding beasts, switching Skip Beasts on and off leaves the saved catalog and the Wild Shape list exactly as before.
+- [x] AC-4: the integration card shows the checkbox labelled "Skip beasts" with the caption above, with the SRD Baseline and with an Integrated Catalog, at 320, 393, 768 and 1280 px; checking it saves the setting, and the next sync reads it.
+- [x] AC-5: with an Integrated Catalog holding beasts, switching Skip Beasts on and off leaves the saved catalog and the Wild Shape list exactly as before.
 
 ## Verification
 

@@ -1,6 +1,7 @@
 # 04: The download-beasts operation
 
-**Status:** ready-for-agent
+**Status:** done
+**Landed:** 6dd02aef, the duplicate settings write removed in 72b7d233. check:all and check:live passed; three mutation checks failed tests. Integration gate (final tree 54f74f4e): check:all, check:live, full layout:check (SRD, all widths) and layout:check --integrated at 320 passed.
 
 ## What to build
 
@@ -16,9 +17,9 @@ Spec: `.scratch/skip-beasts/spec.md`.
 
 ## Acceptance Criteria
 
-- [ ] AC-7: against a saved Integrated Catalog with no beasts, Catalog Format 15 (stale) and a "Last synced" date, a client serving the bestiary leaves the saved catalog with the filtered beasts (beasts up to CR 6 and the four Wild Shape elementals, no swarms); every other collection, the format (15) and the date are unchanged; the Compendium lists the catalog's beasts at once.
-- [ ] AC-8: with Skip Beasts on and a successful download, the saved setting reads off afterwards.
-- [ ] AC-9: when the client throws, or the bestiary yields zero beasts, an error is raised; the saved catalog and the setting are unchanged and the Compendium still lists the SRD beasts. On the SRD Baseline the operation raises an error and saves nothing.
+- [x] AC-7: against a saved Integrated Catalog with no beasts, Catalog Format 15 (stale) and a "Last synced" date, a client serving the bestiary leaves the saved catalog with the filtered beasts (beasts up to CR 6 and the four Wild Shape elementals, no swarms); every other collection, the format (15) and the date are unchanged; the Compendium lists the catalog's beasts at once.
+- [x] AC-8: with Skip Beasts on and a successful download, the saved setting reads off afterwards.
+- [x] AC-9: when the client throws, or the bestiary yields zero beasts, an error is raised; the saved catalog and the setting are unchanged and the Compendium still lists the SRD beasts. On the SRD Baseline the operation raises an error and saves nothing.
 
 ## Verification
 

@@ -1,6 +1,7 @@
 # 03: A Wild Shape form ends when its beast is gone
 
-**Status:** ready-for-agent
+**Status:** done
+**Landed:** 5860519e (with the Compendium `holdsBeast`). check:all and check:live passed; deleting the release pass failed three tests. Integration gate (final tree 54f74f4e): check:all, check:live, full layout:check (SRD, all widths) and layout:check --integrated at 320 passed.
 
 ## What to build
 
@@ -16,9 +17,9 @@ Spec: `.scratch/skip-beasts/spec.md`. Glossary: **Active Wild Shape** (updated).
 
 ## Acceptance Criteria
 
-- [ ] AC-13: a Druid in the Giant Badger form (source MM) with 5 temporary hit points on the form and a spent Wild Shape use, reconciled against the SRD Baseline (revert) or an Integrated Catalog without that beast, loses the form like Revert: the form's temporary hit points go back to the character (the larger of the two), the character's hit points and the spent use are unchanged, and `needsReview` gains a notice naming the beast.
-- [ ] AC-14: a form of an SRD-sourced Brown Bear stays, with no notice, against an Integrated Catalog that prints Brown Bear under another source, and against an Integrated Catalog without beasts (the SRD beasts remain). A form of a beast whose book is turned off in Active Books stays too.
-- [ ] AC-15: a favourite MM beast stays in `favoriteWildShapes` after the catalog changes to one without it, is not in the listing, and is in the listing again when a catalog with the beast is active.
+- [x] AC-13: a Druid in the Giant Badger form (source MM) with 5 temporary hit points on the form and a spent Wild Shape use, reconciled against the SRD Baseline (revert) or an Integrated Catalog without that beast, loses the form like Revert: the form's temporary hit points go back to the character (the larger of the two), the character's hit points and the spent use are unchanged, and `needsReview` gains a notice naming the beast.
+- [x] AC-14: a form of an SRD-sourced Brown Bear stays, with no notice, against an Integrated Catalog that prints Brown Bear under another source, and against an Integrated Catalog without beasts (the SRD beasts remain). A form of a beast whose book is turned off in Active Books stays too.
+- [x] AC-15: a favourite MM beast stays in `favoriteWildShapes` after the catalog changes to one without it, is not in the listing, and is in the listing again when a catalog with the beast is active.
 
 ## Verification
 

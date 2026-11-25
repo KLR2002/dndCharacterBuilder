@@ -1,6 +1,7 @@
 # 01: Skip Beasts setting and sync
 
-**Status:** ready-for-agent
+**Status:** done
+**Landed:** 2fdd7b7c (merge of the interrupted work and its completion). check:all and check:live passed; mutation checks on the wiring and the beasts-off path made tests fail. Integration gate (final tree 54f74f4e): check:all, check:live, full layout:check (SRD, all widths) and layout:check --integrated at 320 passed.
 
 ## What to build
 
@@ -16,9 +17,9 @@ Spec: `.scratch/skip-beasts/spec.md`. Glossary term: **Skip Beasts**.
 
 ## Acceptance Criteria
 
-- [ ] AC-1: saved settings with no Skip Beasts value read as off; a saved `true` or `false` reads back unchanged; a saved value that is not a boolean is rejected like the other settings.
-- [ ] AC-2: with the setting on, a client that records every endpoint it is asked for sees no `data/bestiary/` request; the saved catalog holds no beasts and every other collection; progress reports 10 steps and none is named "Beasts".
-- [ ] AC-3: with the setting off, the bestiary is fetched and the beasts are saved; progress reports 11 steps with "Beasts" as step 8.
+- [x] AC-1: saved settings with no Skip Beasts value read as off; a saved `true` or `false` reads back unchanged; a saved value that is not a boolean is rejected like the other settings.
+- [x] AC-2: with the setting on, a client that records every endpoint it is asked for sees no `data/bestiary/` request; the saved catalog holds no beasts and every other collection; progress reports 10 steps and none is named "Beasts".
+- [x] AC-3: with the setting off, the bestiary is fetched and the beasts are saved; progress reports 11 steps with "Beasts" as step 8.
 
 ## Verification
 

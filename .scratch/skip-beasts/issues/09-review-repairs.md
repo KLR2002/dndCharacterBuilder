@@ -1,6 +1,7 @@
 # 09: Repairs from the integrated review
 
-**Status:** ready-for-agent
+**Status:** done
+**Landed:** 54f74f4e. Open advisory: when the settings write fails after the catalog is saved, the Features and Wild Shape notices unmount with their error window (only Settings keeps it). check:all and check:live passed; mutation checks failed tests; the full sync's error window wording unchanged (probe screenshot). Integration gate (final tree 54f74f4e): check:all, check:live, full layout:check (SRD, all widths) and layout:check --integrated at 320 passed.
 
 ## What to build
 
@@ -12,13 +13,13 @@ No new acceptance criteria. This ticket repairs the verification and constraints
 
 ## Acceptance Criteria
 
-- [ ] A download whose write to storage could not be persisted (every backend failed) throws; the saved catalog, the saved setting and the Compendium are unchanged, and the player sees an error. A sync's best-effort save keeps its behaviour.
-- [ ] The Settings screen no longer reads the saved setting itself when a sync starts: it seeds the progress total from the context's `skipBeasts` state, synchronously, as before the feature; only the sync reads the saved setting.
-- [ ] The progress window shows wording that fits what the player started: the full sync keeps "Syncing Compendium", "Category N of M", "Integration Error" and "Failed to complete integration: <message>"; a beasts-only download shows a title that says so, no "Category 1 of 1" subtitle, and on failure its own error title and the plain message. The sentence about IndexedDB is gone from both.
-- [ ] A second press of Download beasts, while a download runs, starts nothing.
-- [ ] After a download whose settings write fails once the catalog is saved, the screens still update to the new beasts (the catalog revision is bumped), and the error shows.
-- [ ] An SRD-sourced Wild Shape form stays when the active books exclude the books the beasts come from (Active Books restricted to the Player's Handbook): the release never reads Active Books.
-- [ ] Every SRD beast name exists in the live catalog's beasts, so an SRD-sourced form resolves after a sync.
+- [x] A download whose write to storage could not be persisted (every backend failed) throws; the saved catalog, the saved setting and the Compendium are unchanged, and the player sees an error. A sync's best-effort save keeps its behaviour.
+- [x] The Settings screen no longer reads the saved setting itself when a sync starts: it seeds the progress total from the context's `skipBeasts` state, synchronously, as before the feature; only the sync reads the saved setting.
+- [x] The progress window shows wording that fits what the player started: the full sync keeps "Syncing Compendium", "Category N of M", "Integration Error" and "Failed to complete integration: <message>"; a beasts-only download shows a title that says so, no "Category 1 of 1" subtitle, and on failure its own error title and the plain message. The sentence about IndexedDB is gone from both.
+- [x] A second press of Download beasts, while a download runs, starts nothing.
+- [x] After a download whose settings write fails once the catalog is saved, the screens still update to the new beasts (the catalog revision is bumped), and the error shows.
+- [x] An SRD-sourced Wild Shape form stays when the active books exclude the books the beasts come from (Active Books restricted to the Player's Handbook): the release never reads Active Books.
+- [x] Every SRD beast name exists in the live catalog's beasts, so an SRD-sourced form resolves after a sync.
 
 ## Verification
 

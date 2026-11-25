@@ -1,6 +1,7 @@
 # 06: "Download beasts" in Settings, with a shared progress window
 
-**Status:** ready-for-agent
+**Status:** done
+**Landed:** fe364bdd, 38758900. check:all passed; scoped layout runs (SRD 320 and 768, integrated 320) passed; screenshots of the button, progress and error windows opened. Integration gate (final tree 54f74f4e): check:all, check:live, full layout:check (SRD, all widths) and layout:check --integrated at 320 passed.
 
 ## What to build
 
@@ -14,7 +15,7 @@ Spec: `.scratch/skip-beasts/spec.md`.
 
 ## Acceptance Criteria
 
-- [ ] AC-10: with an Integrated Catalog that holds no beasts, the card shows a "Download beasts" button that starts the download with the progress window and no disclaimer; with an Integrated Catalog that holds beasts, and with the SRD Baseline, there is no such button. After a successful download the button is gone and Skip beasts is unchecked; after a failed one the error shows and the button stays.
+- [x] AC-10: with an Integrated Catalog that holds no beasts, the card shows a "Download beasts" button that starts the download with the progress window and no disclaimer; with an Integrated Catalog that holds beasts, and with the SRD Baseline, there is no such button. After a successful download the button is gone and Skip beasts is unchecked; after a failed one the error shows and the button stays.
 
 ## Verification
 

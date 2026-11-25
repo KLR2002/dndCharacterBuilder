@@ -1,6 +1,7 @@
 # 07: Beasts notice in the Features tab's Wild Shape section
 
-**Status:** ready-for-agent
+**Status:** done
+**Landed:** 7aaa9aa2. check:all passed; scoped layout runs (SRD 320 and 768, integrated 320) passed; the squeezed notice text found by the first run was fixed. Integration gate (final tree 54f74f4e): check:all, check:live, full layout:check (SRD, all widths) and layout:check --integrated at 320 passed.
 
 ## What to build
 
@@ -14,7 +15,7 @@ Spec: `.scratch/skip-beasts/spec.md`.
 
 ## Acceptance Criteria
 
-- [ ] AC-11: with an Integrated Catalog that holds no beasts, the Wild Shape section shows the beasts notice and its button and no Monster Manual reminder; with beasts and the Monster Manual inactive, only the reminder shows; with the SRD Baseline, neither shows. Tapping the button downloads the beasts, after which the notice is gone and the reminder rule applies.
+- [x] AC-11: with an Integrated Catalog that holds no beasts, the Wild Shape section shows the beasts notice and its button and no Monster Manual reminder; with beasts and the Monster Manual inactive, only the reminder shows; with the SRD Baseline, neither shows. Tapping the button downloads the beasts, after which the notice is gone and the reminder rule applies.
 
 ## Verification
 
