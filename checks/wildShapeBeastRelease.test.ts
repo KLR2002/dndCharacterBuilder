@@ -68,6 +68,24 @@ test("an SRD-sourced Brown Bear form stays on an Integrated Catalog with no beas
   assert.equal(result.needsReview, undefined);
 });
 
+test("an SRD-sourced Brown Bear form stays when Active Books excludes the book its beast is printed in", () => {
+  const brownBear = { name: "Brown Bear", source: "SRD", ac: 11, currentHp: 34, maxHp: 34, tempHp: 5 };
+  const character = druidInBadger({ activeWildShape: brownBear });
+  const result = reconcileForActiveBooks(character, integratedWith(loadTestCatalog<BeastData[]>("beasts")), ["PHB"]);
+
+  assert.deepEqual(result.activeWildShape, brownBear);
+  assert.equal(result.needsReview, undefined);
+});
+
+test("an SRD-sourced Brown Bear form stays with Active Books excluding MM on a catalog with no beasts", () => {
+  const brownBear = { name: "Brown Bear", source: "SRD", ac: 11, currentHp: 34, maxHp: 34, tempHp: 5 };
+  const character = druidInBadger({ activeWildShape: brownBear });
+  const result = reconcileForActiveBooks(character, integratedWith([]), ["PHB"]);
+
+  assert.deepEqual(result.activeWildShape, brownBear);
+  assert.equal(result.needsReview, undefined);
+});
+
 test("a Giant Badger form stays when its book is turned off in Active Books", () => {
   const character = druidInBadger();
   const result = reconcileForActiveBooks(character, integratedWith(loadTestCatalog<BeastData[]>("beasts")), ["PHB"]);
