@@ -6,17 +6,33 @@ import { Modal } from "./ui/Modal";
 
 interface SyncProgressModalProps {
   visible: boolean;
+  /** The window's title while the download runs. */
+  title: string;
+  /** The window's title when the download failed. */
+  errorTitle: string;
   /** The category being downloaded, with its 1-based step out of the total. */
   category: string;
   step: number;
   total: number;
-  /** Set when the download failed: the window shows the error and closes only through onClose. */
+  /** Set when the download failed: the window shows this message and closes only through onClose. */
   error: string | null;
+  /** A line under the error message, for an error the player can act on. */
+  errorHint?: string;
   onClose: () => void;
 }
 
 /** The progress window for a Compendium download: the full sync and the beasts-only download both use it. */
-export function SyncProgressModal({ visible, category, step, total, error, onClose }: SyncProgressModalProps) {
+export function SyncProgressModal({
+  visible,
+  title,
+  errorTitle,
+  category,
+  step,
+  total,
+  error,
+  errorHint,
+  onClose,
+}: SyncProgressModalProps) {
   const { theme } = useAppTheme();
   return (
     <Modal
@@ -24,8 +40,8 @@ export function SyncProgressModal({ visible, category, step, total, error, onClo
       onClose={() => {
         if (error) onClose();
       }}
-      title={error ? "Integration Error" : "Syncing Compendium"}
-      subtitle={error ? undefined : `Category ${step} of ${total}`}
+      title={error ? errorTitle : title}
+      subtitle={error || total === 1 ? undefined : `Category ${step} of ${total}`}
       footer={
         error ? (
           <Button title="Close" variant="secondary" onPress={onClose} />
@@ -34,12 +50,10 @@ export function SyncProgressModal({ visible, category, step, total, error, onClo
     >
       {error ? (
         <View style={{ gap: 10 }}>
-          <Text style={{ color: theme.accentHover, fontSize: 14 }}>
-            Failed to complete integration: {error}
-          </Text>
-          <Text style={{ color: theme.textSecondary, fontSize: 13 }}>
-            Please check your internet connection and try again.
-          </Text>
+          <Text style={{ color: theme.accentHover, fontSize: 14 }}>{error}</Text>
+          {errorHint ? (
+            <Text style={{ color: theme.textSecondary, fontSize: 13 }}>{errorHint}</Text>
+          ) : null}
         </View>
       ) : (
         <View style={{ gap: 16, paddingVertical: 8 }}>
@@ -63,9 +77,6 @@ export function SyncProgressModal({ visible, category, step, total, error, onClo
               }}
             />
           </View>
-          <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
-            Downloading catalog datasets directly into local IndexedDB storage.
-          </Text>
         </View>
       )}
     </Modal>

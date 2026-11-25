@@ -7,7 +7,6 @@ import { Button } from "./ui/Button";
 import { Card } from "./ui/Card";
 import { SyncProgressModal } from "./SyncProgressModal";
 
-// Renders nothing unless the Integrated Catalog holds no beasts. The download runs with the sync progress window.
 export function BeastsNotice() {
   const { theme } = useAppTheme();
   const { lacksBeasts, downloadBeasts } = useCharacters();
@@ -18,6 +17,7 @@ export function BeastsNotice() {
   if (!lacksBeasts) return null;
 
   const startDownload = async () => {
+    if (isSyncing) return;
     setIsSyncing(true);
     setSyncError(null);
     setSyncStep({ category: "Beasts", step: 1, total: 1 });
@@ -55,6 +55,8 @@ export function BeastsNotice() {
       </Card>
       <SyncProgressModal
         visible={isSyncing}
+        title="Downloading beasts"
+        errorTitle="Download failed"
         category={syncStep.category}
         step={syncStep.step}
         total={syncStep.total}

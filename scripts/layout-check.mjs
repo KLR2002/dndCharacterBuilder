@@ -4312,9 +4312,11 @@ const STUB_BESTIARY_BEASTS = [
 
 // Answers the bestiary index and its one file from the page: `indexStatus` other than 200 fails the index (the download
 // throws), and `indexDelayMs` holds the index back so the progress window stays on screen long enough to shoot.
-async function stubBestiary(page, { indexStatus = 200, indexDelayMs = 0 } = {}) {
+// `requests.index` counts the index requests, one per download that starts.
+async function stubBestiary(page, { indexStatus = 200, indexDelayMs = 0, requests = { index: 0 } } = {}) {
   const cors = { "access-control-allow-origin": "*" };
   await page.route((url) => url.pathname.endsWith("/data/bestiary/index.json"), async (route) => {
+    requests.index++;
     if (indexDelayMs) await new Promise((done) => setTimeout(done, indexDelayMs));
     if (indexStatus !== 200) return route.fulfill({ status: indexStatus, headers: cors, body: "stub failure" });
     return route.fulfill({ status: 200, headers: cors, contentType: "application/json", body: JSON.stringify({ inv: "bestiary-inv.json" }) });
@@ -4373,7 +4375,8 @@ async function checkSettingsDownloadBeasts(ctx, width, meta) {
   const success = await openSeeded();
   try {
     const page = await success.seeded.newPage();
-    await stubBestiary(page, { indexDelayMs: 3000 });
+    const requests = { index: 0 };
+    await stubBestiary(page, { indexDelayMs: 3000, requests });
     await gotoApp(page, `${BASE}/options`);
     const button = page.getByText("Download beasts", { exact: true }).first();
     if (!(await shown(button))) {
@@ -4383,6 +4386,8 @@ async function checkSettingsDownloadBeasts(ctx, width, meta) {
       await settle(page);
       await maybeShot(page, join(SHOTS, `DownloadBeasts-button-${width}.png`), meta);
       await button.click();
+      // The progress window covers the button, so the second press is dispatched on the element.
+      await button.dispatchEvent("click");
       if (!(await shown(page.getByText("Downloading Beasts...", { exact: true }).first(), 10000))) fail('the progress window does not show "Downloading Beasts..."');
       await settleDialog(page);
       await maybeShot(page, join(SHOTS, `DownloadBeasts-progress-${width}.png`), meta);
@@ -4390,6 +4395,7 @@ async function checkSettingsDownloadBeasts(ctx, width, meta) {
       if (!(await button.waitFor({ state: "hidden", timeout: 60000 }).then(() => true).catch(() => false))) {
         fail('the "Download beasts" button is still shown after the download');
       }
+      if (requests.index !== 1) fail(`a second press started ${requests.index} bestiary downloads`);
       const saved = await page.evaluate(readSavedCatalog);
       const sent = success.seed.integrated;
       const stubNames = STUB_BESTIARY_BEASTS.map((beast) => beast.name).sort();
@@ -4418,7 +4424,7 @@ async function checkSettingsDownloadBeasts(ctx, width, meta) {
       fail('the failing context shows no "Download beasts" button');
     } else {
       await button.click();
-      if (!(await shown(page.getByText("Integration Error", { exact: true }).first()))) fail("a failed download shows no Integration Error window");
+      if (!(await shown(page.getByText("Download failed", { exact: true }).first()))) fail("a failed download shows no Download failed window");
       await settleDialog(page);
       await maybeShot(page, join(SHOTS, `DownloadBeasts-error-${width}.png`), meta);
       await layoutViolations(page, "error window");
@@ -4427,7 +4433,7 @@ async function checkSettingsDownloadBeasts(ctx, width, meta) {
         fail("the error window has no Close button");
       } else {
         await close.click();
-        await page.getByText("Integration Error", { exact: true }).first().waitFor({ state: "hidden", timeout: 10000 }).catch(() => fail("the error window does not close"));
+        await page.getByText("Download failed", { exact: true }).first().waitFor({ state: "hidden", timeout: 10000 }).catch(() => fail("the error window does not close"));
       }
       if (!(await shown(button, 5000))) fail('a failed download removes the "Download beasts" button');
     }
@@ -4487,7 +4493,8 @@ async function checkFeaturesBeastsNotice(ctx, width, meta) {
   const noBeasts = await openSeeded({ ...integratedCollections(ROOT), beasts: [] });
   try {
     const { page } = noBeasts;
-    await stubBestiary(page, { indexDelayMs: 3000 });
+    const requests = { index: 0 };
+    await stubBestiary(page, { indexDelayMs: 3000, requests });
     await openDruidFeatures(page);
     const notice = page.getByText(BEASTS_NOTICE_TEXT, { exact: true }).first();
     const button = page.getByText("Download beasts", { exact: true }).first();
@@ -4503,10 +4510,12 @@ async function checkFeaturesBeastsNotice(ctx, width, meta) {
       if (!row.asElement()) fail("the beasts notice row is not on the page");
       else for (const v of await page.evaluate(findLayoutViolations, row)) fail(`beasts notice: ${v}`);
       await button.click();
+      await button.dispatchEvent("click");
       if (!(await shown(page.getByText("Downloading Beasts...", { exact: true }).first()))) fail('the progress window does not show "Downloading Beasts..."');
       await settleDialog(page);
       await maybeShot(page, join(SHOTS, `FeaturesBeasts-progress-${width}.png`), meta);
       if (!(await notice.waitFor({ state: "hidden", timeout: 60000 }).then(() => true).catch(() => false))) fail("the beasts notice is still shown after the download");
+      if (requests.index !== 1) fail(`a second press started ${requests.index} bestiary downloads`);
       if (!(await shown(page.getByText(MM_REMINDER_TEXT).first(), 5000))) fail("after the download the Monster Manual reminder is not shown");
       const saved = await page.evaluate(readSavedCatalog);
       const stubNames = STUB_BESTIARY_BEASTS.map((beast) => beast.name).sort();

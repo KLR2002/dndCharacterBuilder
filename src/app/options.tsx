@@ -29,7 +29,7 @@ import {
 import { ACCENT_PALETTES } from "../constants/theme";
 import { useCharacters } from "../context/CharacterContext";
 import { useAppTheme } from "../context/ThemeContext";
-import { integrationStepTotal, readIncludeBeasts } from "../services/scraper/runner";
+import { integrationStepTotal } from "../services/scraper/runner";
 
 const DICE_ANIMATION_MODES: { mode: DiceAnimation; label: string }[] = [
   { mode: "off", label: "Off" },
@@ -75,23 +75,29 @@ export default function OptionsScreen() {
     total: 11,
   });
   const [syncError, setSyncError] = useState<string | null>(null);
+  const [isBeastsOnlyWindow, setIsBeastsOnlyWindow] = useState(false);
 
   const startIntegrationProcess = async () => {
     setConfirmDisclaimerVisible(false);
+    setIsBeastsOnlyWindow(false);
     setIsSyncing(true);
     setSyncError(null);
+    setSyncStep({ category: "Races", step: 1, total: integrationStepTotal(!skipBeasts) });
     try {
-      setSyncStep({ category: "Races", step: 1, total: integrationStepTotal(await readIncludeBeasts()) });
       await triggerIntegration((category, step, total) => {
         setSyncStep({ category, step, total });
       });
       setIsSyncing(false);
     } catch (err: any) {
-      setSyncError(err?.message || "Failed to download integration data");
+      setSyncError(
+        `Failed to complete integration: ${err?.message || "Failed to download integration data"}`,
+      );
     }
   };
 
   const startBeastsDownload = async () => {
+    if (isSyncing) return;
+    setIsBeastsOnlyWindow(true);
     setIsSyncing(true);
     setSyncError(null);
     setSyncStep({ category: "Beasts", step: 1, total: 1 });
@@ -911,13 +917,15 @@ export default function OptionsScreen() {
         </View>
       </Modal>
 
-      {/* Syncing Progress Modal */}
       <SyncProgressModal
         visible={isSyncing}
+        title={isBeastsOnlyWindow ? "Downloading beasts" : "Syncing Compendium"}
+        errorTitle={isBeastsOnlyWindow ? "Download failed" : "Integration Error"}
         category={syncStep.category}
         step={syncStep.step}
         total={syncStep.total}
         error={syncError}
+        errorHint={isBeastsOnlyWindow ? undefined : "Please check your internet connection and try again."}
         onClose={() => {
           setIsSyncing(false);
           setSyncError(null);
