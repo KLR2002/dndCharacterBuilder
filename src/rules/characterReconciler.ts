@@ -3,6 +3,7 @@ import type { Character, CharacterClass, KnownSpell } from "../types/character.t
 import type { ClassData } from "../types/dnd5e.ts";
 import { currentCompendium, type Compendium } from "../services/compendium.ts";
 import { GIANT_BARBARIAN_OWNER_KEY, GIANT_POWER_CANTRIPS } from "../constants/rules.ts";
+import { revertWildShape } from "./wildShapeHp.ts";
 import { getMaxSpellLevel, metamagicAllowance } from "./spellcasting.ts";
 import { pruneInvalidExpertise } from "./expertise.ts";
 import { fightingStyleOwnerOf, pruneInvalidFightingStyles } from "./choices/fightingStyles.ts";
@@ -80,8 +81,23 @@ export function reconcile(
   updated = pruneInvalidFeatSpellPicks(updated, compendium, options.activeBooks);
   updated = pruneReleasedFeatCounters(updated, compendium, options.activeBooks);
   updated = pruneInvalidExpertise(updated, { compendium, activeBooks: options.activeBooks });
+  updated = releaseEndedWildShape(updated, compendium);
 
   return updated;
+}
+
+/**
+ * Ends an Active Wild Shape whose beast is no longer in the catalog, the way the Revert button ends it, and
+ * appends a review notice naming the beast. The beast is present when the catalog's unscoped listing holds one
+ * with its name and source. A form saved from the SRD matches by name alone, since an Integrated Catalog prints
+ * SRD records under another book. Active Books never enter this check, so a book turned off does not end a form.
+ */
+function releaseEndedWildShape(character: Character, compendium: Compendium): Character {
+  const shape = character.activeWildShape;
+  if (!shape) return character;
+  if (compendium.holdsBeast(shape.name, shape.source)) return character;
+  const notice = `${shape.name} form ended: ${shape.name} is no longer in the catalog`;
+  return withNotices({ ...character, ...revertWildShape(character) }, [notice]);
 }
 
 /**
