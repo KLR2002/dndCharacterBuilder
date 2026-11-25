@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import type { AbilityKey, Character, RuleChoiceEntry } from "../src/types/character.ts";
-import type { AdditionalSpells, ClassData, FeatData, ProficiencyGrant, SpellData, SubclassData } from "../src/types/dnd5e.ts";
+import type { AdditionalSpells, BeastData, ClassData, FeatData, ProficiencyGrant, SpellData, SubclassData } from "../src/types/dnd5e.ts";
 import { createCompendium, type Compendium } from "../src/services/compendium.ts";
 import { isCatalogStale, REQUIRED_CATALOG_FORMAT, type CompendiumCollections } from "../src/services/compendiumStorage.ts";
 import { proficiencyChoiceOffers } from "../src/rules/proficiencyChoiceOffers.ts";
@@ -148,6 +148,13 @@ const collidingIds = [...choices.owners].filter(([, byPrint]) => byPrint.size > 
 
 test("live catalog: the cache is at the catalog format the app requires", { skip: SKIP }, () => {
   assert.equal(isCatalogStale(live!.collections), false, `catalog format ${live!.collections.catalogFormat} is below ${REQUIRED_CATALOG_FORMAT}`);
+});
+
+// An SRD-sourced Wild Shape form is matched by name alone, so every SRD beast name has to resolve in the live catalog.
+test("live catalog: every SRD Baseline beast name is one of the live catalog's beasts", { skip: SKIP }, () => {
+  const srdBeastNames = (JSON.parse(readFileSync(new URL("../src/data/beasts.json", import.meta.url), "utf8")) as BeastData[]).map((b) => b.name);
+  const liveNames = new Set(live!.collections.beasts.map((b) => b.name));
+  assert.deepEqual(srdBeastNames.filter((name) => !liveNames.has(name)), []);
 });
 
 const SRD_CLASS_NAMES = [

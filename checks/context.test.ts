@@ -34,6 +34,8 @@ async function providerHarness(initial: unknown = [makeChar()], options: {
   compendium?: any;
   /** The Compendium the app reads as current (for the open-character reconcile). Defaults to a stub. */
   catalog?: any;
+  /** The beast download the provider calls. Defaults to one that turns the saved Skip Beasts setting off. */
+  downloadBeasts?: (...args: unknown[]) => Promise<void>;
 } = {}) {
   // Writes still queued from an earlier harness must land in its KV before this one installs a fresh
   // one: loadAll enqueues a read behind them on the storage write queue, so awaiting it drains the queue.
@@ -85,7 +87,7 @@ async function providerHarness(initial: unknown = [makeChar()], options: {
       clearCompendiumData: async () => {},
     };
     if (name.includes("runner")) return {
-      runInAppIntegration: async () => ({
+      runSavedIntegration: async () => ({
         hasIntegratedCatalog: true,
         catalogFormat: compendiumStorage.REQUIRED_CATALOG_FORMAT,
         integratedAt: new Date().toISOString(),
@@ -101,12 +103,18 @@ async function providerHarness(initial: unknown = [makeChar()], options: {
       revertToSrd: () => { integrated = null; },
       currentCompendium: () => options.catalog ?? {
         stale: integrated ? compendiumStorage.isCatalogStale(integrated) : false,
+        lacksBeasts: integrated ? !integrated.beasts?.length : false,
         for: () => ({ races: () => options.races ?? [], classes: () => options.classes ?? [], backgrounds: () => [] }),
       },
     };
     if (name.includes("constants/rules")) return rules;
-    if (name.includes("constants/books")) return { DEFAULT_ACTIVE_BOOK_CODES: [] };
+    if (name.includes("constants/books")) return { DEFAULT_ACTIVE_BOOK_CODES: [], SRD_SOURCE: "SRD" };
     if (name.includes("builderTransitions")) return { checkActiveBooksIntegrity: () => [] };
+    if (name.includes("beastDownload")) return { downloadBeasts: options.downloadBeasts ?? (async () => {
+      integrated = { ...integrated, beasts: [{ name: "Invented Beast", source: "TST" }] };
+      await storage.updateSettings({ skipBeasts: false });
+    }) };
+    if (name.includes("browserClient")) return { BrowserToolsClient: class {} };
     if (name.includes("catalogUpdateNotice")) return catalogUpdateNotice;
     if (name.includes("e2eSeedHook")) return { runE2eSeedHook: async () => {} };
     throw new Error(`Unexpected provider import: ${name}`);
@@ -696,4 +704,115 @@ test("a new character's base scores are 8 and its Point Buy has all 27 points le
   const created: Character = await create;
   assert.deepEqual(created.baseAbilityScores, { str: 8, dex: 8, con: 8, int: 8, wis: 8, cha: 8 });
   assert.equal(POINT_BUY_BUDGET - pointBuySpent(created.baseAbilityScores), 27);
+});
+
+const SETTINGS_KEY = "@dnd5e_app_settings";
+
+test("provider loads Skip Beasts from the saved settings, off when absent", async () => {
+  const saved = await providerHarness([], { settings: { skipBeasts: true } });
+  assert.equal(saved.value.skipBeasts, true);
+  const absent = await providerHarness([], { settings: {} });
+  assert.equal(absent.value.skipBeasts, false);
+});
+
+test("setting Skip Beasts updates the provider state and the saved setting", async () => {
+  const h = await providerHarness([], { settings: {} });
+  const set = h.value.setSkipBeasts(true);
+  h.render();
+  await set;
+  h.render();
+  assert.equal(h.value.skipBeasts, true);
+  assert.equal(JSON.parse(h.kv.get(SETTINGS_KEY)!).skipBeasts, true);
+});
+
+test("a successful beast download turns the provider's Skip Beasts state off", async () => {
+  const h = await providerHarness([], { settings: { skipBeasts: true } });
+  assert.equal(h.value.skipBeasts, true);
+  const download = h.value.downloadBeasts();
+  h.render();
+  await download;
+  h.render();
+  assert.equal(h.value.skipBeasts, false);
+  assert.equal(JSON.parse(h.kv.get(SETTINGS_KEY)!).skipBeasts, false);
+});
+
+test("a failed beast download leaves the provider's Skip Beasts state on and reports the error", async () => {
+  const h = await providerHarness([], {
+    settings: { skipBeasts: true },
+    downloadBeasts: async () => { throw new Error("connection reset"); },
+  });
+  const download = h.value.downloadBeasts();
+  h.render();
+  await assert.rejects(download, /connection reset/);
+  h.render();
+  assert.equal(h.value.skipBeasts, true);
+});
+
+test("a beast download that fails after its catalog was saved still bumps the catalog revision and rethrows", async () => {
+  const h = await providerHarness([], {
+    compendium: { hasIntegratedCatalog: true, races: [], classes: [] },
+    downloadBeasts: async () => { throw new Error("settings write failed"); },
+  });
+  const before = h.value.catalogRevision;
+  const download = h.value.downloadBeasts();
+  h.render();
+  await assert.rejects(download, /settings write failed/);
+  h.render();
+  assert.ok(h.value.catalogRevision > before, "the screens must re-read the saved beasts");
+});
+
+test("the provider passes the progress callback to the beast download", async () => {
+  const seen: unknown[][] = [];
+  const h = await providerHarness([], {
+    settings: { skipBeasts: true },
+    downloadBeasts: async (...args: unknown[]) => { seen.push(args.slice(1)); },
+  });
+  const progress = () => {};
+  const download = h.value.downloadBeasts(progress);
+  h.render();
+  await download;
+  assert.equal(seen.length, 1);
+  assert.equal(seen[0][0], progress);
+});
+
+test("the provider reports that an Integrated Catalog without beasts lacks beasts", async () => {
+  const h = await providerHarness([], { compendium: { hasIntegratedCatalog: true, races: [], classes: [] } });
+  assert.equal(h.value.lacksBeasts, true);
+});
+
+test("the provider reports that an Integrated Catalog with beasts holds them", async () => {
+  const h = await providerHarness([], {
+    compendium: { hasIntegratedCatalog: true, races: [], classes: [], beasts: [{ name: "Invented Beast", source: "TST" }] },
+  });
+  assert.equal(h.value.lacksBeasts, false);
+});
+
+test("the provider reports that the SRD Baseline does not lack beasts", async () => {
+  const h = await providerHarness([], { compendium: null });
+  assert.equal(h.value.lacksBeasts, false);
+});
+
+test("a successful beast download clears the provider's lacksBeasts and bumps the catalog revision", async () => {
+  const h = await providerHarness([], { compendium: { hasIntegratedCatalog: true, races: [], classes: [] } });
+  assert.equal(h.value.lacksBeasts, true);
+  const before = h.value.catalogRevision;
+  const download = h.value.downloadBeasts();
+  h.render();
+  await download;
+  h.render();
+  assert.equal(h.value.lacksBeasts, false);
+  assert.ok(h.value.catalogRevision > before, "catalogRevision should increase after a download");
+});
+
+test("reverting to the SRD Baseline clears the provider's lacksBeasts", async () => {
+  const h = await providerHarness([], { compendium: { hasIntegratedCatalog: true, races: [], classes: [] } });
+  assert.equal(h.value.lacksBeasts, true);
+  // The revert's character write is queued after its settings write, so renders keep the queue moving.
+  const revert = h.value.revertToSrd();
+  for (let i = 0; i < 20; i++) {
+    await new Promise(resolve => setImmediate(resolve));
+    h.render();
+  }
+  await revert;
+  assert.equal(h.value.lacksBeasts, false);
 });

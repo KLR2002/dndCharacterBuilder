@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { REQUIRED_CATALOG_FORMAT, type CompendiumCollections } from "../src/services/compendiumStorage.ts";
-import type { RaceData, SpellData, ItemData, ConditionData, FeatData, OptionFeatureData } from "../src/types/dnd5e.ts";
+import type { RaceData, SpellData, ItemData, ConditionData, FeatData, OptionFeatureData, BeastData } from "../src/types/dnd5e.ts";
 import { createCompendium, currentCompendium, integrate, revertToSrd } from "../src/services/compendium.ts";
 import { ALL_BOOKS } from "../src/constants/books.ts";
 import { fightingStyleRuleChoices } from "../src/rules/choices/fightingStyles.ts";
@@ -107,6 +107,55 @@ test("integrate and revertToSrd move the process default that currentCompendium 
   assert.ok(currentCompendium().for().spells().length > 1, "SRD Baseline spells are back after revertToSrd");
   assert.ok(currentCompendium().for().spells().every((s) => s.source === "SRD"), "only SRD records after revertToSrd");
   assert.equal(currentCompendium().findSpell("Toll the Dead"), undefined);
+});
+
+test("the Compendium answers lacksBeasts only for an Integrated Catalog saved with no beasts", () => {
+  const beast = (name: string, source: string) => ({ name, source }) as unknown as BeastData;
+  const withoutBeasts = createCompendium(bundle({ beasts: [] }));
+  assert.equal(withoutBeasts.lacksBeasts, true, "an integrated catalog with an empty beasts collection lacks beasts");
+  assert.equal(withoutBeasts.for().beasts().length, 92, "the SRD Baseline's 92 beasts are listed in its place");
+  assert.ok(withoutBeasts.for().beasts().every((b) => b.source === "SRD"), "every listed beast is an SRD beast");
+
+  const absent = bundle();
+  delete (absent as Partial<CompendiumCollections>).beasts;
+  const withAbsentBeasts = createCompendium(absent);
+  assert.equal(withAbsentBeasts.lacksBeasts, true, "an integrated catalog with no beasts collection lacks beasts");
+  assert.equal(withAbsentBeasts.for().beasts().length, 92, "the SRD Baseline's 92 beasts are listed for an absent collection");
+
+  const withBeasts = createCompendium(bundle({ beasts: [beast("Invented Beast", "MM")] }));
+  assert.equal(withBeasts.lacksBeasts, false, "an integrated catalog with beasts does not lack them");
+
+  const srd = createCompendium(bundle({ hasIntegratedCatalog: false, beasts: [] }));
+  assert.equal(srd.lacksBeasts, false, "the SRD Baseline never lacks beasts: no download is offered there");
+});
+
+const beastOf = (name: string, source: string) => ({ name, source }) as unknown as BeastData;
+
+test("holdsBeast: an SRD-sourced name resolves through an integrated catalog that prints the beast under another book", () => {
+  const integrated = createCompendium(bundle({ beasts: [beastOf("Invented Beast", "MM")] }));
+  assert.equal(integrated.holdsBeast("Invented Beast", "SRD"), true);
+});
+
+test("holdsBeast: a name resolves on the SRD Baseline, and an unknown name never does", () => {
+  const srd = srdBaselineCompendium();
+  assert.equal(srd.holdsBeast("Brown Bear", "SRD"), true);
+  assert.equal(srd.holdsBeast("Nonexistent Beast", "SRD"), false);
+  const integrated = createCompendium(bundle({ beasts: [beastOf("Invented Beast", "MM")] }));
+  assert.equal(integrated.holdsBeast("Nonexistent Beast", "SRD"), false);
+  assert.equal(integrated.holdsBeast("Nonexistent Beast", "MM"), false);
+});
+
+test("holdsBeast: a name saved under a book is held only with that book, never by name alone", () => {
+  const integrated = createCompendium(bundle({ beasts: [beastOf("Invented Beast", "MM")] }));
+  assert.equal(integrated.holdsBeast("Invented Beast", "MM"), true);
+  assert.equal(integrated.holdsBeast("Invented Beast", "XGE"), false);
+  assert.equal(srdBaselineCompendium().holdsBeast("Brown Bear", "MM"), false);
+});
+
+test("holdsBeast: an inactive book does not end a beast, since the answer never reads Active Books", () => {
+  const integrated = createCompendium(bundle({ beasts: [beastOf("Invented Beast", "MM")] }));
+  assert.equal(integrated.for(["PHB"]).beasts().length, 0);
+  assert.equal(integrated.holdsBeast("Invented Beast", "MM"), true);
 });
 
 test("the Compendium reports stale only for an integrated catalog below the required format", () => {

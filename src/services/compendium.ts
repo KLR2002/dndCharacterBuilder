@@ -51,6 +51,8 @@ export interface Compendium {
   readonly integrated: boolean;
   /** True when the integrated catalog is below the format the application requires. Its records still load. */
   readonly stale: boolean;
+  /** True when the integrated catalog was saved with no beasts (the Skip Beasts case). Always false for the SRD Baseline. */
+  readonly lacksBeasts: boolean;
   /** Listings scoped to active books. Unscoped when no books are given or the bundle is not integrated. */
   for(activeBooks?: readonly string[]): CompendiumListings;
   /** The race a held race resolves to, subrace included: the saved source's record, else an active book's (see findHeldRace). */
@@ -64,6 +66,12 @@ export interface Compendium {
   findItem(name: string, source?: string): ItemData | undefined;
   findBackground(name: string, source?: string): BackgroundData | undefined;
   findBeast(name: string, source?: string): BeastData | undefined;
+  /**
+   * Whether the unscoped beast listing holds a beast with this name and source. An SRD source matches a beast of
+   * that name from any book, since an Integrated Catalog prints SRD beasts under another book. Active Books never
+   * enter this answer.
+   */
+  holdsBeast(name: string, source: string): boolean;
 }
 
 type Sourced = { readonly source: string };
@@ -173,6 +181,7 @@ export function createCompendium(
   return {
     integrated,
     stale: isCatalogStale(bundle),
+    lacksBeasts: integrated && !bundle.beasts?.length,
     for: (activeBooks) => (!activeBooks || !integrated ? unscoped : scopedFor(activeBooks)),
     findRace: (held, activeBooks) => findHeldRace(races, held, activeBooks).race,
     findClass: (name, source) => findIn(classes, name, source),
@@ -180,6 +189,7 @@ export function createCompendium(
     findItem: (name, source) => findNamedIn(items, name, source),
     findBackground: (name, source) => findIn(backgrounds, name, source),
     findBeast: (name, source) => findIn(beasts, name, source),
+    holdsBeast: (name, source) => beasts.some((b) => b.name === name && (source === SRD_SOURCE || b.source === source)),
   };
 }
 

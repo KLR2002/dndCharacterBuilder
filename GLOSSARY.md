@@ -105,7 +105,7 @@ A Druid class feature (gained at 2nd level) allowing the character to magically 
 _Avoid_: Shapeshift, polymorph, animal form, morph
 
 **Active Wild Shape**:
-The beast or elemental form a Druid is currently in. It has its own armor class and its own hit points (the Wild Shape hit points), separate from the character's normal hit points. Temporary hit points travel with the form: assuming a shape moves the character's temporary hit points onto it, temporary hit points granted while in the form go to the form, and the Revert button moves them back. When the Wild Shape hit points reach 0 the form ends, its temporary hit points having absorbed damage first, and any excess damage carries over to the character's normal hit points; healing never carries over. A form that ends at 0 Wild Shape hit points, whether by damage or by setting its hit points to 0, takes its temporary hit points with it.
+The beast or elemental form a Druid is currently in. It has its own armor class and its own hit points (the Wild Shape hit points), separate from the character's normal hit points. Temporary hit points travel with the form: assuming a shape moves the character's temporary hit points onto it, temporary hit points granted while in the form go to the form, and the Revert button moves them back. When the Wild Shape hit points reach 0 the form ends, its temporary hit points having absorbed damage first, and any excess damage carries over to the character's normal hit points; healing never carries over. A form that ends at 0 Wild Shape hit points, whether by damage or by setting its hit points to 0, takes its temporary hit points with it. A form ends the same way as by the Revert button when its beast is no longer in the active catalog (after a revert to the SRD Baseline, or a sync under *Skip Beasts*); a book turned off in Active Books does not end it.
 _Avoid_: Beast form, current shape, transformation
 
 **Circle Forms**:
@@ -116,7 +116,11 @@ _Avoid_: Combat wild shape, moon forms, enhanced shape
 The complete game statistics (size, AC, hit points, speeds, ability scores, traits, and actions) of a beast creature available for Wild Shape reference and active transformation tracking.
 _Avoid_: Monster sheet, creature profile, beast card
 
-The SRD Baseline carries the SRD's beasts and elementals, so a Druid can browse and adopt forms without an Integrated Catalog. Which Beast Statblocks exist follows Sourcebook Gating; Wild Shape adds only its own limits (challenge rating, swimming and flying levels, elementals for Moon Druids).
+The SRD Baseline carries the SRD's beasts and elementals, so a Druid can browse and adopt forms without an Integrated Catalog. Which Beast Statblocks exist follows Sourcebook Gating; Wild Shape adds only its own limits (challenge rating, swimming and flying levels, elementals for Moon Druids). An Integrated Catalog synced under *Skip Beasts* holds none of its own.
+
+**Skip Beasts**:
+A setting that makes the next sync of the Integrated Catalog leave out its Beast Statblocks; it changes no catalog already saved. While an Integrated Catalog holds no beasts, Wild Shape offers the SRD Baseline's beasts, and the player can download the catalog's beasts on their own, which changes nothing else in the catalog (not its Catalog Format or its last synced date) and turns the setting off. The SRD Baseline never offers that download.
+_Avoid_: Fast sync, lite sync, no-bestiary mode
 
 **Elemental Wild Shape**:
 The 10th-level Circle of the Moon feature allowing the expenditure of two Wild Shape uses simultaneously to assume the form of an Air, Earth, Fire, or Water Elemental.
