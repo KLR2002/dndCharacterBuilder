@@ -4312,16 +4312,17 @@ async function checkSubclassStepKeepsList(ctx, width, meta) {
   if (!(await isSelected("Champion"))) fail("Edit Build's Subclass step does not select the held Champion");
   await pickKeepsList(SUBCLASS_EDIT_ID, "Battle Master", "Champion", "Edit Build");
 
+  // The seeded character is restored on every load, so the Class step shows the seeded Champion.
   await gotoApp(page, `${BASE}/build/${SUBCLASS_EDIT_ID}?step=class`);
-  if (!(await waitForVisibleText(page, "Archetype: Battle Master"))) {
-    fail("Edit Build's Class step shows no archetype line for Battle Master");
+  if (!(await waitForVisibleText(page, "Archetype: Champion"))) {
+    fail("Edit Build's Class step shows no archetype line for Champion");
     await closePage(page);
     return failures;
   }
-  await page.getByText("Archetype: Battle Master", { exact: true }).first().click();
+  await page.getByText("Archetype: Champion", { exact: true }).first().click();
   await settle(page);
-  if (!(await waitForChip("Champion"))) fail("the archetype on the Class step does not open the Subclass step's list");
-  else if (!(await isSelected("Battle Master"))) fail("the Subclass step opened from the archetype does not select Battle Master");
+  if (!(await waitForChip("Battle Master"))) fail("the archetype on the Class step does not open the Subclass step's list");
+  else if (!(await isSelected("Champion"))) fail("the Subclass step opened from the archetype does not select Champion");
   await closePage(page);
   return failures;
 }

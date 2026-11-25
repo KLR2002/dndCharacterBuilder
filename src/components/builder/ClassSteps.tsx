@@ -1,5 +1,5 @@
 import type { ActiveBooks } from "../../constants/books";
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { View } from "react-native";
 import { applySoleSubclasses } from "../../rules/builderTransitions";
 import type { AvailableRuleChoice } from "../../rules/ruleChoices";
@@ -59,12 +59,14 @@ export interface ClassStepsProps {
    * the free-form builder, where every part renders in order.
    */
   step?: CreationStepId;
+  /** Opens the Subclass step from the archetype line on the Class step. */
+  onOpenSubclassStep?: () => void;
 }
 
 /**
- * The Class tab's parts in on-screen order: the levels, the subclass prompts, the Class Choices cards and Expertise,
- * the ASI and feat slots, the equipment, the optional features, and the class list. Subclass change state is shared
- * between the levels and the subclass prompts, and the sole-subclass sync runs for as long as this host is mounted.
+ * The Class tab's parts in on-screen order: the levels, the subclass list, the Class Choices cards and Expertise,
+ * the ASI and feat slots, the equipment, the optional features, and the class list. The sole-subclass sync runs for
+ * as long as this host is mounted.
  */
 export const ClassSteps: React.FC<ClassStepsProps> = ({
   character,
@@ -93,8 +95,8 @@ export const ClassSteps: React.FC<ClassStepsProps> = ({
   theme,
   activeBooks,
   step,
+  onOpenSubclassStep,
 }) => {
-  const [changingSubclassFor, setChangingSubclassFor] = useState<string | null>(null);
   const hasAnyClass = (character.classes || []).length > 0;
   // SRD mode has exactly one subclass per class, so there is no choice to offer: it is applied instead.
   const isSrd = !currentCompendium().integrated;
@@ -122,8 +124,7 @@ export const ClassSteps: React.FC<ClassStepsProps> = ({
           totalLevel={totalLevel}
           activeBooks={activeBooks}
           step={step}
-          changingSubclassFor={changingSubclassFor}
-          setChangingSubclassFor={setChangingSubclassFor}
+          onOpenSubclassStep={onOpenSubclassStep}
           theme={theme}
         />
       )}
@@ -133,8 +134,6 @@ export const ClassSteps: React.FC<ClassStepsProps> = ({
           character={character}
           onUpdate={onUpdate}
           activeBooks={activeBooks}
-          changingSubclassFor={changingSubclassFor}
-          setChangingSubclassFor={setChangingSubclassFor}
           theme={theme}
         />
       )}

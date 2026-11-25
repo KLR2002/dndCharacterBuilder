@@ -25,9 +25,8 @@ export interface ClassLevelsSectionProps {
   activeBooks: ActiveBooks;
   /** The Creation Step this part is hosted on. Unset in the free-form builder. */
   step?: CreationStepId;
-  /** The class whose subclass change picker is open. */
-  changingSubclassFor: string | null;
-  setChangingSubclassFor: (className: string | null) => void;
+  /** Opens the Subclass step; the archetype line is plain text without it. */
+  onOpenSubclassStep?: () => void;
   theme: any;
 }
 
@@ -39,8 +38,7 @@ export const ClassLevelsSection: React.FC<ClassLevelsSectionProps> = ({
   totalLevel,
   activeBooks,
   step,
-  changingSubclassFor,
-  setChangingSubclassFor,
+  onOpenSubclassStep,
   theme,
 }) => {
   const { isPhone } = useResponsiveLayout();
@@ -167,7 +165,7 @@ export const ClassLevelsSection: React.FC<ClassLevelsSectionProps> = ({
 
             <View style={{ flex: isPhone ? undefined : 1 }}>
               {c.subclassName ? (
-                isSrd ? (
+                isSrd || !onOpenSubclassStep ? (
                   <Text
                     style={{
                       color: theme.accentHover,
@@ -181,13 +179,7 @@ export const ClassLevelsSection: React.FC<ClassLevelsSectionProps> = ({
                   </Text>
                 ) : (
                   <TouchableOpacity
-                    onPress={() =>
-                      setChangingSubclassFor(
-                        changingSubclassFor === c.className
-                          ? null
-                          : c.className,
-                      )
-                    }
+                    onPress={onOpenSubclassStep}
                     hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     style={{
                       flexDirection: "row",

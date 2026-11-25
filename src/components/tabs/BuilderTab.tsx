@@ -50,6 +50,8 @@ interface BuilderTabProps {
    * section nav is hidden. Unset in the free-form builder, where the nav switches sections.
    */
   step?: CreationStepId;
+  /** Opens the Subclass step from the Class tab's archetype line. Unset where there is no Creation Flow. */
+  onOpenSubclassStep?: () => void;
 }
 
 /** Which builder section hosts each Creation Step (spells, details and review are hosted by the flow itself). */
@@ -70,6 +72,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
   onUpdate: propUpdate,
   onViewDetail: propViewDetail,
   step,
+  onOpenSubclassStep,
 }) => {
   const { theme } = useAppTheme();
   const { currentCharacter, updateCharacter: contextUpdate, activeBooks, fullHealOnLevelUp } = useCharacters();
@@ -344,6 +347,7 @@ export const BuilderTab: React.FC<BuilderTabProps> = ({
           character={character}
           onUpdate={onUpdate}
           step={step}
+          onOpenSubclassStep={onOpenSubclassStep}
           fullHealOnLevelUp={fullHealOnLevelUp}
           allClasses={allClasses}
           allFeats={allFeats}

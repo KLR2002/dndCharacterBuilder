@@ -169,7 +169,12 @@ export default function BuildScreen() {
     }
     return (
       <View style={{ flex: 1, minHeight: 0 }}>
-        <BuilderTab character={character} onUpdate={handleUpdate} step={openStep} />
+        <BuilderTab
+          character={character}
+          onUpdate={handleUpdate}
+          step={openStep}
+          onOpenSubclassStep={() => openStepById("subclass")}
+        />
       </View>
     );
   };
