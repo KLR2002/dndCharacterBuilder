@@ -193,6 +193,24 @@ function waitForSavedDiceAnimation(page, mode) {
     .catch(() => false);
 }
 
+// Waits until the saved settings hold the Skip beasts `on` value (the Options checkbox saves through the same async queue).
+function waitForSavedSkipBeasts(page, on) {
+  return page
+    .waitForFunction(
+      (value) => {
+        try {
+          return JSON.parse(localStorage.getItem("@dnd5e_app_settings") ?? "null")?.skipBeasts === value;
+        } catch {
+          return false;
+        }
+      },
+      on,
+      { timeout: 10000, polling: 50 },
+    )
+    .then(() => true)
+    .catch(() => false);
+}
+
 async function settle(page, probe, maxMs = 4000) {
   await page.evaluate(settleProbe, { probeSel: probe ?? "body", maxMs }).catch((error) => {
     if (settleErrorLogged) return;
@@ -4247,7 +4265,44 @@ async function checkBuilderAsiFeat(ctx, width, meta) {
   return failures;
 }
 
+// Taps the Skip beasts checkbox on the Options screen: the saved setting turns on, the reloaded screen shows it checked,
+// and a second tap saves it off again.
+async function checkSkipBeastsSetting(ctx, width, meta) {
+  const prefix = `[${width}px ${meta.name}]`;
+  let failures = 0;
+  const fail = (msg) => {
+    failures++;
+    console.log(`${prefix} ${msg}`);
+  };
+  const page = await ctx.newPage();
+  try {
+    await gotoApp(page, `${BASE}/options`);
+    const row = page.locator('[role="checkbox"]', { hasText: "Skip beasts" }).first();
+    if (!(await row.isVisible().catch(() => false))) {
+      fail('the Options screen has no "Skip beasts" checkbox');
+      return failures;
+    }
+    // react-native-web does not map accessibilityState to aria-checked, so the checked look is read from the row's border
+    // (the same way the Options segments are read).
+    const borderOf = () => page.locator('[role="checkbox"]', { hasText: "Skip beasts" }).first().evaluate((el) => getComputedStyle(el).borderTopColor);
+    const unchecked = await borderOf();
+    await row.click();
+    if (!(await waitForSavedSkipBeasts(page, true))) fail("checking Skip beasts was not saved");
+    await gotoApp(page, `${BASE}/options`);
+    if ((await borderOf()) === unchecked) fail("after a reload, the Skip beasts row does not show as checked");
+    await page.locator('[role="checkbox"]', { hasText: "Skip beasts" }).first().click();
+    if (!(await waitForSavedSkipBeasts(page, false))) fail("unchecking Skip beasts was not saved");
+    if ((await borderOf()) !== unchecked) fail("unchecking Skip beasts does not restore the unchecked row");
+    await maybeShot(page, join(SHOTS, `skip-beasts-${width}.png`), meta);
+    await closePage(page);
+    return failures;
+  } finally {
+    await page.close().catch(() => {});
+  }
+}
+
 const EXTRA_CHECKS = [
+  { name: "Settings skip beasts", run: checkSkipBeastsSetting },
   { name: "HP modals", run: checkHitPointModals },
   { name: "Wild Shape Stats", run: checkWildShapeScreen },
   { name: "Wild Shape Features", run: checkWildShapeFeatures },

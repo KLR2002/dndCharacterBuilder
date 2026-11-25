@@ -76,10 +76,12 @@ type Call = { command: string; args: string[]; options?: Record<string, unknown>
 // followed by a few payload bytes.
 const PNG_BYTES = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52]);
 
-// A dump that satisfies both runnable scenarios' ready conditions (Home and Settings).
+// A dump that satisfies both runnable scenarios' ready conditions (Home and Settings). It also holds the Skip beasts
+// label the Settings scenario scrolls to, so the scroll finds it at once.
 const DEFAULT_DUMP =
   `<hierarchy><node text="5e Character Builder" content-desc="" bounds="[0,0][300,60]" clickable="false" />` +
-  `<node text="Settings &amp; Compendium" content-desc="" bounds="[185,86][534,129]" clickable="false" /></hierarchy>`;
+  `<node text="Settings &amp; Compendium" content-desc="" bounds="[185,86][534,129]" clickable="false" />` +
+  `<node text="Skip beasts" content-desc="" bounds="[20,700][300,730]" clickable="false" /></hierarchy>`;
 
 // The `dumpsys window windows` output the step player reads the bar heights from: both system bars are
 // `fillx48`; the NAVIGATION_BAR_PANEL line must not count as the bar.
@@ -808,6 +810,8 @@ test("one scenario runs end to end: reset, seed copy, deep link, ready poll, scr
     "seed-copy",
     "rm-tmp",
     "am-start",
+    "dump",
+    // The Settings scenario's scrollTo reads the screen once more to find its Skip beasts label.
     "dump",
     "screencap",
     "pull",
