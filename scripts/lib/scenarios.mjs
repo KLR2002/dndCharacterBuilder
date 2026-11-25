@@ -2040,7 +2040,8 @@ export function buildScreens({ integrated }) {
         route: "/options",
         ready: /settings & compendium/i,
         scrollTo: "Skip beasts",
-        expect: { texts: ["Skip beasts", "Speeds up integration. Worth enabling if you don't plan to play a Druid. Wild Shape keeps the SRD beasts."], fitsWidth: true },
+        // The seeded catalog holds beasts (and the SRD Baseline never offers the download), so no download button.
+        expect: { texts: ["Skip beasts", "Speeds up integration. Worth enabling if you don't plan to play a Druid. Wild Shape keeps the SRD beasts."], absent: ["Download beasts"], fitsWidth: true },
         shot: true,
       },
       // The floating dice button (label "Dice tray") is on every screen at every width: Home, Options, the

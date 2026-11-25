@@ -40,6 +40,7 @@ import fs from "node:fs";
 import { chromium } from "playwright";
 import {
   httpStatus,
+  integratedCollections,
   seedBrowser,
   signalExpoGroup,
   spawnExpoExport,
@@ -52,6 +53,7 @@ import { buildScreens, buildSeed, ACTIONS_ID, ASI_FIGHTER_ID, CHARACTER_ID, DRAF
 import { applyWideOverride } from "./lib/scenario-override.mjs";
 import { playStep, playSteps } from "./lib/web-steps.mjs";
 import { ACCENT_PALETTES, BASE_DARK_THEME } from "../src/constants/theme.ts";
+import { defaultSettings } from "../checks/testUtils.ts";
 import { rollAccentId } from "../src/rules/rollColors.ts";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -4301,8 +4303,143 @@ async function checkSkipBeastsSetting(ctx, width, meta) {
   }
 }
 
+// Invented beasts for the stubbed bestiary: the shape the 5etools bestiary file carries, with challenge ratings under 6.
+const STUB_BESTIARY_BEASTS = [
+  { name: "Mossback Grazer", source: "TST", size: "L", type: "beast", cr: "1/4", ac: [12], hp: { average: 15, formula: "2d10 + 4" }, speed: { walk: 30 }, str: 16, dex: 9, con: 14, int: 2, wis: 10, cha: 5 },
+  { name: "Thornwhisk Stag", source: "TST", size: "L", type: "beast", cr: "2", ac: [13], hp: { average: 22, formula: "3d10 + 6" }, speed: { walk: 50 }, str: 15, dex: 14, con: 13, int: 3, wis: 12, cha: 7 },
+  { name: "Ember Harrier", source: "TST", size: "M", type: "beast", cr: "5", ac: [14], hp: { average: 38, formula: "7d8 + 7" }, speed: { walk: 40 }, str: 14, dex: 16, con: 12, int: 4, wis: 13, cha: 8 },
+];
+
+// Answers the bestiary index and its one file from the page: `indexStatus` other than 200 fails the index (the download
+// throws), and `indexDelayMs` holds the index back so the progress window stays on screen long enough to shoot.
+async function stubBestiary(page, { indexStatus = 200, indexDelayMs = 0 } = {}) {
+  const cors = { "access-control-allow-origin": "*" };
+  await page.route((url) => url.pathname.endsWith("/data/bestiary/index.json"), async (route) => {
+    if (indexDelayMs) await new Promise((done) => setTimeout(done, indexDelayMs));
+    if (indexStatus !== 200) return route.fulfill({ status: indexStatus, headers: cors, body: "stub failure" });
+    return route.fulfill({ status: 200, headers: cors, contentType: "application/json", body: JSON.stringify({ inv: "bestiary-inv.json" }) });
+  });
+  await page.route((url) => url.pathname.endsWith("/data/bestiary/bestiary-inv.json"), (route) =>
+    route.fulfill({ status: 200, headers: cors, contentType: "application/json", body: JSON.stringify({ monster: STUB_BESTIARY_BEASTS }) }),
+  );
+}
+
+// Runs in the browser. The saved Integrated Catalog's beast names and its format and "Last synced" stamp.
+function readSavedCatalog() {
+  return new Promise((resolve, reject) => {
+    const open = indexedDB.open("dnd5e_compendium_db");
+    open.onerror = () => reject(open.error);
+    open.onsuccess = () => {
+      const request = open.result.transaction("collections", "readonly").objectStore("collections").get("@dnd5e_integrated_compendium");
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        open.result.close();
+        const catalog = request.result ?? {};
+        resolve({ beasts: (catalog.beasts ?? []).map((beast) => beast.name), catalogFormat: catalog.catalogFormat, integratedAt: catalog.integratedAt });
+      };
+    };
+  });
+}
+
+// The Download beasts button on an Integrated Catalog without beasts. A context seeded with that catalog taps the
+// button against the stubbed bestiary: the progress window shows, then the window and the button are gone, the saved
+// catalog holds the stub beasts with its format and date as seeded, and Skip beasts is off. A context whose bestiary
+// answers HTTP 500 shows the error window, and the button stays after the window is closed.
+async function checkSettingsDownloadBeasts(ctx, width, meta) {
+  const prefix = `[${width}px ${meta.name}]`;
+  let failures = 0;
+  const fail = (msg) => {
+    failures++;
+    console.log(`${prefix} ${msg}`);
+  };
+  const shown = (locator, timeout = 15000) => locator.waitFor({ state: "visible", timeout }).then(() => true).catch(() => false);
+  const openSeeded = async () => {
+    const seeded = await ctx.browser().newContext({ viewport: { width, height: 851 }, deviceScaleFactor: DSF, hasTouch: true, isMobile: true });
+    const seed = {
+      characters: [],
+      folders: [],
+      settings: { ...defaultSettings(), hasCompletedFirstRun: true, skipBeasts: true },
+      integrated: { ...integratedCollections(ROOT), beasts: [] },
+    };
+    await seeded.addInitScript(seedBrowser, seed);
+    return { seeded, seed };
+  };
+  const layoutViolations = async (page, label) => {
+    const dialog = await page.evaluateHandle(() => document.querySelector('[role="dialog"]'));
+    if (!dialog.asElement()) return fail(`${label}: no dialog on the page`);
+    for (const v of await page.evaluate(findLayoutViolations, dialog)) fail(`${label}: ${v}`);
+  };
+
+  const success = await openSeeded();
+  try {
+    const page = await success.seeded.newPage();
+    await stubBestiary(page, { indexDelayMs: 3000 });
+    await gotoApp(page, `${BASE}/options`);
+    const button = page.getByText("Download beasts", { exact: true }).first();
+    if (!(await shown(button))) {
+      fail('an Integrated Catalog without beasts shows no "Download beasts" button');
+    } else {
+      await button.evaluate((el) => el.scrollIntoView({ block: "center" }));
+      await settle(page);
+      await maybeShot(page, join(SHOTS, `DownloadBeasts-button-${width}.png`), meta);
+      await button.click();
+      if (!(await shown(page.getByText("Downloading Beasts...", { exact: true }).first(), 10000))) fail('the progress window does not show "Downloading Beasts..."');
+      await settleDialog(page);
+      await maybeShot(page, join(SHOTS, `DownloadBeasts-progress-${width}.png`), meta);
+      await layoutViolations(page, "progress window");
+      if (!(await button.waitFor({ state: "hidden", timeout: 60000 }).then(() => true).catch(() => false))) {
+        fail('the "Download beasts" button is still shown after the download');
+      }
+      const saved = await page.evaluate(readSavedCatalog);
+      const sent = success.seed.integrated;
+      const stubNames = STUB_BESTIARY_BEASTS.map((beast) => beast.name).sort();
+      if (JSON.stringify([...saved.beasts].sort()) !== JSON.stringify(stubNames)) {
+        fail(`the saved catalog holds beasts ${JSON.stringify(saved.beasts)}`);
+      }
+      if (saved.catalogFormat !== sent.catalogFormat || saved.integratedAt !== sent.integratedAt) {
+        fail("the download changed the saved Catalog Format or Last synced date");
+      }
+      if (!(await waitForSavedSkipBeasts(page, false))) fail("a successful download left Skip beasts on");
+      await page.waitForSelector('[role="dialog"]', { state: "detached", timeout: 5000 }).catch(() => {});
+      await settle(page);
+      await maybeShot(page, join(SHOTS, `DownloadBeasts-after-${width}.png`), meta);
+    }
+  } finally {
+    await success.seeded.close();
+  }
+
+  const failing = await openSeeded();
+  try {
+    const page = await failing.seeded.newPage();
+    await stubBestiary(page, { indexStatus: 500 });
+    await gotoApp(page, `${BASE}/options`);
+    const button = page.getByText("Download beasts", { exact: true }).first();
+    if (!(await shown(button))) {
+      fail('the failing context shows no "Download beasts" button');
+    } else {
+      await button.click();
+      if (!(await shown(page.getByText("Integration Error", { exact: true }).first()))) fail("a failed download shows no Integration Error window");
+      await settleDialog(page);
+      await maybeShot(page, join(SHOTS, `DownloadBeasts-error-${width}.png`), meta);
+      await layoutViolations(page, "error window");
+      const close = page.getByText("Close", { exact: true }).first();
+      if (!(await shown(close, 5000))) {
+        fail("the error window has no Close button");
+      } else {
+        await close.click();
+        await page.getByText("Integration Error", { exact: true }).first().waitFor({ state: "hidden", timeout: 10000 }).catch(() => fail("the error window does not close"));
+      }
+      if (!(await shown(button, 5000))) fail('a failed download removes the "Download beasts" button');
+    }
+  } finally {
+    await failing.seeded.close();
+  }
+  return failures;
+}
+
 const EXTRA_CHECKS = [
   { name: "Settings skip beasts", run: checkSkipBeastsSetting },
+  { name: "Settings download beasts", run: checkSettingsDownloadBeasts, shot: true },
   { name: "HP modals", run: checkHitPointModals },
   { name: "Wild Shape Stats", run: checkWildShapeScreen },
   { name: "Wild Shape Features", run: checkWildShapeFeatures },
