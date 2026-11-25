@@ -423,11 +423,18 @@ test("runInAppIntegration with beasts off: requests no bestiary, saves no beasts
     assert.deepEqual(progressReports.map(report => report.total), Array(10).fill(10));
     assert.deepEqual(progressReports.map(report => report.step), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
 
-    const stored = await loadCompendiumData();
-    assert.deepEqual(stored?.beasts, []);
-    assert.equal(stored?.races.length, 1);
-    assert.equal(stored?.spells.length, 1);
-    assert.equal(stored?.conditions.length, 1);
+    const withoutBeasts = await loadCompendiumData();
+    assert.deepEqual(withoutBeasts?.beasts, []);
+
+    await clearCompendiumData();
+    globalThis.fetch = fakeMirror([]);
+    await runInAppIntegration(undefined);
+    const withBeasts = await loadCompendiumData();
+    assert.deepEqual(withBeasts?.beasts.map(beast => beast.name), ["Wolf"]);
+
+    const { beasts: _offBeasts, integratedAt: _offAt, ...offRest } = withoutBeasts!;
+    const { beasts: _onBeasts, integratedAt: _onAt, ...onRest } = withBeasts!;
+    assert.deepEqual(offRest, onRest);
   } finally {
     globalThis.fetch = originalFetch;
     await clearCompendiumData();
