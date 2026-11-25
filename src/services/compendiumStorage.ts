@@ -135,8 +135,25 @@ function openIndexedDB(): Promise<IDBDatabase> {
   });
 }
 
+/** Saves a new Integrated Catalog, stamped with the required Catalog Format. */
 export async function saveCompendiumData(input: CompendiumCollections): Promise<void> {
-  const data: CompendiumCollections = { ...input, catalogFormat: REQUIRED_CATALOG_FORMAT };
+  await writeCompendium({ ...input, catalogFormat: REQUIRED_CATALOG_FORMAT });
+}
+
+/**
+ * Replaces the beasts of the saved Integrated Catalog and nothing else: its Catalog Format and its
+ * `integratedAt` keep their saved values, so a stale catalog stays stale. Throws, and writes nothing,
+ * when no Integrated Catalog is saved. Returns the catalog as saved.
+ */
+export async function replaceSavedBeasts(beasts: BeastData[]): Promise<CompendiumCollections> {
+  const saved = await loadCompendiumData();
+  if (!saved?.hasIntegratedCatalog) throw new Error("No Integrated Catalog is saved to add beasts to");
+  const updated: CompendiumCollections = { ...saved, beasts };
+  await writeCompendium(updated);
+  return updated;
+}
+
+async function writeCompendium(data: CompendiumCollections): Promise<void> {
   if (testKv) {
     testKv.set(STORAGE_KEY, JSON.stringify(data));
     return;
