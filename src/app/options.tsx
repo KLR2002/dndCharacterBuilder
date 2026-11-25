@@ -16,6 +16,7 @@ import type { DiceAnimation } from "../rules/diceAnimation";
 import { Button } from "../components/ui/Button";
 import { Card } from "../components/ui/Card";
 import { Modal } from "../components/ui/Modal";
+import { SyncProgressModal } from "../components/SyncProgressModal";
 import { SearchBar } from "../components/ui/SearchBar";
 import {
   ALL_RESOURCE_BOOKS,
@@ -52,7 +53,9 @@ export default function OptionsScreen() {
     isIntegrated,
     integratedAt,
     catalogStale,
+    lacksBeasts,
     triggerIntegration,
+    downloadBeasts,
     revertToSrd,
   } = useCharacters();
 
@@ -85,6 +88,20 @@ export default function OptionsScreen() {
       setIsSyncing(false);
     } catch (err: any) {
       setSyncError(err?.message || "Failed to download integration data");
+    }
+  };
+
+  const startBeastsDownload = async () => {
+    setIsSyncing(true);
+    setSyncError(null);
+    setSyncStep({ category: "Beasts", step: 1, total: 1 });
+    try {
+      await downloadBeasts((category, step, total) => {
+        setSyncStep({ category, step, total });
+      });
+      setIsSyncing(false);
+    } catch (err: any) {
+      setSyncError(err?.message || "Failed to download beasts");
     }
   };
 
@@ -489,6 +506,14 @@ export default function OptionsScreen() {
                     size="sm"
                     onPress={() => setConfirmDisclaimerVisible(true)}
                   />
+                  {lacksBeasts ? (
+                    <Button
+                      title="Download beasts"
+                      variant="outline"
+                      size="sm"
+                      onPress={startBeastsDownload}
+                    />
+                  ) : null}
                   <Button
                     title="Revert to SRD"
                     variant="secondary"
@@ -887,73 +912,17 @@ export default function OptionsScreen() {
       </Modal>
 
       {/* Syncing Progress Modal */}
-      <Modal
+      <SyncProgressModal
         visible={isSyncing}
+        category={syncStep.category}
+        step={syncStep.step}
+        total={syncStep.total}
+        error={syncError}
         onClose={() => {
-          if (syncError) {
-            setIsSyncing(false);
-            setSyncError(null);
-          }
+          setIsSyncing(false);
+          setSyncError(null);
         }}
-        title={syncError ? "Integration Error" : "Syncing Compendium"}
-        subtitle={
-          syncError
-            ? undefined
-            : `Category ${syncStep.step} of ${syncStep.total}`
-        }
-        footer={
-          syncError ? (
-            <Button
-              title="Close"
-              variant="secondary"
-              onPress={() => {
-                setIsSyncing(false);
-                setSyncError(null);
-              }}
-            />
-          ) : undefined
-        }
-      >
-        {syncError ? (
-          <View style={{ gap: 10 }}>
-            <Text style={{ color: theme.accentHover, fontSize: 14 }}>
-              Failed to complete integration: {syncError}
-            </Text>
-            <Text style={{ color: theme.textSecondary, fontSize: 13 }}>
-              Please check your internet connection and try again.
-            </Text>
-          </View>
-        ) : (
-          <View style={{ gap: 16, paddingVertical: 8 }}>
-            <Text
-              style={{ color: theme.text, fontSize: 15, fontWeight: "600" }}
-            >
-              Downloading {syncStep.category}...
-            </Text>
-            <View
-              style={{
-                width: "100%",
-                height: 8,
-                backgroundColor: theme.surfaceHighlight,
-                borderRadius: 4,
-                overflow: "hidden",
-              }}
-            >
-              <View
-                style={{
-                  width: `${Math.round((syncStep.step / syncStep.total) * 100)}%`,
-                  height: "100%",
-                  backgroundColor: theme.accent,
-                }}
-              />
-            </View>
-            <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
-              Downloading catalog datasets directly into local IndexedDB
-              storage.
-            </Text>
-          </View>
-        )}
-      </Modal>
+      />
 
       {/* Revert Confirmation Modal */}
       <Modal
