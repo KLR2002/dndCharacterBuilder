@@ -204,3 +204,48 @@ test("the SRD Baseline refuses a beast download and saves nothing", async () => 
     resetTestCompendium();
   }
 });
+
+test("a beast download whose catalog cannot be written rejects and changes nothing", async () => {
+  __setCompendiumKvForTests(undefined);
+  const files = new Map<string, string>();
+  let writesFail = false;
+  const mockFs = {
+    documentDirectory: "file:///data/user/0/com.app/files/",
+    writeAsStringAsync: async (uri: string, content: string) => {
+      if (writesFail) throw new Error("disk full");
+      files.set(uri, content);
+    },
+    readAsStringAsync: async (uri: string) => {
+      const content = files.get(uri);
+      if (content === undefined) throw new Error("File not found");
+      return content;
+    },
+    getInfoAsync: async (uri: string) => ({ exists: files.has(uri) }),
+    deleteAsync: async (uri: string) => {
+      files.delete(uri);
+    },
+  };
+  const { __setNativeFsForTests, saveCompendiumData } = await import("../src/services/compendiumStorage.ts");
+  __setNativeFsForTests(mockFs);
+  __setKvForTests(new Map([[SETTINGS_KEY, JSON.stringify({ skipBeasts: true })]]));
+  try {
+    const savedCatalog = savedCatalogWithoutBeasts();
+    await saveCompendiumData(savedCatalog as any);
+    integrate(savedCatalog as any);
+    const catalogBefore = await loadCompendiumData();
+    const listingBefore = currentCompendium().for().beasts().map((b) => b.name);
+    assert.equal(listingBefore.length, 92);
+
+    writesFail = true;
+    await assert.rejects(downloadBeasts(bestiaryClient([])), /could not be saved/);
+
+    assert.deepEqual(await loadCompendiumData(), catalogBefore);
+    assert.equal((await loadSettings()).skipBeasts, true, "the setting is cleared only after the catalog is saved");
+    assert.deepEqual(currentCompendium().for().beasts().map((b) => b.name), listingBefore);
+    assert.ok(currentCompendium().for().beasts().every((b) => b.source === "SRD"));
+  } finally {
+    __setNativeFsForTests(undefined);
+    __setKvForTests(new Map());
+    resetTestCompendium();
+  }
+});
