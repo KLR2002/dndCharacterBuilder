@@ -28,6 +28,7 @@ import {
 import { ACCENT_PALETTES } from "../constants/theme";
 import { useCharacters } from "../context/CharacterContext";
 import { useAppTheme } from "../context/ThemeContext";
+import { integrationStepTotal, readIncludeBeasts } from "../services/scraper/runner";
 
 const DICE_ANIMATION_MODES: { mode: DiceAnimation; label: string }[] = [
   { mode: "off", label: "Off" },
@@ -74,8 +75,8 @@ export default function OptionsScreen() {
     setConfirmDisclaimerVisible(false);
     setIsSyncing(true);
     setSyncError(null);
-    setSyncStep({ category: "Races", step: 1, total: 11 });
     try {
+      setSyncStep({ category: "Races", step: 1, total: integrationStepTotal(await readIncludeBeasts()) });
       await triggerIntegration((category, step, total) => {
         setSyncStep({ category, step, total });
       });

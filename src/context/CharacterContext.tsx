@@ -22,7 +22,7 @@ import {
 } from "../services/compendiumStorage";
 import { runE2eSeedHook } from "../services/e2eSeedHook";
 import { shouldShowCatalogUpdateNotice } from "../services/catalogUpdateNotice";
-import { runInAppIntegration } from "../services/scraper/runner";
+import { runSavedIntegration } from "../services/scraper/runner";
 import { unsetAbilityScores } from "../constants/rules";
 
 interface CharacterContextValue {
@@ -364,7 +364,7 @@ export function CharacterProvider({ children }: { children: React.ReactNode }) {
   const triggerIntegration = async (
     onProgress?: (category: string, step: number, total: number) => void
   ) => {
-    const compendium = await runInAppIntegration(onProgress);
+    const compendium = await runSavedIntegration(onProgress);
     integrateCompendium(compendium);
     setIsIntegrated(true);
     setIntegratedAt(compendium.integratedAt || new Date().toISOString());

@@ -12,48 +12,66 @@ import { scrapeConditions } from "../../../dnd5eToolsScrap/src/scrapers/conditio
 import { scrapeOriginRules } from "../../../dnd5eToolsScrap/src/scrapers/origin-rules.ts";
 import { REQUIRED_CATALOG_FORMAT, saveCompendiumData, type CompendiumCollections } from "../compendiumStorage.ts";
 import { integrate } from "../compendium.ts";
+import { loadSettings } from "../storage.ts";
+
+/** The number of progress steps a sync reports: 11 with the bestiary, 10 without it. */
+export function integrationStepTotal(includeBeasts: boolean): number {
+  return includeBeasts ? 11 : 10;
+}
+
+/** Whether a sync that starts now fetches the bestiary. Reads the saved Skip Beasts setting. */
+export async function readIncludeBeasts(): Promise<boolean> {
+  return (await loadSettings()).skipBeasts !== true;
+}
 
 /**
  * Scrapes every category through the client and returns the collections. Nothing is integrated or saved here:
  * the in-app sync does both after this, and the live catalog build (`scripts/build-live-catalog.mjs`) stops here.
+ * Without beasts the bestiary is never requested and `beasts` is empty.
  */
 export async function collectIntegratedCatalog(
   client: BrowserToolsClient,
   onProgress?: ScraperProgressCallback,
+  includeBeasts = true,
 ): Promise<CompendiumCollections> {
-  const total = 11;
+  const total = integrationStepTotal(includeBeasts);
+  let step = 0;
+  const report = (category: string) => onProgress?.(category, ++step, total);
 
-  onProgress?.("Races", 1, total);
+  report("Races");
   const races = await scrapeRaces(client as any);
 
-  onProgress?.("Classes", 2, total);
+  report("Classes");
   const classes = await scrapeClasses(client as any);
 
-  onProgress?.("Feats", 3, total);
+  report("Feats");
   const feats = await scrapeFeats(client as any);
 
-  onProgress?.("Options & Features", 4, total);
+  report("Options & Features");
   const optionsAndFeatures = await scrapeOptions(client as any);
 
-  onProgress?.("Backgrounds", 5, total);
+  report("Backgrounds");
   const backgrounds = await scrapeBackgrounds(client as any);
 
-  onProgress?.("Items", 6, total);
+  report("Items");
   const items = await scrapeItems(client as any);
 
-  onProgress?.("Spells", 7, total);
+  report("Spells");
   const spells = await scrapeSpells(client as any);
 
-  onProgress?.("Beasts", 8, total);
-  const beasts = await scrapeBeasts(client as any);
+  let beasts: unknown[] = [];
+  if (includeBeasts) {
+    report("Beasts");
+    beasts = await scrapeBeasts(client as any);
+  }
 
-  onProgress?.("Conditions", 9, total);
+  report("Conditions");
   const conditions = await scrapeConditions(client as any);
 
-  onProgress?.("Books", 10, total);
+  report("Books");
   const books = await scrapeBooks(client as any);
 
-  onProgress?.("Origin Rules", 11, total);
+  report("Origin Rules");
   const originRules = await scrapeOriginRules(client as any);
 
   const compendium: CompendiumCollections = {
@@ -75,9 +93,18 @@ export async function collectIntegratedCatalog(
   return compendium;
 }
 
-export async function runInAppIntegration(onProgress?: ScraperProgressCallback): Promise<CompendiumCollections> {
-  const compendium = await collectIntegratedCatalog(new BrowserToolsClient(), onProgress);
+export async function runInAppIntegration(
+  onProgress?: ScraperProgressCallback,
+  options: { includeBeasts?: boolean } = {},
+): Promise<CompendiumCollections> {
+  const compendium = await collectIntegratedCatalog(new BrowserToolsClient(), onProgress, options.includeBeasts ?? true);
   integrate(compendium);
   await saveCompendiumData(compendium);
   return compendium;
+}
+
+/** The sync a user starts: the saved Skip Beasts setting is read here, when the sync starts, and passed in. */
+export async function runSavedIntegration(onProgress?: ScraperProgressCallback): Promise<CompendiumCollections> {
+  const includeBeasts = await readIncludeBeasts();
+  return runInAppIntegration(onProgress, { includeBeasts });
 }
