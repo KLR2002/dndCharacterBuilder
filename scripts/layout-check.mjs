@@ -4287,14 +4287,23 @@ async function checkSkipBeastsSetting(ctx, width, meta) {
     // react-native-web does not map accessibilityState to aria-checked, so the checked look is read from the row's border
     // (the same way the Options segments are read).
     const borderOf = () => page.locator('[role="checkbox"]', { hasText: "Skip beasts" }).first().evaluate((el) => getComputedStyle(el).borderTopColor);
+    // The settings load after the first render, so the row's look is polled until it matches or 10 seconds pass.
+    const waitForBorder = async (matches) => {
+      const deadline = Date.now() + 10000;
+      while (Date.now() < deadline) {
+        if (matches(await borderOf())) return true;
+        await page.waitForTimeout(100);
+      }
+      return false;
+    };
     const unchecked = await borderOf();
     await row.click();
     if (!(await waitForSavedSkipBeasts(page, true))) fail("checking Skip beasts was not saved");
     await gotoApp(page, `${BASE}/options`);
-    if ((await borderOf()) === unchecked) fail("after a reload, the Skip beasts row does not show as checked");
+    if (!(await waitForBorder((border) => border !== unchecked))) fail("after a reload, the Skip beasts row does not show as checked");
     await page.locator('[role="checkbox"]', { hasText: "Skip beasts" }).first().click();
     if (!(await waitForSavedSkipBeasts(page, false))) fail("unchecking Skip beasts was not saved");
-    if ((await borderOf()) !== unchecked) fail("unchecking Skip beasts does not restore the unchecked row");
+    if (!(await waitForBorder((border) => border === unchecked))) fail("unchecking Skip beasts does not restore the unchecked row");
     await maybeShot(page, join(SHOTS, `skip-beasts-${width}.png`), meta);
     await closePage(page);
     return failures;
