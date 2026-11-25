@@ -37,4 +37,4 @@ Spec: `.scratch/skip-beasts/spec.md`.
 
 ## Blocked by
 
-01
+01, 04 (04 puts the setting in the character context's state, which this checkbox reads and writes)

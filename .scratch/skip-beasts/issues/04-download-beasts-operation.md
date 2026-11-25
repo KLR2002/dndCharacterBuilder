@@ -37,6 +37,7 @@ Spec: `.scratch/skip-beasts/spec.md`.
 - The setting is cleared only after the catalog is saved.
 - It takes the progress callback the sync takes (one step, named "Beasts") so the progress window of ticket 06 can show it.
 - Reuse the existing beast scraper; do not copy its filtering.
+- The character context holds the setting as state (the way it holds the dice animation setting) and exposes it with a setter, so the checkbox of ticket 05 reads and writes it; the context's download function also sets that state to off after a successful download, so the state and the saved setting never disagree.
 - No UI, no Catalog Format bump.
 
 ## Blocked by
