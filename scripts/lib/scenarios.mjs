@@ -525,6 +525,51 @@ function asiFighterCharacter() {
   });
 }
 
+// The Subclass step's list: a level 3 Human Fighter draft on that step with no subclass picked, and a finished copy
+// holding Champion for Edit Build. Integrated mode only: the integrated catalog lists the Fighter's subclasses.
+export const SUBCLASS_DRAFT_ID = "char_subclass_draft";
+export const SUBCLASS_EDIT_ID = "char_subclass_edit";
+function subclassCharacter({ id, name, createdAt, draft, subclassName }) {
+  return makeChar({
+    id,
+    name,
+    createdAt,
+    updatedAt: createdAt,
+    startingOption: "equipment",
+    baseAbilityScores: { str: 15, dex: 14, con: 14, int: 10, wis: 12, cha: 8 },
+    race: { name: "Human", source: catalogSource("races", "Human") },
+    background: { name: "Acolyte", source: catalogSource("backgrounds", "Acolyte") },
+    classes: [
+      {
+        className: "Fighter",
+        source: catalogSource("classes", "Fighter"),
+        level: 3,
+        ...(subclassName ? { subclassName, subclassSource: "PHB" } : {}),
+      },
+    ],
+    currentHp: 28,
+    startingGrantsApplied: true,
+    backgroundGrantsApplied: true,
+    ruleChoices: [
+      {
+        id: "PHB__Fighter__Fighting Style",
+        trait: "Fighting Style",
+        origin: "class",
+        choose: 1,
+        from: ["Defense"],
+        picked: ["Defense"],
+      },
+    ],
+    ...(draft ? { creationProgress: { currentStep: "subclass" } } : {}),
+  });
+}
+function subclassDraftCharacter() {
+  return subclassCharacter({ id: SUBCLASS_DRAFT_ID, name: "Orla", createdAt: 22, draft: true });
+}
+function subclassEditCharacter() {
+  return subclassCharacter({ id: SUBCLASS_EDIT_ID, name: "Corran", createdAt: 23, subclassName: "Champion" });
+}
+
 // A level 1 High Elf Wizard with no cantrip picked yet. The race card shows the wizard cantrip pick the High Elf's
 // subrace grants, with the Intelligence casting ability.
 const HIGH_ELF_ID = "char_highelf";
@@ -1439,7 +1484,7 @@ export function buildSeed({ root, integrated }) {
       noticesManyCharacter(),
       noticesFewCharacter(),
       ...(INTEGRATED ? [kenseiCharacter()] : []),
-      ...(INTEGRATED ? [initiativeCharacter(), asiFighterCharacter()] : []),
+      ...(INTEGRATED ? [initiativeCharacter(), asiFighterCharacter(), subclassDraftCharacter(), subclassEditCharacter()] : []),
       bardCharacter(),
       noRaceCharacter(),
       noBackgroundCharacter(),

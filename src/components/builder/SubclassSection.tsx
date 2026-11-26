@@ -1,4 +1,3 @@
-import Ionicons from "@expo/vector-icons/Ionicons";
 import React, { useState } from "react";
 import { Text, TouchableOpacity, View } from "react-native";
 import type { ActiveBooks } from "../../constants/books";
@@ -20,19 +19,14 @@ export interface SubclassSectionProps {
     patchOrUpdater: Partial<Character> | ((prev: Character) => Character),
   ) => void;
   activeBooks: ActiveBooks;
-  /** The class whose subclass change picker is open. */
-  changingSubclassFor: string | null;
-  setChangingSubclassFor: (className: string | null) => void;
   theme: any;
 }
 
-/** The subclass prompts for classes that need one, the change pickers, and the warning for spells a switch orphans. */
+/** Each class that has reached its subclass level, with its subclass list, and the warning for spells a switch orphans. */
 export const SubclassSection: React.FC<SubclassSectionProps> = ({
   character,
   onUpdate,
   activeBooks,
-  changingSubclassFor,
-  setChangingSubclassFor,
   theme,
 }) => {
   const [orphanWarning, setOrphanWarning] = useState<{
@@ -93,7 +87,6 @@ export const SubclassSection: React.FC<SubclassSectionProps> = ({
         activeBooks,
       ),
     );
-    setChangingSubclassFor(null);
     setOrphanWarning(null);
   };
 
@@ -103,20 +96,14 @@ export const SubclassSection: React.FC<SubclassSectionProps> = ({
       {character.classes.map((c) => {
         const cd = findClassData(currentCompendium().for().classes(), c);
         const req = subclassLevel(c.className);
-        const isChanging = changingSubclassFor === c.className;
         const needsChoice = !c.subclassName;
-        if (
-          !isSrd &&
-          c.level >= req &&
-          (needsChoice || isChanging) &&
-          cd?.subclasses?.length
-        ) {
+        if (!isSrd && c.level >= req && cd?.subclasses?.length) {
           return (
             <Card
               key={`sub_${c.className}`}
               style={{
                 gap: 8,
-                borderColor: isChanging ? theme.accentHover : theme.warning,
+                borderColor: needsChoice ? theme.warning : theme.border,
               }}
             >
               <View
@@ -130,7 +117,7 @@ export const SubclassSection: React.FC<SubclassSectionProps> = ({
               >
                 <Text
                   style={{
-                    color: isChanging ? theme.accentHover : theme.warning,
+                    color: needsChoice ? theme.warning : theme.text,
                     fontWeight: "700",
                     fontSize: 14,
                     flexShrink: 1,
@@ -139,15 +126,6 @@ export const SubclassSection: React.FC<SubclassSectionProps> = ({
                   {needsChoice ? "⚠️ " : ""}Choose Subclass for {c.className}{" "}
                   (Level {c.level})
                 </Text>
-                {isChanging && (
-                  <TouchableOpacity
-                    onPress={() => setChangingSubclassFor(null)}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    style={{ padding: 4 }}
-                  >
-                    <Ionicons name="close" size={18} color={theme.textMuted} />
-                  </TouchableOpacity>
-                )}
               </View>
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
                 {cd.subclasses
@@ -157,9 +135,12 @@ export const SubclassSection: React.FC<SubclassSectionProps> = ({
                     return (
                       <TouchableOpacity
                         key={sub.name}
-                        onPress={() =>
-                          selectSubclass(c.className, sub.name, sub.source)
-                        }
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: isCurrent }}
+                        aria-selected={isCurrent}
+                        onPress={() => {
+                          if (!isCurrent) selectSubclass(c.className, sub.name, sub.source);
+                        }}
                         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                         style={[
                           styles.subclassChip,
